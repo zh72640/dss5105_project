@@ -1,0 +1,13 @@
+[STANDARD]
+policy           mean days  p90 days  % late  % defect        cost  max share
+-----------------------------------------------------------------------------
+random                21.5      45.6     34%        4%     111,780        23%
+greedy_biggest        49.0      80.6     84%        4%     108,430        70%
+cheapest             105.1     192.9     93%        8%      85,960        70%
+
+[SHOCK]
+policy           mean days  p90 days  % late  % defect        cost  max share
+-----------------------------------------------------------------------------
+random                23.4      48.4     39%        4%     111,780        23%
+greedy_biggest        51.0      81.2     87%        4%     108,430        70%
+cheapest             103.9     190.0     92%        5%      85,960        70%

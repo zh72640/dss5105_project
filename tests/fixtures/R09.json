@@ -1,0 +1,1 @@
+{"request_id":"R09","order_id":"ORD-045","customer":"Cotton Club","product":"Vest","category":"TOPS","quantity":150,"required_date":"2026-04-09","preferred_workshop":null,"excluded_workshops":[],"objective_override":"fastest_turnaround","constraints":[{"type":"cost_priority","value":"ignore","source_text":"Cost doesn't matter"}],"missing_fields":[],"ambiguous_fields":[]}

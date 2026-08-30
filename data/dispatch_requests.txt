@@ -1,0 +1,33 @@
+# SweaterCo dispatch group chat — morning of 2026-04-01.
+# One allocation request per line. This is the inbox your system must handle.
+
+R01 [07:53] Chen: Need scarves for Harbor Knits sent out today, usual quantities.
+R02 [07:59] Ravi: Which workshop did we use for the Harbor Knits batch last October?
+R03 [08:03] Priya: Can we get the TrendCart order moving? They are chasing.
+R04 [08:08] Boss: ORD-029 needs a home today. 1500 beanies, back by Apr 01.
+R05 [08:14] Mei: ORD-066 due date just moved up — will confirm the new date after the call, but line something up.
+R06 [08:18] Chen: Farm out ORD-061 please — 800 scarves for Harbor Knits, ship date Apr 05.
+R07 [08:23] Ravi: ORD-020 — 1200 vests. No special requirements, just make Mar 31.
+R08 [08:29] Priya: Send ORD-073 (400 hoodies) to FreshStart, their quote was good.
+R09 [08:33] Boss: ORD-045 — 150 vests for Cotton Club, due Apr 09. It's urgent. Cost doesn't matter, just the fastest turnaround.
+R10 [08:38] Mei: New rush coming in from Loom & Leaf — details to follow, but book capacity somewhere good.
+R11 [08:44] Chen: OldMill is free right now — give them ORD-008.
+R12 [08:48] Ravi: ORD-053 — 800 polo shirts for UrbanThread, due Apr 10. Boss says nothing new to QuickStitch this week, they're swamped.
+R13 [08:53] Priya: Finance asks: what price did we quote TrendCart on ORD-120?
+R14 [08:59] Boss: QuickStitch for the scarves on ORD-103?
+R15 [09:03] Mei: Boss wants the Loom & Leaf stuff outside asap.
+R16 [09:08] Chen: Northwind Apparel confirmed the reorder: ORD-114, 2000 hoodies. Needs to ship Mar 23, so it has to go out today.
+R17 [09:14] Ravi: ORD-120 — 1500 vests for TrendCart. Factory is full, this one goes outside. Back by Mar 17 please.
+R18 [09:18] Priya: Any movement on ORD-999? Customer is chasing.
+R19 [09:23] Boss: That big reorder from last week — send it to whoever is quickest.
+R20 [09:29] Mei: New one for the network: ORD-103, 2000 scarves for Bright Basics, due Apr 04.
+R21 [09:33] Chen: ORD-081 — 1500 crewneck sweaters for Harbor Knits, due Apr 13. Margin is thin on this one — cheapest shop that can still make Apr 13.
+R22 [09:38] Ravi: ORD-083 ready to dispatch. 1000 hoodies for Maple & Co, back by Mar 23.
+R23 [09:44] Priya: ORD-093 — 100 beanies for Maple & Co, due Mar 29. Split it across two shops if that gets it back faster.
+R24 [09:48] Boss: Little Loom does lovely work — ORD-015 to them?
+R25 [09:53] Mei: ORD-109 — 500 vests for Harbor Knits, due Apr 13. …and keep it away from BudgetWorks, the last batch came back rough.
+R26 [09:59] Chen: Can someone place ORD-107? 2000 cardigans, Northwind Apparel, due Mar 16.
+R27 [10:03] Ravi: ORD-055 — 800 crewneck sweaters for Cotton Club, due Mar 31. Cotton Club rejected a batch last month, so lowest defect rate you can get.
+R28 [10:08] Priya: Sending ORD-002 outside — 1000 crewneck sweaters. Who has room this week? Due Mar 29.
+R29 [10:14] Boss: The vests need to go out this week — who takes them?
+R30 [10:18] Mei: Please allocate ORD-099: 1500 polo shirts, Northwind Apparel. Deadline Apr 05.
