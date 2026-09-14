@@ -54,4 +54,4 @@ python -m app.server --backend llm
 
 ## 范围
 
-业务日期默认 `2026-04-01`，来自 `data/data_dictionary.md`。Session、多轮澄清、生产完工事件、自动过期、RAG、Agent 编排、复杂混合目标优化和新算法的官方模拟器对比留在下一阶段。原始 `data/`、官方 `harness/`、Week 4 fixtures 和基线均保留。
+业务日期默认 `2026-04-01`，来自 `data/data_dictionary.md`。Session、多轮澄清、生产完工事件、自动过期、RAG、Agent 编排、复杂混合目标优化和新算法的官方模拟器对比留在下一阶段。原始 `data/`、官方 `harness/`、Week 4 fixtures 和基线均保留
