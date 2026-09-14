@@ -77,4 +77,4 @@ python3 evaluation/verify_gemini_live.py --full
 
 ## Week 4 兼容
 
-旧 dataclass/allocator/tools 保留，用于历史基线。固定样例解析器移至 `app/agent/legacy_parser.py`，由 `fake_parse_request()` 显式调用；主流程不会调用它。旧 `quantity / required_date / excluded_workshops / objective_override` 分别对应新 `pieces / due_date / exclusion / objective`。使用旧 `conversation.gate_request()` 的外部代码应继续传旧 StructuredRequest，或迁移到新 Pipeline，不能混传两个版本。
+旧 dataclass/allocator/tools 保留，用于历史基线。固定样例解析器移至 `app/agent/legacy_parser.py`，由 `fake_parse_request()` 显式调用；主流程不会调用它。旧 `quantity / required_date / excluded_workshops / objective_override` 分别对应新 `pieces / due_date / exclusion / objective`。使用旧 `conversation.gate_request()` 的外部代码应继续传旧 StructuredRequest，或迁移到新 Pipeline，不能混传两个版本
