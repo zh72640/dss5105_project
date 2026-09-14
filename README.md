@@ -2,7 +2,7 @@
 
 已从 Week 4 固定样例骨架升级为可运行的单消息系统：自然语言 → Parser v1 → SQLite 检索 → 工坊资格/队列 → 单工坊或整数拆单 → 事务写库 → 页面/JSON 结果。
 
-默认使用**离线规则解析**，无需安装第三方 Python 包。真实 LLM 已适配 **Google 官方 `google-genai` SDK / `gemini-2.5-flash`**，仅从 `GEMINI_API_KEY` 读取密钥。当前执行环境没有该变量，**真实模型调用与质量验收尚未运行**。
+默认使用**离线规则解析**，无需安装第三方 Python 包。真实 LLM 已适配 **Google 官方 `google-genai` SDK / `gemini-3.5-flash`**，仅从 `GEMINI_API_KEY` 读取密钥。当前执行环境没有该变量，**真实模型调用与质量验收尚未运行**。
 
 ## 立即运行
 
@@ -44,11 +44,11 @@ python -m pip install -r requirements.txt
 python -m app.server --backend llm
 ```
 
-模型固定为 `gemini-2.5-flash`，使用 Google 官方默认地址。在线冒烟验收：`python evaluation/verify_gemini_live.py`；加 `--full` 才会运行 60 条真实模型评估。离线核心仍可不安装依赖运行；完整 SDK 测试请在上述虚拟环境内执行 `python evaluation/verify_mvp.py`。
+模型固定为 `gemini-3.5-flash`，使用 Google 官方默认地址。在线冒烟验收：`python evaluation/verify_gemini_live.py`；加 `--full` 才会运行 60 条真实模型评估。离线核心仍可不安装依赖运行；完整 SDK 测试请在上述虚拟环境内执行 `python evaluation/verify_mvp.py`。
 
 ## 已验证结果
 
-116 条自动测试通过（包含 10 条真实 Google SDK + 模拟网络专项测试，0 条跳过）；60 条 parser golden case 完整匹配，原始 30 条请求的行为标签匹配 30/30；标准/shock 模拟器与 Week 4 原始基线一致。真实浏览器已完成提交、分配结果、候选表和历史记录的人工检查。
+117 条自动测试通过（包含 11 条真实 Google SDK + 模拟网络专项测试，0 条跳过）；60 条 parser golden case 完整匹配，原始 30 条请求的行为标签匹配 30/30；标准/shock 模拟器与 Week 4 原始基线一致。真实浏览器已完成提交、分配结果、候选表和历史记录的人工检查。
 
 所有解析质量数字都是本仓库**离线回归集**的结果，不是独立测试集或真实 LLM 的泛化能力证明。详见 [验证摘要](evaluation/results/verification_summary.json)。
 

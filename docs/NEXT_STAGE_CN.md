@@ -4,11 +4,11 @@
 
 ## 第一优先级：完成外部核对与在线验收
 
-用户已确认 Google Gemini、gemini-2.5-flash、官方默认 API 地址、GEMINI_API_KEY；无需再次询问服务商。已完成代码适配，下一步在设置密钥的终端运行 `python evaluation/verify_gemini_live.py --full`。
+用户在2.5出现404后，已确认改用 Google Gemini、gemini-3.5-flash、官方默认 API 地址、GEMINI_API_KEY；无需再次询问服务商。已完成代码适配，下一步在设置密钥的终端运行 `python evaluation/verify_gemini_live.py --full`。
 
 | 工作 | 建议责任人 | 输入 | 产出 / 验收 |
 |---|---|---|---|
-| 配置已指定 Gemini 的密钥并验收 | 使用者 + M1 | Google 官方 gemini-2.5-flash；仅设置 GEMINI_API_KEY，不把密钥写进仓库 | 一条真实 LLM 请求成功，raw/validated telemetry 可查 |
+| 配置已指定 Gemini 的密钥并验收 | 使用者 + M1 | Google 官方 gemini-3.5-flash；仅设置 GEMINI_API_KEY，不把密钥写进仓库 | 一条真实 LLM 请求成功，raw/validated telemetry 可查 |
 | 跑真实模型回归 | M1 + 测试成员 | 人工复核过的 60 条 golden set | 首轮结构有效率 ≥98%、核心字段准确率 ≥90%、补造率尽可能为0；保留错误样例 |
 | 核对 Data Schema2 原文件 | 后端成员 + M1 | 原始 ERD/DDL | 和 DATABASE_SCHEMA_CN.md 逐列比对；需变更则新增 migration 002 |
 | 复核标注 | 第二位团队成员 | 60 条完整 JSON + 30 条原始行为标签 | 记录 reviewer/日期/分歧及处理依据；不要只根据程序输出修改 expected |
@@ -21,7 +21,7 @@
 1. **生产生命周期与人工撤销。** 增加受控的 complete/lapse/cancel/reassign 操作、操作人和审计。撤销必须一致更新 working_order、orders.state、queue、decision_log；不能只删记录。测试重复事件、部分完工、撤销后重派及事务回滚。
 2. **Session / 多轮澄清。** 新增 sessions/messages（role/content/sequence），继续保留每条消息 request_id。将“澄清问题 → 用户回复 → 合并已确认字段”作为显式状态机，之后再启用 context_messages。要求用户改口能覆盖旧约束、跨会话不串单。
 3. **真实数据同步与管理入口。** 明确 CSV 是导入种子还是外部系统快照，增加工坊关闭/恢复、产能变更、队列校正；并发更新需版本检查和操作审计。
-4. **稳健的模型运行配置。** Google 官方 adapter 已完成，模型固定 gemini-2.5-flash；接下来按真实流量评估限速、退避和请求追踪。审计原文与 raw output 的保留时长、访问权限应由团队确定。
+4. **稳健的模型运行配置。** Google 官方 adapter 已完成，模型固定 gemini-3.5-flash；接下来按真实流量评估限速、退避和请求追踪。审计原文与 raw output 的保留时长、访问权限应由团队确定。
 
 此阶段完成标准：在同一持久化数据库上连续演示“分配 → 完工/撤销 → 再分配”，所有数量、状态与队列仍能一致核对。
 

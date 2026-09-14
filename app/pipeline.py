@@ -6,7 +6,8 @@ import sqlite3
 import uuid
 from datetime import date
 from app.agent.parser import parse_with_telemetry
-from app.agent.llm_client import GEMINI_MODEL, GEMINI_PROVIDER
+from app.agent.llm_client import (GEMINI_MODEL, GEMINI_PROVIDER,
+                                  GEMINI_TEMPERATURE, GEMINI_THINKING_LEVEL)
 from app.allocator.planner import plan
 from app.db.database import Database, utc_now
 from app.repositories.order_repository import retrieve
@@ -118,7 +119,8 @@ def process_request(text: str, objective="min_delay", *, db_path=None, database=
         return {"request_id": request_id, "result": terminal("DECLINE", "INVALID_MESSAGE", "Message must be text.")}
     backend_name = backend if isinstance(backend, str) else getattr(backend, "name", None) or os.getenv("PARSER_BACKEND", "offline")
     config = [text, objective, as_of.isoformat(), backend_name,
-              [GEMINI_PROVIDER, GEMINI_MODEL, 0.0] if backend_name == "llm" else "rules_v1", PIPELINE_VERSION]
+              [GEMINI_PROVIDER, GEMINI_MODEL, GEMINI_TEMPERATURE, GEMINI_THINKING_LEVEL]
+              if backend_name == "llm" else "rules_v1", PIPELINE_VERSION]
     fingerprint = hashlib.sha256(json.dumps(config).encode()).hexdigest()
     owned = database is None
     db = database

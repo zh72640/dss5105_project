@@ -136,7 +136,7 @@
           "error": null
         }
       ],
-      "latency_ms": 0.303,
+      "latency_ms": 0.305,
       "validation_result": "valid"
     },
     "result": {

@@ -27,6 +27,7 @@ test_auth_error_no_retry_and_no_body_leak (test_gemini_sdk.GeminiSDK.test_auth_e
 test_blocked_prompt_stops (test_gemini_sdk.GeminiSDK.test_blocked_prompt_stops) ... ok
 test_empty_response_is_rejected (test_gemini_sdk.GeminiSDK.test_empty_response_is_rejected) ... ok
 test_invalid_json_retry_then_validated (test_gemini_sdk.GeminiSDK.test_invalid_json_retry_then_validated) ... ok
+test_model_not_found_no_retry_and_no_fallback (test_gemini_sdk.GeminiSDK.test_model_not_found_no_retry_and_no_fallback) ... ok
 test_official_endpoint_key_model_and_schema (test_gemini_sdk.GeminiSDK.test_official_endpoint_key_model_and_schema) ... ok
 test_persistent_503_has_two_calls_total (test_gemini_sdk.GeminiSDK.test_persistent_503_has_two_calls_total) ... ok
 test_timeout_error_is_bounded (test_gemini_sdk.GeminiSDK.test_timeout_error_is_bounded) ... ok
@@ -116,6 +117,6 @@ test_order_resolution (test_tools.ToolTests.test_order_resolution) ... ok
 test_suspended_is_ineligible (test_tools.ToolTests.test_suspended_is_ineligible) ... ok
 
 ----------------------------------------------------------------------
-Ran 116 tests in 1.703s
+Ran 117 tests in 1.644s
 
 OK

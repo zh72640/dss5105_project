@@ -5,7 +5,8 @@ import time
 from dataclasses import dataclass
 from datetime import date
 from app.schemas.parser_schema import ParseResult, SCHEMA_VERSION
-from .llm_client import BackendError, LLMBackend, GEMINI_MODEL, GEMINI_PROVIDER
+from .llm_client import (BackendError, LLMBackend, GEMINI_MODEL, GEMINI_PROVIDER,
+                         GEMINI_TEMPERATURE, GEMINI_THINKING_LEVEL)
 from .prompts import PROMPT_VERSION
 from .rule_parser import extract
 from .validator import ValidationError, validate_output
@@ -51,7 +52,8 @@ def parse_with_telemetry(message: str, context_messages=None, *, backend=None,
             if backend not in ("offline", "llm"):
                 raise BackendError("unknown_parser_backend", False)
             if backend == "llm":
-                telemetry.update(provider=GEMINI_PROVIDER, model=GEMINI_MODEL, temperature=0.0)
+                telemetry.update(provider=GEMINI_PROVIDER, model=GEMINI_MODEL,
+                                 temperature=GEMINI_TEMPERATURE, thinking_level=GEMINI_THINKING_LEVEL)
                 backend = LLMBackend()
                 owned_backend = backend
             else:
@@ -59,6 +61,8 @@ def parse_with_telemetry(message: str, context_messages=None, *, backend=None,
         telemetry.update(backend=backend.name, model=backend.model, temperature=backend.temperature)
         if getattr(backend, "provider", None):
             telemetry["provider"] = backend.provider
+        if getattr(backend, "thinking_level", None):
+            telemetry["thinking_level"] = backend.thinking_level
     except (BackendError, ValueError) as error:
         return finish(None, str(error))
     feedback = None

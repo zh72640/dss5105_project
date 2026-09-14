@@ -1,7 +1,7 @@
 {
-  "checked_at": "2026-09-14T07:44:13.936137+00:00",
+  "checked_at": "2026-09-14T10:44:39.040526+00:00",
   "provider": "google_gemini",
-  "model": "gemini-2.5-flash",
+  "model": "gemini-3.5-flash",
   "api_key_env": "GEMINI_API_KEY",
   "full_evaluation_requested": false,
   "status": "NOT_RUN",

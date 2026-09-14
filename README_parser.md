@@ -57,13 +57,13 @@ print(parsed.to_dict())
 
 日期、数量限制、目标和工坊约束采用保守的词典/规则证据校验。未涵盖的自由表达可能被拒绝或要求澄清；LLM 接口接通不等于无限制自然语言理解。金额预算、精确拆分数量、复杂否定等未支持约束会阻断已识别的请求。
 
-JSON 错误、输出不完整、连接失败、HTTP 408/429/5xx 最多再试 1 次；配置错误、认证失败和模型拒绝不盲目重试。没有从 llm 静默退回 offline 的逻辑。每次尝试保存 `raw_output`、`validated_output`、错误代码；外层记录 prompt/schema 版本、backend、model、temperature、latency_ms、retry_count、validation_result。API Key 不进入日志。Gemini SDK 自带重试关闭（attempts=1），避免与外层 retry 叠加。SDK 客户端在解析结束时关闭。
+JSON 错误、输出不完整、连接失败、HTTP 408/429/5xx 最多再试 1 次；配置错误、认证失败和模型拒绝不盲目重试。没有从 llm 静默退回 offline 的逻辑。每次尝试保存 `raw_output`、`validated_output`、错误代码；外层记录 prompt/schema 版本、backend、model、temperature、thinking_level（Gemini）、latency_ms、retry_count、validation_result。API Key 不进入日志。Gemini SDK 自带重试关闭（attempts=1），避免与外层 retry 叠加。SDK 客户端在解析结束时关闭。
 
 ## 模型接口与评估
 
-`LLMBackend` 使用 Google 官方 `google-genai` SDK 的 `client.models.generate_content(model="gemini-2.5-flash", ...)`，通过 `response_mime_type="application/json"` 和 `response_json_schema` 请求结构化结果。所有字段 required，禁止 additionalProperties；nullable enum 转为等价 anyOf 供 Gemini 使用，Parser v1 原契约保持不变。实现依据 [Google 官方 Python SDK：JSON Schema](https://googleapis.github.io/python-genai/) 和 [Gemini 结构化输出说明](https://ai.google.dev/gemini-api/docs/generate-content/structured-output)。
+`LLMBackend` 使用 Google 官方 `google-genai` SDK 的 `client.models.generate_content(model="gemini-3.5-flash", ...)`，通过 `response_mime_type="application/json"` 和 `response_json_schema` 请求结构化结果。所有字段 required，禁止 additionalProperties；nullable enum 转为等价 anyOf 供 Gemini 使用，Parser v1 原契约保持不变。实现依据 [Google 官方 Python SDK：JSON Schema](https://googleapis.github.io/python-genai/) 和 [Gemini 结构化输出说明](https://ai.google.dev/gemini-api/docs/generate-content/structured-output)。
 
-配置与命令见 [系统说明](docs/SYSTEM_GUIDE_CN.md)。模型固定为 `gemini-2.5-flash`，只读取 `GEMINI_API_KEY`；无需配置 Base URL。temperature=0、thinking_budget=0、超时由 GEMINI_TIMEOUT_SECONDS 控制（默认30秒）。其他服务商密钥和模型变量不参与选择。先激活 .venv 并安装 requirements.txt，再运行 llm 模式。
+配置与命令见 [系统说明](docs/SYSTEM_GUIDE_CN.md)。模型固定为 `gemini-3.5-flash`，只读取 `GEMINI_API_KEY`；无需配置 Base URL。不显式设置 temperature/top_p/top_k（保留模型默认值）、thinking_level=minimal、超时由 GEMINI_TIMEOUT_SECONDS 控制（默认30秒）。其他服务商密钥和模型变量不参与选择。先激活 .venv 并安装 requirements.txt，再运行 llm 模式。
 
 ```bash
 python3 -m demos.week5_mock
@@ -78,3 +78,7 @@ python3 evaluation/verify_gemini_live.py --full
 ## Week 4 兼容
 
 旧 dataclass/allocator/tools 保留，用于历史基线。固定样例解析器移至 `app/agent/legacy_parser.py`，由 `fake_parse_request()` 显式调用；主流程不会调用它。旧 `quantity / required_date / excluded_workshops / objective_override` 分别对应新 `pieces / due_date / exclusion / objective`。使用旧 `conversation.gate_request()` 的外部代码应继续传旧 StructuredRequest，或迁移到新 Pipeline，不能混传两个版本
+
+### Gemini 3.5 Flash 迁移（2026-09-14）
+
+根据用户确认，模型已从2.5 Flash改为3.5 Flash。依照[Google官方迁移说明](https://ai.google.dev/gemini-api/docs/generate-content/whats-new-gemini-3.5)，移除显式temperature，改用thinking_level=minimal。telemetry中的temperature=null表示采用模型默认值，不表示温度为0；minimal也不保证完全关闭思考。输出仍由固定Schema、原文证据校验和最多一次重试约束，真实准确率需重新做在线验收。

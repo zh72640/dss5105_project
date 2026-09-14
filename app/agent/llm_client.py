@@ -5,7 +5,9 @@ from copy import deepcopy
 from app.schemas.parser_schema import json_schema
 from .prompts import messages
 
-GEMINI_MODEL = "gemini-2.5-flash"
+GEMINI_MODEL = "gemini-3.5-flash"
+GEMINI_TEMPERATURE = None  # Gemini 3.x: omit sampling overrides; use model defaults.
+GEMINI_THINKING_LEVEL = "minimal"
 GEMINI_BASE_URL = "https://generativelanguage.googleapis.com"
 GEMINI_PROVIDER = "google_gemini"
 
@@ -31,7 +33,8 @@ class LLMBackend:
     name = "llm"
     provider = GEMINI_PROVIDER
     model = GEMINI_MODEL
-    temperature = 0.0
+    temperature = GEMINI_TEMPERATURE
+    thinking_level = GEMINI_THINKING_LEVEL
 
     def __init__(self):
         api_key = os.getenv("GEMINI_API_KEY", "").strip()
@@ -76,10 +79,10 @@ class LLMBackend:
             response = self.client.models.generate_content(
                 model=GEMINI_MODEL, contents=contents,
                 config=types.GenerateContentConfig(
-                    system_instruction=system, temperature=self.temperature,
+                    system_instruction=system,
                     response_mime_type="application/json", response_json_schema=gemini_json_schema(),
                     candidate_count=1, max_output_tokens=4096,
-                    thinking_config=types.ThinkingConfig(thinking_budget=0),
+                    thinking_config=types.ThinkingConfig(thinking_level=self.thinking_level),
                     automatic_function_calling=types.AutomaticFunctionCallingConfig(disable=True),
                 ),
             )

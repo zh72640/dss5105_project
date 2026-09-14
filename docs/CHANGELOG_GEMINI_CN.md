@@ -2,7 +2,11 @@
 
 日期：2026-09-14。此日志记录用户明确指定 Gemini 后的增量修改，路径均相对于 `Workspace/`。
 
-本次新增 **5** 个文件、修改 **23** 个文件、删除 **0** 个文件。
+## 初次接入2.5 Flash（历史记录）
+
+当前配置以文末3.5 Flash迁移记录为准。
+
+初次接入新增 **5** 个文件、修改 **23** 个文件、删除 **0** 个文件。
 
 固定配置：Google Gemini Developer API / 官方 google-genai SDK 2.23.0 / gemini-2.5-flash / GEMINI_API_KEY / Google 官方默认地址。
 
@@ -61,3 +65,50 @@
 通过已批准的安装命令在 Workspace/.venv 安装SDK及依赖，未修改系统Python。该可再生环境（含大量第三方包）不逐文件纳入源码变更表；requirements.txt记录直接依赖版本。Python缓存和临时开发输出同样不计入源码清单。
 
 运行命令及环境变量配置见 [系统说明](SYSTEM_GUIDE_CN.md)。累计变更见 [Week5/6日志](CHANGELOG_WEEK5_WEEK6_CN.md)。
+
+## 404 故障排查增补（2026-09-14）
+
+- 新增 `evaluation/diagnose_gemini.py`：通过官方SDK检查固定模型的查询和最小生成请求，输出已去除密钥/原始错误的诊断；不修改业务数据库。
+- 修改 `docs/SYSTEM_GUIDE_CN.md`：新增404排查、200查询不等于可生成的说明，并引用Google模型访问答复。
+- 修改本日志及累计变更日志/机器可读hash清单，记录以上增补。
+- 当前执行进程仍无GEMINI_API_KEY，无法代替用户验证其项目访问权限；当时模型配置保持gemini-2.5-flash，随后按用户确认执行下述迁移。
+
+## 用户确认改用 Gemini 3.5 Flash（2026-09-14）
+
+本次模型迁移新增 **0** 个文件、修改 **24** 个文件、删除 **0** 个文件。上节诊断脚本已在模型迁移前新增，自动读取当前模型常量。
+
+- `app/agent/llm_client.py`：模型改为 `gemini-3.5-flash`，官方SDK/URL/密钥变量保留；使用 `thinking_level=minimal`，移除显式采样参数，按Google建议采用模型默认值。
+- `app/agent/parser.py`、`app/pipeline.py`：审计同步记录模型/思考级别，temperature=null表示模型默认值；幂等指纹包含新配置，旧请求ID不能用于不同模型配置。
+- `tests/test_gemini_sdk.py`、`tests/test_parser.py`：验证真实SDK序列化后的3.5地址、无采样覆盖、minimal思考级别和审计字段；新增404不重试/不自动切换测试。
+- README、环境变量样例、运行手册、下一阶段说明、验收表、已知问题：同步模型/参数/117条测试结果；补充停止旧服务、重启、刷新页面和使用新请求ID的步骤。
+- 冻结清单及累计变更清单：更新源码SHA-256和配置；数据库/原始数据/固定Prompt/Schema未改动。
+- 验证产物：重新运行本地完整验收。117/117测试通过，0跳过；离线golden60/60、原始行为30/30、官方standard/shock基线一致。11条SDK测试为模拟HTTP，不代表真实模型验收。在线预检重新记录当前模型为3.5，当前执行进程缺密钥，状态仍为NOT_RUN。
+
+参数依据：[Google官方3.5迁移说明](https://ai.google.dev/gemini-api/docs/generate-content/whats-new-gemini-3.5)。保留现有 `google-genai==2.23.0`，无需再次安装或改用其他API。
+
+完整修改文件列表（路径相对于Workspace，排除Git元数据、运行库和可再生环境）：
+
+- `.env.example`
+- `KNOWN_ISSUES.md`
+- `README.md`
+- `README_parser.md`
+- `app/agent/llm_client.py`
+- `app/agent/parser.py`
+- `app/pipeline.py`
+- `docs/CHANGELOG_GEMINI_CN.md`
+- `docs/CHANGELOG_WEEK5_WEEK6_CN.md`
+- `docs/NEXT_STAGE_CN.md`
+- `docs/SYSTEM_GUIDE_CN.md`
+- `docs/WEEK5_WEEK6_ACCEPTANCE_CN.md`
+- `docs/file_change_manifest.json`
+- `docs/release_manifest.json`
+- `evaluation/results/dispatch_runs.jsonl`
+- `evaluation/results/gemini_live_status.json`
+- `evaluation/results/parser_offline_metrics.json`
+- `evaluation/results/parser_offline_runs.jsonl`
+- `evaluation/results/test_results.txt`
+- `evaluation/results/verification_summary.json`
+- `evaluation/results/week5_mock_demo.jsonl`
+- `evaluation/results/week6_demo.json`
+- `tests/test_gemini_sdk.py`
+- `tests/test_parser.py`

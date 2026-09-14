@@ -61,15 +61,21 @@ class GeminiSDK(unittest.TestCase):
         out = self.parse()
         self.assertEqual(out.parsed.order_id, 'ORD-045')
         request = self.calls[0]
-        self.assertEqual(str(request.url), 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent')
+        self.assertEqual(str(request.url), 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent')
         self.assertEqual(request.headers['x-goog-api-key'], 'gemini-test-key-not-a-secret')
         data = json.loads(request.content)
         config = data['generationConfig']
         self.assertEqual(config['responseMimeType'], 'application/json')
         self.assertEqual(config['responseJsonSchema'], gemini_json_schema())
-        self.assertEqual(config['temperature'], 0)
+        for field in ('temperature', 'topP', 'topK'):
+            self.assertNotIn(field, config)
         thinking = config['thinkingConfig']
-        self.assertEqual(thinking.get('thinkingBudget', thinking.get('thinking_budget')), 0)
+        self.assertEqual(thinking.get('thinkingLevel', thinking.get('thinking_level')).lower(), 'minimal')
+        self.assertNotIn('thinkingBudget', thinking)
+        self.assertNotIn('thinking_budget', thinking)
+        self.assertEqual(out.telemetry['model'], 'gemini-3.5-flash')
+        self.assertIsNone(out.telemetry['temperature'])
+        self.assertEqual(out.telemetry['thinking_level'], 'minimal')
         self.assertIn('Reference date: 2026-04-01', data['systemInstruction']['parts'][0]['text'])
         self.assertEqual(data['contents'][-1]['parts'][0]['text'], 'Allocate ORD-045.')
         self.assertEqual([m['role'] for m in data['contents']], ['user','model']*4+['user'])
@@ -101,6 +107,15 @@ class GeminiSDK(unittest.TestCase):
     def test_blocked_prompt_stops(self):
         self.responses = [(200, {'promptFeedback': {'blockReason': 'SAFETY'}})]
         self.assertEqual(self.parse().error, 'gemini_refusal'); self.assertEqual(len(self.calls), 1)
+
+    def test_model_not_found_no_retry_and_no_fallback(self):
+        self.responses = [(404, {'error': {'code': 404, 'message': 'private model access detail'}})]
+        out = self.parse()
+        self.assertIsNone(out.parsed)
+        self.assertEqual(out.error, 'gemini_http_404')
+        self.assertEqual(len(self.calls), 1)
+        self.assertEqual(out.telemetry['model'], 'gemini-3.5-flash')
+        self.assertNotIn('private model access detail', json.dumps(out.telemetry))
 
     def test_truncated_output_is_not_allocated(self):
         self.responses = [(200, self.body(finish='MAX_TOKENS'))]

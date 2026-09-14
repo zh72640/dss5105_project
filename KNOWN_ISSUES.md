@@ -1,6 +1,6 @@
 # 已知限制 — Week 5/6 MVP v0.1
 
-- **真实 LLM 未验收**：Google 官方 SDK / gemini-2.5-flash adapter 已实现，10条真实 SDK + 模拟 HTTP 测试通过；当前缺少 GEMINI_API_KEY，尚未调用真实模型。offline 的 60/60 不能当作真实 LLM 准确率。
+- **真实 LLM 未验收**：Google 官方 SDK / gemini-3.5-flash adapter 已实现，11条真实 SDK + 模拟 HTTP 测试通过；当前缺少 GEMINI_API_KEY，尚未调用真实模型。offline 的 60/60 不能当作真实 LLM 准确率。
 - **Data Schema2 原件缺失**：当前 SQLite 根据两份计划列出的字段/表设计；需要和原始 ERD/DDL 核对。
 - **解析覆盖有限**：离线模式以英文课程请求为主，含少量中文模式；保守证据校验也会限制真实 LLM 可接受的日期、数量和约束表达。复杂否定、金额预算、精确拆分、更多自由表达仍需扩展与 holdout 测试。
 - **单条消息**：非空 context_messages 明确报错；澄清后必须提交完整新消息，尚无 sessions/messages 状态机。

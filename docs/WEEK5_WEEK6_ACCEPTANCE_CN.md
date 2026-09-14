@@ -2,7 +2,7 @@
 
 依据：`Plans/Week5_Execution_Plan.pdf`（8 页）及 `Plans/Week6_Execution_Plan.pdf`（10 页）；继承 Week 4 真实 CSV、30 条语言标签和官方 simulator。实现位于 `Workspace`。两份计划原文件和原始数据均未修改。
 
-结论：**本地代码交付和离线集成验收完成；真实 LLM 在线验收及 Data Schema2 原定义核对尚待外部信息。** 用户已确认 Google Gemini / gemini-2.5-flash / GEMINI_API_KEY，官方 SDK 适配和10条专项测试已完成；当前仅缺密钥和真实在线验收。
+结论：**本地代码交付和离线集成验收完成；真实 LLM 在线验收及 Data Schema2 原定义核对尚待外部信息。** 用户已确认 Google Gemini / gemini-3.5-flash / GEMINI_API_KEY，官方 SDK 适配和11条专项测试已完成；当前仅缺密钥和真实在线验收。
 
 ## Week 5
 
@@ -40,7 +40,7 @@
 
 运行：`python3 evaluation/verify_mvp.py`，在已安装 requirements.txt 的 .venv 内运行，输出至 `evaluation/results/`。
 
-- **116 条自动测试全部通过（0跳过）**：包括原有 8 条 Week 4 测试、60 条解析 golden、12 条解析/transport 校验、22 条 E2E、2 条分配验证、2 条 HTTP 接口测试，以及新增10条真实 Google SDK / 模拟 HTTP 专项测试。
+- **117 条自动测试全部通过（0跳过）**：包括原有 8 条 Week 4 测试、60 条解析 golden、12 条解析/transport 校验、22 条 E2E、2 条分配验证、2 条 HTTP 接口测试，以及新增11条真实 Google SDK / 模拟 HTTP 专项测试。
 - Parser 60/60 完整字段匹配；核心字段和 normalized match 100%；missing-field hallucination 0/549。此数字只描述本仓库离线回归集。
 - 原始 30 条 dispatch 请求与 Week 4 行为标签 **30/30 匹配**；每条用独立数据库，只评估行为，不把它当作 30 条连续生产分配测试。
 - 标准 / shock 官方 simulator 与原 baseline_results.txt 完全一致。该结果证明基线未破坏，不证明新策略优于 baseline。

@@ -94,7 +94,7 @@ class ParserValidation(unittest.TestCase):
             out = parse_with_telemetry('Allocate ORD-045.', backend='llm')
         self.assertEqual(out.error, 'gemini_api_key_missing')
         self.assertEqual(out.telemetry['provider'], 'google_gemini')
-        self.assertEqual(out.telemetry['model'], 'gemini-2.5-flash')
+        self.assertEqual(out.telemetry['model'], 'gemini-3.5-flash')
 
     def test_llm_missing_config_fails_without_fallback(self):
         with patch.dict('os.environ',{},clear=True):

@@ -2,7 +2,7 @@
 
 版本：Week 5/6 MVP v0.1，Parser/Prompt v1，SQLite migration 001。实际工作目录是 `Workspace`（不是另建 `WorkSpace`）。
 
-系统已支持从一条自然语言消息完成解析、真实订单检索、资格筛选、队列计算、单工坊或整数拆单、数据库事务更新和页面显示。默认是可重复的离线规则模式；LLM 接口代码已实现，服务商已固定为 Google Gemini / gemini-2.5-flash；当前环境缺少 GEMINI_API_KEY，在线验收尚待运行。**离线成功不代表真实模型验收已经完成。**
+系统已支持从一条自然语言消息完成解析、真实订单检索、资格筛选、队列计算、单工坊或整数拆单、数据库事务更新和页面显示。默认是可重复的离线规则模式；LLM 接口代码已实现，服务商已固定为 Google Gemini / gemini-3.5-flash；当前环境缺少 GEMINI_API_KEY，在线验收尚待运行。**离线成功不代表真实模型验收已经完成。**
 
 ## 1. 环境与首次运行
 
@@ -88,13 +88,13 @@ python3 -m app.cli --request R09 --as-of 2026-04-02 --db :memory:
 | 项目 | 值 |
 |---|---|
 | 服务商 / SDK | Google Gemini Developer API / 官方 `google-genai==2.23.0` |
-| 模型 | `gemini-2.5-flash`，代码固定，不读取其他模型变量 |
+| 模型 | `gemini-3.5-flash`，代码固定，不读取其他模型变量 |
 | API 地址 | `https://generativelanguage.googleapis.com`，官方默认地址 |
 | 调用 | 官方 SDK `client.models.generate_content()`，API v1beta |
 | 密钥来源 | **仅 `GEMINI_API_KEY`**，通过 `genai.Client(api_key=...)` 显式传入 |
 | 结构化输出 | application/json + response_json_schema；保留 Parser v1 业务校验 |
 | 重试 | SDK attempts=1；外层 Parser 最多重试 1 次，总计最多 2 次生成调用 |
-| 其他参数 | temperature=0；thinking_budget=0；输出上限4096 tokens；默认超时30秒 |
+| 其他参数 | 不显式设置采样参数（模型默认值）；thinking_level=minimal；输出上限4096 tokens；默认超时30秒 |
 
 不使用 OpenAI 兼容端点、Vertex AI、LLM_API_KEY 或 OPENAI_API_KEY；即使其他 Google 变量已配置，也显式选择 Gemini Developer API 和指定 key。无需设置 Base URL。SDK 的官方调用示例及 JSON Schema 说明见 [Google Python SDK](https://googleapis.github.io/python-genai/)。
 
@@ -143,7 +143,7 @@ python evaluation/verify_gemini_live.py --full
 python3 evaluation/verify_mvp.py
 ```
 
-请在安装 requirements.txt 的虚拟环境内运行。这一命令运行 116 条测试、60 条解析回归、30 条原始语言行为回归、Week 5 mock demo、Week 6真实数据 demo、官方标准与 shock 模拟器比对；报告写到 `evaluation/results/`，失败返回非零。
+请在安装 requirements.txt 的虚拟环境内运行。这一命令运行 117 条测试、60 条解析回归、30 条原始语言行为回归、Week 5 mock demo、Week 6真实数据 demo、官方标准与 shock 模拟器比对；报告写到 `evaluation/results/`，失败返回非零。
 
 也可分别运行：
 
@@ -155,7 +155,7 @@ python3 -m demos.week5_mock
 python3 -m demos.day1_retrieval
 ```
 
-HTTP 测试会短暂监听 `127.0.0.1` 随机端口；在受限执行沙箱中需允许本地端口监听。不会连接外部模型或修改默认 runtime 数据库。若未安装 SDK，10 条 Google SDK 专项测试会明确跳过，summary 的 tests_skipped 不为0，不能把该运行称为完整验收。官方 baseline_results.txt 保留原样，验收脚本只比对，不覆盖。
+HTTP 测试会短暂监听 `127.0.0.1` 随机端口；在受限执行沙箱中需允许本地端口监听。不会连接外部模型或修改默认 runtime 数据库。若未安装 SDK，11 条 Google SDK 专项测试会明确跳过，summary 的 tests_skipped 不为0，不能把该运行称为完整验收。官方 baseline_results.txt 保留原样，验收脚本只比对，不覆盖。
 
 ## 6. HTTP 与代码接口
 
@@ -227,3 +227,38 @@ print(response["result"])
 ## 8. 当前边界
 
 已实现功能和待办分别见 [验收表](WEEK5_WEEK6_ACCEPTANCE_CN.md)、[已知限制](../KNOWN_ISSUES.md) 和 [下一阶段说明](NEXT_STAGE_CN.md)。目前未实现 Session、自动完工/过期、人工改单/撤销、工坊系统对接和公网部署。模型质量待在线验证；hybrid 是启发式，官方模拟器仍是原始基线，不代表新分配器已经优于三种 baseline。
+
+## 9. Gemini HTTP 404 的进一步诊断（2026-09-14）
+
+`gemini_http_404` 说明 Gemini 返回了 NOT_FOUND，不能仅凭此判断密钥是否有效或模型是否已经退役。原2.5配置的官方地址、v1beta路径和模型拼写与官方API定义一致；用户随后确认改用3.5 Flash，当前诊断命令会检查 `gemini-3.5-flash`。
+
+Google 开发者论坛在 2026-08-31 对“查询能看到2.5 Flash、generateContent却404”的答复指出，2.5系列访问限制在过去已活跃使用过它的用户，新项目建议使用较新的模型。官方模型生命周期页仍未宣布2.5 Flash关停日期。因此，新项目的生成访问限制是一个可能原因，不能直接断言模型已下线。
+
+来源：[相关论坛答复](https://discuss.ai.google.dev/t/auth-key-can-list-models-but-generatecontent-returns-http-404-not-found-for-gemini-2-5-flash/180197)、[官方生命周期表](https://ai.google.dev/gemini-api/docs/deprecations)。
+
+在已经 export GEMINI_API_KEY 的同一个终端、Workspace目录下运行：
+
+```bash
+source .venv/bin/activate
+python evaluation/diagnose_gemini.py
+```
+
+该命令最多进行一次模型查询和一次仅含 `Reply with OK.` 的生成请求；不修改业务库、不输出密钥/服务原始错误/项目标识。生成请求可能消耗少量配额。
+
+- `model_lookup_http=200` 且 `generate_http=404`：模型可查询，但最小请求也被拒绝；应核查项目模型访问或Google服务路由，不能靠改本地Parser规则解决。
+- `model_lookup_http=404`：该接口无法查询指定模型；检查该项目的模型可用性。
+- `MINIMAL_GENERATION_SUCCEEDED`：最小请求成功，下一步检查完整结构化请求/参数，而不是直接归咎模型不可用。
+- `CONNECTION_FAILED`：先检查本机网络/代理。
+
+用户已于2026-09-14确认改用 **Gemini 3.5 Flash**。继续使用原有 `GEMINI_API_KEY`，无需新增模型环境变量或修改API地址。参数按[Google官方迁移说明](https://ai.google.dev/gemini-api/docs/generate-content/whats-new-gemini-3.5)改为 `thinking_level=minimal`，采样参数采用模型默认值；telemetry中temperature=null表示未显式设置。
+
+在原来配置密钥的终端按 `Ctrl+C` 停止旧服务，然后在Workspace目录执行：
+
+```bash
+source .venv/bin/activate
+python -m app.server --backend llm
+```
+
+刷新浏览器并发起新请求；新响应的 `parser_telemetry.model` 应为 `gemini-3.5-flash`。历史请求仍保留当时的模型及错误记录。CLI/API请使用新的request_id；旧ID与新模型配置不同会返回IDEMPOTENCY_CONFLICT。不要为重试删除业务数据库。若新请求仍然404，在同一终端运行上述诊断命令，检查当前项目对3.5的访问。
+
+本地模拟SDK测试不能证明你的项目已具备真实模型权限；可先运行 `python evaluation/verify_gemini_live.py` 做在线冒烟验收，再按下一阶段说明执行 `--full`。
