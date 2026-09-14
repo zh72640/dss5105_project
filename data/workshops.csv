@@ -1,0 +1,9 @@
+workshop_id,name,capacity_pieces_per_day,pickup_lead_days,defect_rate,cost_per_piece,makes,status,max_batch_pieces,current_queue_days,notes
+W1,QuickStitch,300,1,0.12,1.5,TOPS,ACTIVE,,4.0,fastest in the region; quality slips under pressure
+W2,SteadyHands,170,2,0.03,1.3,TOPS+ACCESSORIES,ACTIVE,,2.5,"never early, never late, never sloppy"
+W3,BudgetWorks,230,3,0.09,0.8,TOPS,ACTIVE,,5.0,cheapest by far
+W4,Little Loom,70,1,0.02,1.6,ACCESSORIES,ACTIVE,,0.5,"tiny boutique shop, immaculate work"
+W5,GiantWeave,400,4,0.06,1.1,TOPS,ACTIVE,,3.0,"huge capacity, slow pickup and delivery"
+W6,Nimble Needle,130,1,0.05,1.2,TOPS+ACCESSORIES,ACTIVE,,1.0,quick turnaround on small batches
+W7,OldMill,200,2,0.1,0.9,TOPS+ACCESSORIES,SUSPENDED,,0.0,suspended after last month's quality audit
+W8,FreshStart,100,2,0.04,1.0,TOPS,ACTIVE,300,0.0,new workshop on trial: small batches only

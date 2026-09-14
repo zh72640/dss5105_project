@@ -1,0 +1,32 @@
+{
+  "release": "mvp_v0.1",
+  "parser_schema_version": "parser_v1",
+  "prompt_version": "parser_v1",
+  "database_version": 1,
+  "freeze_date": "2026-09-14",
+  "status": "Google Gemini SDK adaptation frozen; live acceptance pending GEMINI_API_KEY",
+  "sha256": {
+    "app/schemas/parser_schema.py": "0ccbf4887429aa6501a1b4e6a6061f50390a6dfd3b4746370374df05a4155211",
+    "app/agent/prompts.py": "1bf3e459dcd2868b88413537cf582816affa1e303739f9f2b76a79db8d68348f",
+    "app/agent/parser.py": "14746e5b05a0f0fdf5e9e8229672bbee8b3352f651ea649b21b9843bf89c3b08",
+    "app/agent/validator.py": "6499911bad5a4e0524021caf1aaf9f0668a0dea70ecce78703496f341112836f",
+    "app/agent/normalization.py": "07c0d7bb94e8e437d6e46605d85d201ae68b417897a2628a21edf403beb59de9",
+    "app/agent/rule_parser.py": "2b7a6fecd8de303b91f6c01da4f3ce38752de8b597f379af180daf4ed7fdca80",
+    "app/agent/llm_client.py": "82eb814628245f16b5e544ec743b8e53561ba20c42728f83fc111e1427c798e1",
+    "app/pipeline.py": "adecdd3b1d26c35a36e6728a1f5a2b5836492e7669ced576897868eb578cebc3",
+    "app/allocator/planner.py": "3664b4ced6b931ad58f51c7ec28a732f035bd234e582aa35911b9639e2e9e681",
+    "app/db/migrations/001_initial.sql": "f1c60bc20c201af5a1c5b524777e15e80ab1e381f86130586584b3cd43a77467",
+    "tests/parser_golden.jsonl": "8d821599b21837a3f4aa16e78ca94358b122907a8381be8866ee12d8d5131d61",
+    "requirements.txt": "b1452900f43733650c64ef5f37b6995270fde517d8d485db935b5424c426f615",
+    "tests/test_gemini_sdk.py": "ceaee61853845fa195506d08b3fef3fae7fee86e3ebc9a195a2ea6bd0ecabe98",
+    "evaluation/verify_gemini_live.py": "71402429a5fcdbb0f856280eac743d7bfd3d1920beb5ea0e3f3a5fffa8b269ba"
+  },
+  "llm": {
+    "provider": "google_gemini",
+    "model": "gemini-2.5-flash",
+    "api_key_env": "GEMINI_API_KEY",
+    "base_url": "https://generativelanguage.googleapis.com",
+    "sdk": "google-genai==2.23.0",
+    "transport_version": "gemini_sdk_v1"
+  }
+}

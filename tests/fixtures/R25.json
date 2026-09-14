@@ -1,0 +1,1 @@
+{"request_id":"R25","order_id":"ORD-109","customer":"Harbor Knits","quantity":500,"required_date":"2026-04-13","excluded_workshops":["BudgetWorks"],"constraints":[{"type":"excluded_workshop","value":"BudgetWorks"}]}

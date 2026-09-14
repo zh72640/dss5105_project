@@ -1,0 +1,10 @@
+{
+  "checked_at": "2026-09-14T07:44:13.936137+00:00",
+  "provider": "google_gemini",
+  "model": "gemini-2.5-flash",
+  "api_key_env": "GEMINI_API_KEY",
+  "full_evaluation_requested": false,
+  "status": "NOT_RUN",
+  "live_llm_validated": false,
+  "reason": "gemini_api_key_missing"
+}

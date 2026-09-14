@@ -1,0 +1,7 @@
+{
+  "R09": {"expected_status": "ALLOCATE", "expected_order_id": "ORD-045", "expected_objective": "fastest_turnaround"},
+  "R03": {"expected_status": "CLARIFY", "expected_ambiguous_fields": ["order_id"]},
+  "R08": {"expected_status": "REFUSE", "expected_reason": "EXCEEDS_300_PIECE_LIMIT"},
+  "R02": {"expected_status": "DECLINE", "expected_reason": "DATA_NOT_AVAILABLE"}
+}
+

@@ -1,0 +1,5 @@
+{
+  "cases": 30,
+  "behavior_matches": 30,
+  "scope": "behaviour only; each request uses a fresh database; original human labels remain provisional"
+}

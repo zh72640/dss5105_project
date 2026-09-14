@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SweaterCo Dispatch Desk</title>
+<style>
+:root{color-scheme:light}*{box-sizing:border-box}body{margin:0;background:#f3f5f7;color:#17202a;font:15px system-ui,sans-serif}.shell{max-width:1150px;margin:32px auto;padding:0 20px}header{display:flex;justify-content:space-between;gap:16px;align-items:center}.badge{background:#d9f4e5;color:#166534;padding:8px 12px;border-radius:20px}main{display:grid;grid-template-columns:1.15fr .85fr;gap:18px;margin-top:20px}.card{min-width:0;background:white;border:1px solid #dfe4e8;border-radius:14px;padding:20px}.wide{grid-column:1/-1}h1{margin:0;font-size:25px}h2{font-size:16px;margin:0 0 12px;color:#56616d}.recommend{font-size:24px;font-weight:700;color:#0b6b4f}.warning{white-space:pre-wrap;background:#fff6db;border-left:4px solid #e6a700;padding:12px}table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:10px;border-bottom:1px solid #edf0f2}th{color:#64707d}.scroll{overflow:auto}textarea{width:100%;min-height:130px;padding:12px;font:inherit;border:1px solid #bec7d0;border-radius:8px}button,select{font:inherit;padding:9px 12px;border-radius:7px;border:1px solid #bcc7ce;margin:8px 8px 0 0}button{cursor:pointer;background:#0b6b4f;color:white}button:disabled{opacity:.5}pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#f5f7f9;padding:12px;max-height:420px;overflow:auto;font-size:12px}.subtle{color:#64707d;font-size:13px;line-height:1.6}#status{white-space:nowrap}@media(max-width:750px){main{grid-template-columns:1fr}.wide{grid-column:auto}header{align-items:start;flex-direction:column}}
+</style></head><body><div class="shell"><header><div><h1>SweaterCo Dispatch Desk</h1><div id="health" class="subtle">连接本地服务…</div></div><span id="status" class="badge" role="status">等待请求</span></header><main>
+<section class="card"><h2>输入一条完整的分配请求</h2><form id="form"><label for="message" class="subtle">订单号、目标、排除工坊及最大工坊数</label><textarea id="message" required maxlength="10000">Allocate ORD-045 using the fastest workshop. Cost doesn't matter.</textarea><label for="objective">默认目标</label><select id="objective"><option value="min_delay">最快完成</option><option value="min_cost">最低成本</option><option value="min_defects">最低缺陷率</option><option value="hybrid">时间与质量平衡</option></select><button id="submit" type="submit">执行分配并保存</button></form><p class="subtle">消息明确指定的目标优先。每次提交都是独立消息；如需澄清，请重新输入完整请求。网络失败后重试会复用请求 ID。</p></section>
+<section class="card" aria-live="polite"><h2>分配结果</h2><div class="recommend" id="winner">等待执行</div><p id="explanation">成功后将显示工坊、件数、费用及预计完成日期。</p><div id="parts" class="scroll"></div><p class="subtle" id="request-id"></p></section>
+<section class="card wide"><h2>候选比较与排除理由</h2><div id="candidates" class="scroll">尚无结果</div><p id="rejected" class="subtle"></p></section>
+<section class="card"><h2>提示与需要处理的问题</h2><div id="warnings" class="warning">请先提交请求。</div><details><summary>查看解析结果</summary><pre id="parsed">{}</pre></details></section>
+<section class="card"><h2>最近请求</h2><div id="history" class="scroll"></div></section>
+<section class="card wide"><details><summary>查看完整审计记录与数据库变化</summary><pre id="audit">{}</pre></details></section>
+</main></div><script>
+const $=id=>document.getElementById(id);
+let pending=null;
+function table(target,headers,rows){const t=document.createElement('table'), head=t.createTHead().insertRow();headers.forEach(v=>{const c=document.createElement('th');c.textContent=v;head.append(c)});const body=t.createTBody();rows.forEach(row=>{const tr=body.insertRow();row.forEach(v=>{tr.insertCell().textContent=v??'—'})});target.replaceChildren(t)}
+const fixed=n=>typeof n==='number'?n.toFixed(2):'—';
+async function history(){try{const response=await fetch('/api/history');if(!response.ok)throw Error('history');const data=await response.json();table($('history'),['订单','状态','请求 ID'],data.map(r=>[r.order_id,r.status,r.request_id.slice(0,8)]))}catch{$('history').textContent='历史记录暂时无法读取'}}
+fetch('/api/health').then(r=>r.json()).then(h=>{$('health').textContent=`${h.version} · ${h.backend==='offline'?'离线规则解析':'LLM 解析'} · 业务日期 ${h.as_of_date}`}).catch(()=>{$('health').textContent='服务未连接，请用 python3 -m app.server 启动'});
+history();
+$('form').addEventListener('submit',async event=>{event.preventDefault();const message=$('message').value,objective=$('objective').value;
+if(!pending||pending.message!==message||pending.objective!==objective)pending={message,objective,request_id:crypto.randomUUID()};
+$('submit').disabled=true;$('status').textContent='处理中';
+try{const response=await fetch('/api/requests',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(pending)});const data=await response.json();if(!data.result)throw Error(data.error||'请求失败');const r=data.result;
+$('status').textContent=r.decision_status+(data.replayed?' · 已重放':'');$('winner').textContent=r.recommended_workshop_name||r.decision_status;$('explanation').textContent=r.message;
+$('request-id').textContent=`请求 ID：${data.request_id}`;
+table($('parts'),['工坊','件数','费用','预计天数'],(r.allocation||[]).map(a=>[a.workshop_name,a.pieces,fixed(a.estimated_cost),fixed(a.estimated_days)]));
+table($('candidates'),['单工坊候选','天数','费用','缺陷率'],(r.candidate_ranking||[]).map(a=>[a.workshop_name,fixed(a.estimated_days),fixed(a.estimated_cost),fixed(a.expected_defect_rate*100)+'%']));
+$('rejected').textContent=Object.entries(r.rejected||{}).map(([id,reason])=>`${id}: ${reason}`).join('；');
+$('warnings').textContent=[...(r.warnings||[]),...(r.reason_codes||[]),r.estimated_delivery_date?'预计完成日期：'+r.estimated_delivery_date:''].filter(Boolean).join('\n');
+$('parsed').textContent=JSON.stringify(data.parsed,null,2);$('audit').textContent=JSON.stringify(data,null,2);pending=null;await history();
+}catch(error){$('status').textContent='连接失败';$('warnings').textContent=error.message+'；可点击执行重试，沿用同一请求 ID。'}finally{$('submit').disabled=false}});
+</script></body></html>

@@ -1,0 +1,19 @@
+{
+  "checked_at": "2026-09-14T07:44:54.665755+00:00",
+  "python": "3.14.3",
+  "tests_run": 116,
+  "failures": 0,
+  "errors": 0,
+  "tests_skipped": 0,
+  "google_genai_version": "2.23.0",
+  "golden_cases": 60,
+  "golden_passed": 60,
+  "demo_success": true,
+  "idempotent_replay": true,
+  "original_dispatch_behavior_matches": 30,
+  "official_simulator_matches_week4": true,
+  "llm_provider": "google_gemini",
+  "llm_model": "gemini-2.5-flash",
+  "real_llm_call": "NOT_RUN: this verification command uses mocked SDK transport; run evaluation/verify_gemini_live.py for live evidence",
+  "data_schema2_original": "NOT_PRESENT: implemented field mapping from Week 5/6 plans"
+}

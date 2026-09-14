@@ -1,0 +1,2 @@
+# Optional for offline mode; required for Google Gemini mode and SDK integration tests.
+google-genai==2.23.0
