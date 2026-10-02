@@ -5,7 +5,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-DB_VERSION = 1
+DB_VERSION = 2
 
 
 def utc_now():
@@ -33,8 +33,10 @@ class Database:
             has_table = self.connection.execute("SELECT 1 FROM sqlite_master WHERE name='schema_migrations'").fetchone()
             if has_table:
                 version = self.connection.execute("SELECT MAX(version) FROM schema_migrations").fetchone()[0]
-                if version != DB_VERSION:
+                if version not in (1, DB_VERSION):
                     raise sqlite3.DatabaseError("unsupported_database_version")
+                if version == 1:
+                    self._upgrade_lifecycle()
                 return
             sql = (Path(__file__).parent / "migrations/001_initial.sql").read_text()
             for statement in sql.split(";"):
@@ -55,7 +57,31 @@ class Database:
                         float(r["defect_rate"]), float(r["cost_per_piece"]), r["makes"], r["status"],
                         int(r["max_batch_pieces"]) if r["max_batch_pieces"] else None, r["notes"]))
                     self.connection.execute("INSERT INTO workshop_queue VALUES (?,?,?)", (r["workshop_id"], float(r["current_queue_days"]), "2026-04-01"))
-            self.connection.execute("INSERT INTO schema_migrations VALUES (?,?)", (DB_VERSION, utc_now()))
+            self.connection.execute("INSERT INTO schema_migrations VALUES (?,?)", (1, utc_now()))
+            self._upgrade_lifecycle()
+
+    def _upgrade_lifecycle(self):
+        sql = (Path(__file__).parent / "migrations/002_lifecycle.sql").read_text()
+        for statement in sql.split(";"):
+            if statement.strip():
+                self.connection.execute(statement)
+        # Legacy queues are FIFO: the tail contains the newest assignments.
+        # Recover their unelapsed reservations without resetting persisted queues.
+        queues = self.connection.execute("SELECT * FROM workshop_queue").fetchall()
+        for queue in queues:
+            remaining = queue["current_queue_days"]
+            rows = self.connection.execute("""SELECT wo.rowid AS position, wo.*, w.capacity_pieces_per_day
+                FROM working_order wo JOIN workshops w USING(workshop_id)
+                WHERE wo.workshop_id=? ORDER BY wo.rowid DESC""", (queue["workshop_id"],)).fetchall()
+            for row in rows:
+                capacity = row["capacity_pieces_per_day"]
+                reserved = min(remaining, row["pieces"] / capacity)
+                self.connection.execute("""UPDATE working_order SET capacity_at_assignment=?,queue_remaining_days=?
+                    WHERE rowid=?""", (capacity, reserved, row["position"]))
+                remaining = max(0., remaining - reserved)
+            self.connection.execute("UPDATE workshop_queue SET baseline_queue_days=? WHERE workshop_id=?",
+                                    (remaining, queue["workshop_id"]))
+        self.connection.execute("INSERT INTO schema_migrations VALUES (?,?)", (2, utc_now()))
 
     @contextmanager
     def transaction(self):

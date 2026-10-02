@@ -12,9 +12,10 @@ from app.allocator.planner import plan
 from app.db.database import Database, utc_now
 from app.repositories.order_repository import retrieve
 from app.repositories.workshop_repository import get_all
+from app.repositories.queue_repository import advance
 from app.schemas.parser_schema import OBJECTIVES
 
-PIPELINE_VERSION = "mvp_v0.1"
+PIPELINE_VERSION = "mvp_v0.2"
 ALIASES = {"min_lateness": "min_delay", "fastest_turnaround": "min_delay"}
 
 
@@ -73,7 +74,8 @@ def _decide(connection, parsed, objective, as_of, trace):
     unknown = set(parsed.exclusion) - {w.workshop_id for w in workshops}
     if unknown:
         return terminal("CLARIFY", "UNKNOWN_EXCLUDED_WORKSHOP", "Unknown workshop ID(s): " + ", ".join(sorted(unknown)))
-    result = plan(order, workshops, parsed, parsed.objective or objective, as_of)
+    remaining_order = {**order, "pieces": order["pieces"] - order["completed_pieces"]}
+    result = plan(remaining_order, workshops, parsed, parsed.objective or objective, as_of)
     trace["eligible_workshops"] = result["eligible_workshops"]
     trace["rejected_workshops"] = result["rejected"]
     return result
@@ -85,25 +87,30 @@ def _apply(connection, request_id, result, trace, as_of):
     if not order or order["state"] not in ("READY", "UNASSIGNED"):
         return
     if result["success"]:
-        if sum(p["pieces"] for p in result["allocation"]) != order["pieces"]:
+        if sum(p["pieces"] for p in result["allocation"]) != order["pieces"] - order["completed_pieces"]:
             raise ValueError("PIECES_CONSERVATION_FAILED")
         for part in result["allocation"]:
-            connection.execute("INSERT INTO working_order VALUES (?,?,?,?,?,?,?,?)", (
+            advance(connection, part["workshop_id"], as_of)
+            capacity = connection.execute("SELECT capacity_pieces_per_day FROM workshops WHERE workshop_id=?",
+                                          (part["workshop_id"],)).fetchone()[0]
+            connection.execute("""INSERT INTO working_order
+                (order_id,workshop_id,request_id,pieces,estimated_days,estimated_cost,objective,assigned_at,
+                 capacity_at_assignment,queue_remaining_days) VALUES (?,?,?,?,?,?,?,?,?,?)""", (
                 order["order_id"], part["workshop_id"], request_id, part["pieces"], part["estimated_days"],
-                part["estimated_cost"], result["objective"], utc_now()))
+                part["estimated_cost"], result["objective"], utc_now(), capacity, part["processing_days"]))
             # Processing consumes queue; transport is not workshop production capacity.
             after = part["queue_days"] + part["processing_days"]
             connection.execute("UPDATE workshop_queue SET current_queue_days=?,as_of_date=? WHERE workshop_id=?",
                                (after, as_of.isoformat(), part["workshop_id"]))
             changes.append({"table": "workshop_queue", "workshop_id": part["workshop_id"],
                             "before": part["queue_days"], "after": after})
-        connection.execute("UPDATE orders SET state='WORKING' WHERE order_id=?", (order["order_id"],))
+        connection.execute("UPDATE orders SET state='WORKING',version=version+1 WHERE order_id=?", (order["order_id"],))
         connection.execute("DELETE FROM unassigned_order WHERE order_id=?", (order["order_id"],))
         changes.append({"table": "working_order", "inserted_rows": len(result["allocation"]), "order_id": order["order_id"]})
     elif result["decision_status"] == "ESCALATE" or (result["decision_status"] == "REFUSE" and "rejected" in result):
         connection.execute("INSERT INTO unassigned_order VALUES (?,?,?,?) ON CONFLICT(order_id) DO UPDATE SET request_id=excluded.request_id,reason=excluded.reason,updated_at=excluded.updated_at",
                            (order["order_id"], request_id, result["reason_codes"][0], utc_now()))
-        connection.execute("UPDATE orders SET state='UNASSIGNED' WHERE order_id=?", (order["order_id"],))
+        connection.execute("UPDATE orders SET state='UNASSIGNED',version=version+1 WHERE order_id=?", (order["order_id"],))
         changes.append({"table": "unassigned_order", "order_id": order["order_id"], "reason": result["reason_codes"][0]})
 
 
