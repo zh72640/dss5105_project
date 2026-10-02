@@ -1,0 +1,61 @@
+{
+  "backend": "llm",
+  "model": "gemini-3.5-flash",
+  "prompt_version": "parser_v1",
+  "golden_cases": 60,
+  "edge_cases": 46,
+  "first_attempt_structured_validity": 0.15,
+  "final_structured_validity": 0.23333333333333334,
+  "core_field_exact_match": 0.23333333333333334,
+  "all_fields_exact_case_match": 0.23333333333333334,
+  "passed_cases": 14,
+  "field_exact_match": {
+    "order_id": 0.23333333333333334,
+    "customer": 0.23333333333333334,
+    "product": 0.23333333333333334,
+    "category": 0.23333333333333334,
+    "pieces": 0.23333333333333334,
+    "order_date": 0.23333333333333334,
+    "due_date": 0.23333333333333334,
+    "objective": 0.23333333333333334,
+    "exclusion": 0.23333333333333334,
+    "num_workshop_allowed": 0.23333333333333334,
+    "parse_status": 0.23333333333333334,
+    "missing_fields": 0.23333333333333334,
+    "ambiguities": 0.23333333333333334,
+    "preferred_workshop": 0.23333333333333334,
+    "deadline_required": 0.23333333333333334
+  },
+  "field_normalized_match": {
+    "order_id": 0.23333333333333334,
+    "customer": 0.23333333333333334,
+    "product": 0.23333333333333334,
+    "category": 0.23333333333333334,
+    "pieces": 0.23333333333333334,
+    "order_date": 0.23333333333333334,
+    "due_date": 0.23333333333333334,
+    "objective": 0.23333333333333334,
+    "exclusion": 0.23333333333333334,
+    "num_workshop_allowed": 0.23333333333333334,
+    "parse_status": 0.23333333333333334,
+    "missing_fields": 0.23333333333333334,
+    "ambiguities": 0.23333333333333334,
+    "preferred_workshop": 0.23333333333333334,
+    "deadline_required": 0.23333333333333334
+  },
+  "missing_field_hallucination_rate": 0.0,
+  "missing_field_slots": 549,
+  "hallucinated_slots": 0,
+  "mean_latency_ms": 4459.218666666667,
+  "human_review_status": "pending",
+  "live_llm_validated": false,
+  "interval_seconds": 0,
+  "error_counts": {
+    "gemini_http_429": 46
+  },
+  "attempt_error_counts": {
+    "gemini_http_503": 6,
+    "gemini_http_429": 91
+  },
+  "cases_with_model_output": 14
+}

@@ -1,7 +1,9 @@
 """Field-level golden evaluation; offline metrics are never labelled LLM metrics."""
 import argparse
 import json
+import math
 import sys
+import time
 from collections import Counter
 from pathlib import Path
 from statistics import mean
@@ -22,12 +24,16 @@ def normalize(value):
     return value
 
 
-def evaluate(backend='offline'):
+def evaluate(backend='offline', interval_seconds=0):
+    if not math.isfinite(interval_seconds) or not 0 <= interval_seconds <= 60:
+        raise ValueError('interval_seconds must be between 0 and 60')
     cases = [json.loads(line) for line in (ROOT/'tests/parser_golden.jsonl').read_text().splitlines()]
     exact, normalized = Counter(), Counter()
     null_slots = hallucinations = passed = valid = first_valid = 0
     records = []
-    for case in cases:
+    for index, case in enumerate(cases):
+        if index and interval_seconds:
+            time.sleep(interval_seconds)
         out = parse_with_telemetry(case['message'], [], backend=backend)
         actual = out.parsed.to_dict() if out.parsed else {}
         expected = case['expected']
@@ -56,7 +62,13 @@ def evaluate(backend='offline'):
                'missing_field_hallucination_rate': hallucinations/null_slots if null_slots else 0,
                'missing_field_slots': null_slots, 'hallucinated_slots': hallucinations,
                'mean_latency_ms': mean(r['latency_ms'] for r in records),
-               'human_review_status': 'pending', 'live_llm_validated': backend=='llm' and valid==n}
+               'interval_seconds': interval_seconds,
+               'error_counts': dict(Counter(r['error'] for r in records if r['error'])),
+               'attempt_error_counts': dict(Counter(a['error'] for r in records for a in r['attempts'] if a['error'])),
+               'cases_with_model_output': sum(any(a['raw_output'] is not None for a in r['attempts']) for r in records),
+               'human_review_status': 'pending',
+               'live_llm_validated': backend=='llm' and first_valid/n >= .98 and
+                                     sum(exact[f] for f in CORE)/(len(CORE)*n) >= .90 and hallucinations == 0}
     return metrics, records
 
 
@@ -64,7 +76,8 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--backend',choices=['offline','llm'],default='offline')
     parser.add_argument('--output-dir',type=Path,default=ROOT/'evaluation/results')
-    args=parser.parse_args(); metrics, records=evaluate(args.backend)
+    parser.add_argument('--interval-seconds',type=float,default=0,help='Pause 0-60 seconds between evaluation cases')
+    args=parser.parse_args(); metrics, records=evaluate(args.backend,args.interval_seconds)
     args.output_dir.mkdir(parents=True,exist_ok=True)
     (args.output_dir/f'parser_{args.backend}_metrics.json').write_text(json.dumps(metrics,indent=2,ensure_ascii=False)+'\n')
     (args.output_dir/f'parser_{args.backend}_runs.jsonl').write_text(''.join(json.dumps(r,ensure_ascii=False)+'\n' for r in records))
