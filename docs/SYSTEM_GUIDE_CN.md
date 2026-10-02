@@ -1,8 +1,8 @@
 # 当前系统说明与操作手册
 
-版本：Week 5/6 MVP v0.1，Parser/Prompt v1，SQLite migration 001。实际工作目录是 `Workspace`（不是另建 `WorkSpace`）。
+版本：MVP v0.2，Parser/Prompt v1，SQLite migrations 001 + 002。实际工作目录是 `Workspace`（不是另建 `WorkSpace`）。
 
-系统已支持从一条自然语言消息完成解析、真实订单检索、资格筛选、队列计算、单工坊或整数拆单、数据库事务更新和页面显示。默认是可重复的离线规则模式；LLM 接口代码已实现，服务商已固定为 Google Gemini / gemini-3.5-flash；当前环境缺少 GEMINI_API_KEY，在线验收尚待运行。**离线成功不代表真实模型验收已经完成。**
+系统已支持从一条自然语言消息完成解析、真实订单检索、资格筛选、队列计算、单工坊或整数拆单、数据库事务更新和页面显示。默认是可重复的离线规则模式；LLM 接口代码已实现，服务商已固定为 Google Gemini / gemini-3.5-flash；2026-10-02 真实冒烟成功，完整评估因 46/60 条 HTTP 429 未通过；详见 [在线验收](GEMINI_LIVE_ACCEPTANCE_CN.md)。**离线成功不代表真实模型验收已经完成。**
 
 ## 1. 环境与首次运行
 
@@ -37,7 +37,9 @@ python3 -m app.server
 python3 -m app.server --port 8001
 ```
 
-首次自动生成 `runtime/dispatch.sqlite3` 并导入 CSV，后续启动不会覆盖数据。页面显示当前 backend 和业务日期；输入完整消息后点击“执行分配并保存”。成功分配立即记入本地数据库。
+首次自动生成 `runtime/dispatch.sqlite3` 并导入 CSV，后续启动不会覆盖数据；旧 v1 库自动事务升级到 v2，首次升级前先停服务备份。页面显示当前 backend 和业务日期；输入完整消息后点击“执行分配并保存”。成功分配立即记入本地数据库。
+
+生产操作位于“生产进度与分配调整”，支持登记部分/全部完工、撤销分配、失效和原子重派。必须先读取订单并填写操作人和原因；规则、CLI 和接口见 [生命周期手册](LIFECYCLE_CN.md)。
 
 页面包含：请求和默认目标、分配工坊及件数/费用/天数、单工坊候选比较、排除原因、预计日期和提示、最近 30 条请求、解析 JSON 与完整审计记录。界面以中文标注，机器 reason codes 和部分解释保留英文，便于和测试/日志对应。
 
@@ -135,7 +137,7 @@ python evaluation/verify_gemini_live.py --full
 
 输出默认在 `evaluation/live_results/`（已忽略提交）；包含在线状态、完整 demo、full 模式下的逐条 raw/validated 输出和指标。缺 key 时状态为 NOT_RUN 并返回退出码1，SMOKE_PASSED 只代表单条端到端成功；只有 full 模式达到计划指标才标 ACCEPTANCE_PASSED。
 
-也可单独运行 `python evaluation/evaluate_parser.py --backend llm --output-dir evaluation/live_results`。不要用 offline 指标替代在线验收。此次 `evaluation/results/gemini_live_status.json` 明确记录 `gemini_api_key_missing`，未发起真实 API 请求。
+也可单独运行 `python evaluation/evaluate_parser.py --backend llm --output-dir evaluation/live_results`。不要用 offline 指标替代在线验收。当前 `evaluation/results/gemini_live_status.json` 记录真实冒烟成功、完整评估 ACCEPTANCE_FAILED；46 条最终错误为 HTTP 429。新增 `--interval-seconds 10` 可降低用例提交速度，需按项目实际配额选择；它不替代生产请求限速/退避。
 
 ## 5. 自动验证与证据
 
@@ -143,7 +145,7 @@ python evaluation/verify_gemini_live.py --full
 python3 evaluation/verify_mvp.py
 ```
 
-请在安装 requirements.txt 的虚拟环境内运行。这一命令运行 117 条测试、60 条解析回归、30 条原始语言行为回归、Week 5 mock demo、Week 6真实数据 demo、官方标准与 shock 模拟器比对；报告写到 `evaluation/results/`，失败返回非零。
+请在安装 requirements.txt 的虚拟环境内运行。这一命令运行 150 条测试、60 条解析回归、30 条原始语言行为回归、Week 5 mock demo、Week 6真实数据 demo、生命周期持久库连续 demo、官方标准与 shock 模拟器比对；报告写到 `evaluation/results/`，失败返回非零。
 
 也可分别运行：
 
@@ -167,6 +169,8 @@ HTTP 测试会短暂监听 `127.0.0.1` 随机端口；在受限执行沙箱中�
 | /api/health | GET | backend、版本、业务日期 |
 | /api/history | GET | 最近 30 次请求概要 |
 | /api/requests | POST | 处理并提交一条消息 |
+| /api/orders/ORD-045 | GET | 当前状态、version、分配、事件历史 |
+| /api/events | POST | complete/cancel/lapse/reassign，详见生命周期手册 |
 
 POST Content-Type 必须为 application/json：
 
@@ -204,7 +208,9 @@ print(response["result"])
 
 | 问题 | 处理 |
 |---|---|
-| ORDER_ALREADY_WORKING | 该订单已分配；重放用原 key，重新演示用临时库/新库；不要只删除某张表的一行 |
+| ORDER_ALREADY_WORKING | 该订单已分配；重放用原 key，调整分配使用生命周期 cancel/reassign；不要只删除某张表的一行 |
+| VERSION_CONFLICT | 人工操作使用旧订单版本；重新读取并核对后，以新 event_id 提交 |
+| QUEUE_ACCOUNTING_MISMATCH | 队列总量与预留分项不一致；核对外部手工改库或恢复可信备份 |
 | IDEMPOTENCY_CONFLICT | 同 key 搭配了不同消息、目标、日期或模型；新提交使用新 key |
 | ORDER_FIELD_CONFLICT | 明确给出的数量/日期等与订单表不同；先核实，不自动覆写主数据 |
 | PARSER_NEEDS_CLARIFICATION | 提供订单 ID、绝对日期或清晰约束；复杂自由表达可改为示例句式 |
@@ -220,13 +226,13 @@ print(response["result"])
 | DB_ERROR | 检查目录权限、文件路径、锁；响应 error_logged=false 表示数据库审计也未保存 |
 | 端口占用 | 更换 --port；浏览器地址随之更改 |
 
-**备份**：先 `Ctrl+C` 停止服务，再复制 `runtime/dispatch.sqlite3` 到你指定的备份路径。恢复时也先停止服务，将完整备份恢复为运行文件；不要在程序运行时仅复制部分 SQLite 辅助文件。当前没有单笔撤销 API。
+**备份**：先 `Ctrl+C` 停止服务，再复制 `runtime/dispatch.sqlite3` 到你指定的备份路径。恢复时也先停止服务，将完整备份恢复为运行文件；不要在程序运行时仅复制部分 SQLite 辅助文件。单笔撤销通过 `/api/events` 的 cancel 执行，不需要删除数据库。
 
 如果只需重新演示，使用 `python3 -m demos.week6_demo` 最简单；它不会删除或改动你的持久化数据库。
 
 ## 8. 当前边界
 
-已实现功能和待办分别见 [验收表](WEEK5_WEEK6_ACCEPTANCE_CN.md)、[已知限制](../KNOWN_ISSUES.md) 和 [下一阶段说明](NEXT_STAGE_CN.md)。目前未实现 Session、自动完工/过期、人工改单/撤销、工坊系统对接和公网部署。模型质量待在线验证；hybrid 是启发式，官方模拟器仍是原始基线，不代表新分配器已经优于三种 baseline。
+已实现功能和待办分别见 [验收表](WEEK5_WEEK6_ACCEPTANCE_CN.md)、[已知限制](../KNOWN_ISSUES.md) 和 [下一阶段说明](NEXT_STAGE_CN.md)。已实现显式生产操作；目前未实现 Session、自动完工/过期、订单主数据修改、工坊系统对接和公网部署。真实模型完整验收仍受服务限流影响；hybrid 是启发式，官方模拟器仍是原始基线，不代表新分配器已经优于三种 baseline。
 
 ## 9. Gemini HTTP 404 的进一步诊断（2026-09-14）
 

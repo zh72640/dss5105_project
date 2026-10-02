@@ -82,3 +82,9 @@ python3 evaluation/verify_gemini_live.py --full
 ### Gemini 3.5 Flash 迁移（2026-09-14）
 
 根据用户确认，模型已从2.5 Flash改为3.5 Flash。依照[Google官方迁移说明](https://ai.google.dev/gemini-api/docs/generate-content/whats-new-gemini-3.5)，移除显式temperature，改用thinking_level=minimal。telemetry中的temperature=null表示采用模型默认值，不表示温度为0；minimal也不保证完全关闭思考。输出仍由固定Schema、原文证据校验和最多一次重试约束，真实准确率需重新做在线验收。
+
+### 2026-10-02 在线验收与下游生命周期
+
+真实冒烟已通过；60 条完整回归中 14 条匹配、46 条 HTTP 429，未达到质量验收阈值。报告增加服务错误统计、实际收到输出的用例数和可配置间隔；详见 [在线验收记录](docs/GEMINI_LIVE_ACCEPTANCE_CN.md)。
+
+下游升级为 MVP v0.2 / migration 002，支持显式生产事件；Parser/Prompt v1 与单消息限制保持不变。自然语言中的 pieces 仍为原订单总数，下游根据累计完工数仅分配剩余数量；complete/cancel/lapse/reassign 不通过本 Parser 执行。

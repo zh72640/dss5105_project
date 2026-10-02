@@ -1,7 +1,7 @@
 {
   "first_request": {
     "request_id": "week6-demo-1",
-    "pipeline_version": "mvp_v0.1",
+    "pipeline_version": "mvp_v0.2",
     "as_of_date": "2026-04-01",
     "raw_message": "Allocate ORD-045 using the cheapest available workshops. Do not use W03 and use at most two workshops.",
     "replayed": false,
@@ -40,7 +40,9 @@
         "order_date": "2026-03-21",
         "due_date": "2026-04-09",
         "source_status": "IN_PROGRESS",
-        "state": "READY"
+        "state": "READY",
+        "version": 0,
+        "completed_pieces": 0
       },
       "workshop_count": 8,
       "queue": {
@@ -136,7 +138,7 @@
           "error": null
         }
       ],
-      "latency_ms": 0.305,
+      "latency_ms": 0.525,
       "validation_result": "valid"
     },
     "result": {

@@ -1,0 +1,941 @@
+{
+  "verified": true,
+  "steps": [
+    {
+      "request_id": "allocate-1",
+      "pipeline_version": "mvp_v0.2",
+      "as_of_date": "2026-04-01",
+      "raw_message": "Allocate ORD-045 to Nimble Needle.",
+      "replayed": false,
+      "trace": {
+        "db_changes": [
+          {
+            "table": "workshop_queue",
+            "workshop_id": "W6",
+            "before": 1.0,
+            "after": 2.1538461538461537
+          },
+          {
+            "table": "working_order",
+            "inserted_rows": 1,
+            "order_id": "ORD-045"
+          },
+          {
+            "table": "requests",
+            "inserted_rows": 1
+          },
+          {
+            "table": "request_parsing_history",
+            "inserted_rows": 1
+          },
+          {
+            "table": "decision_log",
+            "inserted_rows": 1
+          }
+        ],
+        "order": {
+          "order_id": "ORD-045",
+          "customer": "Cotton Club",
+          "product": "Vest",
+          "category": "TOPS",
+          "pieces": 150,
+          "order_date": "2026-03-21",
+          "due_date": "2026-04-09",
+          "source_status": "IN_PROGRESS",
+          "state": "READY",
+          "version": 0,
+          "completed_pieces": 0
+        },
+        "workshop_count": 8,
+        "queue": {
+          "W1": 4.0,
+          "W2": 2.5,
+          "W3": 5.0,
+          "W4": 0.5,
+          "W5": 3.0,
+          "W6": 1.0,
+          "W7": 0.0,
+          "W8": 0.0
+        },
+        "eligible_workshops": [
+          "W1",
+          "W2",
+          "W3",
+          "W5",
+          "W6",
+          "W8"
+        ],
+        "rejected_workshops": {
+          "W4": "cannot_make_tops",
+          "W7": "status_suspended"
+        }
+      },
+      "parsed": {
+        "order_id": "ORD-045",
+        "customer": null,
+        "product": null,
+        "category": null,
+        "pieces": null,
+        "order_date": null,
+        "due_date": null,
+        "objective": null,
+        "exclusion": [],
+        "num_workshop_allowed": null,
+        "parse_status": "ok",
+        "missing_fields": [],
+        "ambiguities": [],
+        "preferred_workshop": "W6",
+        "deadline_required": false
+      },
+      "request": {
+        "order_id": "ORD-045",
+        "customer": null,
+        "product": null,
+        "category": null,
+        "pieces": null,
+        "order_date": null,
+        "due_date": null,
+        "objective": null,
+        "exclusion": [],
+        "num_workshop_allowed": null,
+        "parse_status": "ok",
+        "missing_fields": [],
+        "ambiguities": [],
+        "preferred_workshop": "W6",
+        "deadline_required": false
+      },
+      "parser_telemetry": {
+        "prompt_version": "parser_v1",
+        "schema_version": "parser_v1",
+        "backend": "offline",
+        "model": "rules_v1",
+        "temperature": null,
+        "retry_count": 0,
+        "attempts": [
+          {
+            "raw_output": "{\"order_id\": \"ORD-045\", \"customer\": null, \"product\": null, \"category\": null, \"pieces\": null, \"order_date\": null, \"due_date\": null, \"objective\": null, \"exclusion\": [], \"num_workshop_allowed\": null, \"parse_status\": \"ok\", \"missing_fields\": [], \"ambiguities\": [], \"preferred_workshop\": \"W6\", \"deadline_required\": false}",
+            "validated_output": {
+              "order_id": "ORD-045",
+              "customer": null,
+              "product": null,
+              "category": null,
+              "pieces": null,
+              "order_date": null,
+              "due_date": null,
+              "objective": null,
+              "exclusion": [],
+              "num_workshop_allowed": null,
+              "parse_status": "ok",
+              "missing_fields": [],
+              "ambiguities": [],
+              "preferred_workshop": "W6",
+              "deadline_required": false
+            },
+            "error": null
+          }
+        ],
+        "latency_ms": 0.341,
+        "validation_result": "valid"
+      },
+      "result": {
+        "success": true,
+        "decision_status": "ALLOCATE",
+        "allocation": [
+          {
+            "workshop_id": "W6",
+            "workshop_name": "Nimble Needle",
+            "pieces": 150,
+            "queue_days": 1.0,
+            "processing_days": 1.1538461538461537,
+            "transport_days": 1,
+            "estimated_days": 3.1538461538461537,
+            "estimated_cost": 180.0,
+            "defect_rate": 0.05
+          }
+        ],
+        "objective": "min_delay",
+        "rejected": {
+          "W4": "cannot_make_tops",
+          "W7": "status_suspended"
+        },
+        "reason_codes": [
+          "ELIGIBLE",
+          "BEST_CONFIGURED_SCORE",
+          "INTEGER_PIECES_CONSERVED"
+        ],
+        "warnings": [],
+        "eligible_workshops": [
+          "W1",
+          "W2",
+          "W3",
+          "W5",
+          "W6",
+          "W8"
+        ],
+        "candidate_ranking": [
+          {
+            "workshop_id": "W6",
+            "workshop_name": "Nimble Needle",
+            "allocation": [
+              {
+                "workshop_id": "W6",
+                "workshop_name": "Nimble Needle",
+                "pieces": 150,
+                "queue_days": 1.0,
+                "processing_days": 1.1538461538461537,
+                "transport_days": 1,
+                "estimated_days": 3.1538461538461537,
+                "estimated_cost": 180.0,
+                "defect_rate": 0.05
+              }
+            ],
+            "estimated_days": 3.1538461538461537,
+            "estimated_cost": 180.0,
+            "expected_defect_rate": 0.05,
+            "score": 3.1538461538461537
+          }
+        ],
+        "estimated_days": 3.1538461538461537,
+        "estimated_cost": 180.0,
+        "expected_defect_rate": 0.05,
+        "score": 3.1538461538461537,
+        "recommended_workshop_id": "W6",
+        "recommended_workshop_name": "Nimble Needle",
+        "estimated_delivery_date": "2026-04-05",
+        "deadline_met": true,
+        "message": "Allocated 150 pieces to 1 workshop(s) using min_delay.",
+        "request_id": "allocate-1"
+      }
+    },
+    {
+      "request_id": "complete-50",
+      "replayed": false,
+      "pipeline_version": "mvp_v0.2",
+      "trace": {
+        "db_changes": [
+          {
+            "table": "working_order",
+            "workshop_id": "W6",
+            "completed_pieces_delta": 50,
+            "released_queue_days": 0.38461538461538447
+          }
+        ]
+      },
+      "result": {
+        "success": true,
+        "decision_status": "COMPLETE",
+        "reason_codes": [
+          "LIFECYCLE_APPLIED"
+        ],
+        "allocation": [],
+        "warnings": [],
+        "message": "Production event recorded.",
+        "candidate_ranking": [],
+        "request_id": "complete-50"
+      },
+      "order": {
+        "order_id": "ORD-045",
+        "customer": "Cotton Club",
+        "product": "Vest",
+        "category": "TOPS",
+        "pieces": 150,
+        "order_date": "2026-03-21",
+        "due_date": "2026-04-09",
+        "source_status": "IN_PROGRESS",
+        "state": "WORKING",
+        "version": 2,
+        "completed_pieces": 50,
+        "remaining_pieces": 100,
+        "allocations": [
+          {
+            "order_id": "ORD-045",
+            "workshop_id": "W6",
+            "request_id": "allocate-1",
+            "pieces": 150,
+            "estimated_days": 3.1538461538461537,
+            "estimated_cost": 180.0,
+            "objective": "min_delay",
+            "assigned_at": "2026-10-02T08:22:26.558227+00:00",
+            "completed_pieces": 50,
+            "capacity_at_assignment": 130,
+            "queue_remaining_days": 0.7692307692307693
+          }
+        ]
+      },
+      "event": {
+        "action": "complete",
+        "order_id": "ORD-045",
+        "actor": "demo-operator",
+        "reason": "Lifecycle acceptance demo",
+        "expected_version": 1,
+        "event_id": "complete-50",
+        "as_of_date": "2026-04-01",
+        "workshop_id": "W6",
+        "pieces": 50,
+        "objective": "min_delay",
+        "exclusion": [],
+        "max_workshops": 1,
+        "preferred_workshop": null,
+        "deadline_required": false
+      }
+    },
+    {
+      "request_id": "cancel-remaining",
+      "replayed": false,
+      "pipeline_version": "mvp_v0.2",
+      "trace": {
+        "db_changes": [
+          {
+            "table": "workshop_queue",
+            "workshop_id": "W6",
+            "released_queue_days": 0.7692307692307693
+          }
+        ]
+      },
+      "result": {
+        "success": true,
+        "decision_status": "CANCEL",
+        "reason_codes": [
+          "LIFECYCLE_APPLIED"
+        ],
+        "allocation": [],
+        "warnings": [],
+        "message": "Production event recorded.",
+        "candidate_ranking": [],
+        "request_id": "cancel-remaining"
+      },
+      "order": {
+        "order_id": "ORD-045",
+        "customer": "Cotton Club",
+        "product": "Vest",
+        "category": "TOPS",
+        "pieces": 150,
+        "order_date": "2026-03-21",
+        "due_date": "2026-04-09",
+        "source_status": "IN_PROGRESS",
+        "state": "READY",
+        "version": 3,
+        "completed_pieces": 50,
+        "remaining_pieces": 100,
+        "allocations": []
+      },
+      "event": {
+        "action": "cancel",
+        "order_id": "ORD-045",
+        "actor": "demo-operator",
+        "reason": "Lifecycle acceptance demo",
+        "expected_version": 2,
+        "event_id": "cancel-remaining",
+        "as_of_date": "2026-04-01",
+        "workshop_id": null,
+        "pieces": null,
+        "objective": "min_delay",
+        "exclusion": [],
+        "max_workshops": 1,
+        "preferred_workshop": null,
+        "deadline_required": false
+      }
+    },
+    {
+      "request_id": "allocate-remaining",
+      "pipeline_version": "mvp_v0.2",
+      "as_of_date": "2026-04-01",
+      "raw_message": "Allocate ORD-045 to Nimble Needle.",
+      "replayed": false,
+      "trace": {
+        "db_changes": [
+          {
+            "table": "workshop_queue",
+            "workshop_id": "W6",
+            "before": 0.9999999999999999,
+            "after": 1.7692307692307692
+          },
+          {
+            "table": "working_order",
+            "inserted_rows": 1,
+            "order_id": "ORD-045"
+          },
+          {
+            "table": "requests",
+            "inserted_rows": 1
+          },
+          {
+            "table": "request_parsing_history",
+            "inserted_rows": 1
+          },
+          {
+            "table": "decision_log",
+            "inserted_rows": 1
+          }
+        ],
+        "order": {
+          "order_id": "ORD-045",
+          "customer": "Cotton Club",
+          "product": "Vest",
+          "category": "TOPS",
+          "pieces": 150,
+          "order_date": "2026-03-21",
+          "due_date": "2026-04-09",
+          "source_status": "IN_PROGRESS",
+          "state": "READY",
+          "version": 3,
+          "completed_pieces": 50
+        },
+        "workshop_count": 8,
+        "queue": {
+          "W1": 4.0,
+          "W2": 2.5,
+          "W3": 5.0,
+          "W4": 0.5,
+          "W5": 3.0,
+          "W6": 0.9999999999999999,
+          "W7": 0.0,
+          "W8": 0.0
+        },
+        "eligible_workshops": [
+          "W1",
+          "W2",
+          "W3",
+          "W5",
+          "W6",
+          "W8"
+        ],
+        "rejected_workshops": {
+          "W4": "cannot_make_tops",
+          "W7": "status_suspended"
+        }
+      },
+      "parsed": {
+        "order_id": "ORD-045",
+        "customer": null,
+        "product": null,
+        "category": null,
+        "pieces": null,
+        "order_date": null,
+        "due_date": null,
+        "objective": null,
+        "exclusion": [],
+        "num_workshop_allowed": null,
+        "parse_status": "ok",
+        "missing_fields": [],
+        "ambiguities": [],
+        "preferred_workshop": "W6",
+        "deadline_required": false
+      },
+      "request": {
+        "order_id": "ORD-045",
+        "customer": null,
+        "product": null,
+        "category": null,
+        "pieces": null,
+        "order_date": null,
+        "due_date": null,
+        "objective": null,
+        "exclusion": [],
+        "num_workshop_allowed": null,
+        "parse_status": "ok",
+        "missing_fields": [],
+        "ambiguities": [],
+        "preferred_workshop": "W6",
+        "deadline_required": false
+      },
+      "parser_telemetry": {
+        "prompt_version": "parser_v1",
+        "schema_version": "parser_v1",
+        "backend": "offline",
+        "model": "rules_v1",
+        "temperature": null,
+        "retry_count": 0,
+        "attempts": [
+          {
+            "raw_output": "{\"order_id\": \"ORD-045\", \"customer\": null, \"product\": null, \"category\": null, \"pieces\": null, \"order_date\": null, \"due_date\": null, \"objective\": null, \"exclusion\": [], \"num_workshop_allowed\": null, \"parse_status\": \"ok\", \"missing_fields\": [], \"ambiguities\": [], \"preferred_workshop\": \"W6\", \"deadline_required\": false}",
+            "validated_output": {
+              "order_id": "ORD-045",
+              "customer": null,
+              "product": null,
+              "category": null,
+              "pieces": null,
+              "order_date": null,
+              "due_date": null,
+              "objective": null,
+              "exclusion": [],
+              "num_workshop_allowed": null,
+              "parse_status": "ok",
+              "missing_fields": [],
+              "ambiguities": [],
+              "preferred_workshop": "W6",
+              "deadline_required": false
+            },
+            "error": null
+          }
+        ],
+        "latency_ms": 0.282,
+        "validation_result": "valid"
+      },
+      "result": {
+        "success": true,
+        "decision_status": "ALLOCATE",
+        "allocation": [
+          {
+            "workshop_id": "W6",
+            "workshop_name": "Nimble Needle",
+            "pieces": 100,
+            "queue_days": 0.9999999999999999,
+            "processing_days": 0.7692307692307693,
+            "transport_days": 1,
+            "estimated_days": 2.769230769230769,
+            "estimated_cost": 120.0,
+            "defect_rate": 0.05
+          }
+        ],
+        "objective": "min_delay",
+        "rejected": {
+          "W4": "cannot_make_tops",
+          "W7": "status_suspended"
+        },
+        "reason_codes": [
+          "ELIGIBLE",
+          "BEST_CONFIGURED_SCORE",
+          "INTEGER_PIECES_CONSERVED"
+        ],
+        "warnings": [],
+        "eligible_workshops": [
+          "W1",
+          "W2",
+          "W3",
+          "W5",
+          "W6",
+          "W8"
+        ],
+        "candidate_ranking": [
+          {
+            "workshop_id": "W6",
+            "workshop_name": "Nimble Needle",
+            "allocation": [
+              {
+                "workshop_id": "W6",
+                "workshop_name": "Nimble Needle",
+                "pieces": 100,
+                "queue_days": 0.9999999999999999,
+                "processing_days": 0.7692307692307693,
+                "transport_days": 1,
+                "estimated_days": 2.769230769230769,
+                "estimated_cost": 120.0,
+                "defect_rate": 0.05
+              }
+            ],
+            "estimated_days": 2.769230769230769,
+            "estimated_cost": 120.0,
+            "expected_defect_rate": 0.05,
+            "score": 2.769230769230769
+          }
+        ],
+        "estimated_days": 2.769230769230769,
+        "estimated_cost": 120.0,
+        "expected_defect_rate": 0.05,
+        "score": 2.769230769230769,
+        "recommended_workshop_id": "W6",
+        "recommended_workshop_name": "Nimble Needle",
+        "estimated_delivery_date": "2026-04-04",
+        "deadline_met": true,
+        "message": "Allocated 100 pieces to 1 workshop(s) using min_delay.",
+        "request_id": "allocate-remaining"
+      }
+    },
+    {
+      "request_id": "reassign-100",
+      "replayed": false,
+      "pipeline_version": "mvp_v0.2",
+      "trace": {
+        "db_changes": [
+          {
+            "table": "workshop_queue",
+            "workshop_id": "W6",
+            "released_queue_days": 0.7692307692307693
+          },
+          {
+            "table": "workshop_queue",
+            "workshop_id": "W8",
+            "before": 0.0,
+            "after": 1.0
+          },
+          {
+            "table": "working_order",
+            "inserted_rows": 1,
+            "order_id": "ORD-045"
+          }
+        ],
+        "order": {
+          "order_id": "ORD-045",
+          "customer": "Cotton Club",
+          "product": "Vest",
+          "category": "TOPS",
+          "pieces": 150,
+          "order_date": "2026-03-21",
+          "due_date": "2026-04-09",
+          "source_status": "IN_PROGRESS",
+          "state": "READY",
+          "version": 4,
+          "completed_pieces": 50
+        },
+        "workshop_count": 8,
+        "queue": {
+          "W1": 4.0,
+          "W2": 2.5,
+          "W3": 5.0,
+          "W4": 0.5,
+          "W5": 3.0,
+          "W6": 0.9999999999999999,
+          "W7": 0.0,
+          "W8": 0.0
+        },
+        "eligible_workshops": [
+          "W1",
+          "W2",
+          "W3",
+          "W5",
+          "W6",
+          "W8"
+        ],
+        "rejected_workshops": {
+          "W4": "cannot_make_tops",
+          "W7": "status_suspended"
+        }
+      },
+      "result": {
+        "success": true,
+        "decision_status": "REASSIGNED",
+        "allocation": [
+          {
+            "workshop_id": "W8",
+            "workshop_name": "FreshStart",
+            "pieces": 100,
+            "queue_days": 0.0,
+            "processing_days": 1.0,
+            "transport_days": 2,
+            "estimated_days": 3.0,
+            "estimated_cost": 100.0,
+            "defect_rate": 0.04
+          }
+        ],
+        "objective": "min_delay",
+        "rejected": {
+          "W4": "cannot_make_tops",
+          "W7": "status_suspended"
+        },
+        "reason_codes": [
+          "ELIGIBLE",
+          "BEST_CONFIGURED_SCORE",
+          "INTEGER_PIECES_CONSERVED"
+        ],
+        "warnings": [],
+        "eligible_workshops": [
+          "W1",
+          "W2",
+          "W3",
+          "W5",
+          "W6",
+          "W8"
+        ],
+        "candidate_ranking": [
+          {
+            "workshop_id": "W8",
+            "workshop_name": "FreshStart",
+            "allocation": [
+              {
+                "workshop_id": "W8",
+                "workshop_name": "FreshStart",
+                "pieces": 100,
+                "queue_days": 0.0,
+                "processing_days": 1.0,
+                "transport_days": 2,
+                "estimated_days": 3.0,
+                "estimated_cost": 100.0,
+                "defect_rate": 0.04
+              }
+            ],
+            "estimated_days": 3.0,
+            "estimated_cost": 100.0,
+            "expected_defect_rate": 0.04,
+            "score": 3.0
+          }
+        ],
+        "estimated_days": 3.0,
+        "estimated_cost": 100.0,
+        "expected_defect_rate": 0.04,
+        "score": 3.0,
+        "recommended_workshop_id": "W8",
+        "recommended_workshop_name": "FreshStart",
+        "estimated_delivery_date": "2026-04-04",
+        "deadline_met": true,
+        "message": "Remaining production reassigned atomically.",
+        "request_id": "reassign-100"
+      },
+      "order": {
+        "order_id": "ORD-045",
+        "customer": "Cotton Club",
+        "product": "Vest",
+        "category": "TOPS",
+        "pieces": 150,
+        "order_date": "2026-03-21",
+        "due_date": "2026-04-09",
+        "source_status": "IN_PROGRESS",
+        "state": "WORKING",
+        "version": 5,
+        "completed_pieces": 50,
+        "remaining_pieces": 100,
+        "allocations": [
+          {
+            "order_id": "ORD-045",
+            "workshop_id": "W8",
+            "request_id": "reassign-100",
+            "pieces": 100,
+            "estimated_days": 3.0,
+            "estimated_cost": 100.0,
+            "objective": "min_delay",
+            "assigned_at": "2026-10-02T08:22:26.566181+00:00",
+            "completed_pieces": 0,
+            "capacity_at_assignment": 100,
+            "queue_remaining_days": 1.0
+          }
+        ]
+      },
+      "event": {
+        "action": "reassign",
+        "order_id": "ORD-045",
+        "actor": "demo-operator",
+        "reason": "Lifecycle acceptance demo",
+        "expected_version": 4,
+        "event_id": "reassign-100",
+        "as_of_date": "2026-04-01",
+        "workshop_id": null,
+        "pieces": null,
+        "objective": "min_delay",
+        "exclusion": [],
+        "max_workshops": 1,
+        "preferred_workshop": "W8",
+        "deadline_required": false
+      }
+    },
+    {
+      "request_id": "complete-100",
+      "replayed": false,
+      "pipeline_version": "mvp_v0.2",
+      "trace": {
+        "db_changes": [
+          {
+            "table": "working_order",
+            "workshop_id": "W8",
+            "completed_pieces_delta": 100,
+            "released_queue_days": 1.0
+          }
+        ]
+      },
+      "result": {
+        "success": true,
+        "decision_status": "COMPLETE",
+        "reason_codes": [
+          "LIFECYCLE_APPLIED"
+        ],
+        "allocation": [],
+        "warnings": [],
+        "message": "Production event recorded.",
+        "candidate_ranking": [],
+        "request_id": "complete-100"
+      },
+      "order": {
+        "order_id": "ORD-045",
+        "customer": "Cotton Club",
+        "product": "Vest",
+        "category": "TOPS",
+        "pieces": 150,
+        "order_date": "2026-03-21",
+        "due_date": "2026-04-09",
+        "source_status": "IN_PROGRESS",
+        "state": "COMPLETED",
+        "version": 6,
+        "completed_pieces": 150,
+        "remaining_pieces": 0,
+        "allocations": []
+      },
+      "event": {
+        "action": "complete",
+        "order_id": "ORD-045",
+        "actor": "demo-operator",
+        "reason": "Lifecycle acceptance demo",
+        "expected_version": 5,
+        "event_id": "complete-100",
+        "as_of_date": "2026-04-01",
+        "workshop_id": "W8",
+        "pieces": 100,
+        "objective": "min_delay",
+        "exclusion": [],
+        "max_workshops": 1,
+        "preferred_workshop": null,
+        "deadline_required": false
+      }
+    },
+    {
+      "request_id": "lapse-093",
+      "replayed": false,
+      "pipeline_version": "mvp_v0.2",
+      "trace": {
+        "db_changes": []
+      },
+      "result": {
+        "success": true,
+        "decision_status": "LAPSE",
+        "reason_codes": [
+          "LIFECYCLE_APPLIED"
+        ],
+        "allocation": [],
+        "warnings": [],
+        "message": "Production event recorded.",
+        "candidate_ranking": [],
+        "request_id": "lapse-093"
+      },
+      "order": {
+        "order_id": "ORD-093",
+        "customer": "Maple & Co",
+        "product": "Beanie",
+        "category": "ACCESSORIES",
+        "pieces": 100,
+        "order_date": "2026-03-14",
+        "due_date": "2026-03-29",
+        "source_status": "IN_PROGRESS",
+        "state": "LAPSED",
+        "version": 1,
+        "completed_pieces": 0,
+        "remaining_pieces": 100,
+        "allocations": []
+      },
+      "event": {
+        "action": "lapse",
+        "order_id": "ORD-093",
+        "actor": "demo-operator",
+        "reason": "Customer no longer needs production",
+        "expected_version": 0,
+        "event_id": "lapse-093",
+        "as_of_date": "2026-04-01",
+        "workshop_id": null,
+        "pieces": null,
+        "objective": "min_delay",
+        "exclusion": [],
+        "max_workshops": 1,
+        "preferred_workshop": null,
+        "deadline_required": false
+      }
+    }
+  ],
+  "replayed": true,
+  "final_order": {
+    "order_id": "ORD-045",
+    "customer": "Cotton Club",
+    "product": "Vest",
+    "category": "TOPS",
+    "pieces": 150,
+    "order_date": "2026-03-21",
+    "due_date": "2026-04-09",
+    "source_status": "IN_PROGRESS",
+    "state": "COMPLETED",
+    "version": 6,
+    "completed_pieces": 150,
+    "remaining_pieces": 0,
+    "allocations": [],
+    "events": [
+      {
+        "event_id": "complete-100",
+        "action": "complete",
+        "actor": "demo-operator",
+        "reason": "Lifecycle acceptance demo",
+        "as_of_date": "2026-04-01",
+        "expected_version": 5,
+        "applied": 1,
+        "created_at": "2026-10-02T08:22:26.568107+00:00"
+      },
+      {
+        "event_id": "reassign-100",
+        "action": "reassign",
+        "actor": "demo-operator",
+        "reason": "Lifecycle acceptance demo",
+        "as_of_date": "2026-04-01",
+        "expected_version": 4,
+        "applied": 1,
+        "created_at": "2026-10-02T08:22:26.565494+00:00"
+      },
+      {
+        "event_id": "cancel-remaining",
+        "action": "cancel",
+        "actor": "demo-operator",
+        "reason": "Lifecycle acceptance demo",
+        "as_of_date": "2026-04-01",
+        "expected_version": 2,
+        "applied": 1,
+        "created_at": "2026-10-02T08:22:26.561890+00:00"
+      },
+      {
+        "event_id": "complete-50",
+        "action": "complete",
+        "actor": "demo-operator",
+        "reason": "Lifecycle acceptance demo",
+        "as_of_date": "2026-04-01",
+        "expected_version": 1,
+        "applied": 1,
+        "created_at": "2026-10-02T08:22:26.560042+00:00"
+      }
+    ]
+  },
+  "queues": [
+    {
+      "workshop_id": "W1",
+      "current_queue_days": 4.0,
+      "as_of_date": "2026-04-01",
+      "baseline_queue_days": 4.0
+    },
+    {
+      "workshop_id": "W2",
+      "current_queue_days": 2.5,
+      "as_of_date": "2026-04-01",
+      "baseline_queue_days": 2.5
+    },
+    {
+      "workshop_id": "W3",
+      "current_queue_days": 5.0,
+      "as_of_date": "2026-04-01",
+      "baseline_queue_days": 5.0
+    },
+    {
+      "workshop_id": "W4",
+      "current_queue_days": 0.5,
+      "as_of_date": "2026-04-01",
+      "baseline_queue_days": 0.5
+    },
+    {
+      "workshop_id": "W5",
+      "current_queue_days": 3.0,
+      "as_of_date": "2026-04-01",
+      "baseline_queue_days": 3.0
+    },
+    {
+      "workshop_id": "W6",
+      "current_queue_days": 0.9999999999999999,
+      "as_of_date": "2026-04-01",
+      "baseline_queue_days": 1.0
+    },
+    {
+      "workshop_id": "W7",
+      "current_queue_days": 0.0,
+      "as_of_date": "2026-04-01",
+      "baseline_queue_days": 0.0
+    },
+    {
+      "workshop_id": "W8",
+      "current_queue_days": 0.0,
+      "as_of_date": "2026-04-01",
+      "baseline_queue_days": 0.0
+    }
+  ],
+  "queue_consistent": true,
+  "foreign_keys_ok": true,
+  "lifecycle_event_count": 5
+}

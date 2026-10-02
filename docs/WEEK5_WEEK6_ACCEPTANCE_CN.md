@@ -1,5 +1,7 @@
 # Week 5 / Week 6 计划逐项验收
 
+> 本文主体是 2026-09-14 历史记录；2026-10-02 当前状态见文末更新节及 [本轮变更](CHANGELOG_LIFECYCLE_CN.md)。
+
 依据：`Plans/Week5_Execution_Plan.pdf`（8 页）及 `Plans/Week6_Execution_Plan.pdf`（10 页）；继承 Week 4 真实 CSV、30 条语言标签和官方 simulator。实现位于 `Workspace`。两份计划原文件和原始数据均未修改。
 
 结论：**本地代码交付和离线集成验收完成；真实 LLM 在线验收及 Data Schema2 原定义核对尚待外部信息。** 用户已确认 Google Gemini / gemini-3.5-flash / GEMINI_API_KEY，官方 SDK 适配和11条专项测试已完成；当前仅缺密钥和真实在线验收。
@@ -54,3 +56,13 @@
 为了让系统当前即可运行，采用并记录以下规则：订单 ID 精确匹配；最大工坊数默认 1；指定工坊要求其接整单；逾期不自动 lapsed；明确 on-time 才启用硬交期；不自动改订单主数据；队列缺失报错；日期按日历天；系统展示交付日期保守取 ceil。它们是实现选择，不能冒充原 Data Schema2 已确认的规则。
 
 下一阶段的验收缺口和推进顺序见 [NEXT_STAGE_CN.md](NEXT_STAGE_CN.md)。
+
+## 后续验收更新（2026-10-02，MVP v0.2）
+
+上文保留 2026-09-14 的 Week 5/6 历史验收结论；当前状态以本节及最新 verification_summary.json 为准。
+
+- 真实 Gemini 冒烟已成功，不再是缺密钥 NOT_RUN；60 条完整回归中 14 条匹配、46 条 HTTP 429，完整验收仍不通过。见 [在线记录](GEMINI_LIVE_ACCEPTANCE_CN.md)。
+- 新增生产生命周期、migration 002、操作审计、页面/API/CLI，验收覆盖部分完工、撤销、重派、失效、队列与并发/回滚。
+- 当前 150 条自动测试全部通过（0跳过）；60 条离线解析、30 条行为回归和官方基线一致性保持通过。
+- Chrome 实际操作及生命周期连续持久库演示已验证；Data Schema2 原件核对、第二人标注复核和独立 holdout 仍待完成。
+- 下一步主要功能推进到 Session / 多轮澄清；执行清单见 [下一阶段交接](NEXT_STAGE_CN.md)。

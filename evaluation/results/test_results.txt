@@ -22,6 +22,8 @@ test_19_hard_deadline_infeasible_soft_deadline_warning (test_e2e.EndToEnd.test_1
 test_20_concurrent_same_key_and_different_key_same_order (test_e2e.EndToEnd.test_20_concurrent_same_key_and_different_key_same_order) ... ok
 test_full_db_unavailable_returns_error (test_e2e.EndToEnd.test_full_db_unavailable_returns_error) ... ok
 test_unknown_workshop_and_temporal_rewind (test_e2e.EndToEnd.test_unknown_workshop_and_temporal_rewind) ... ok
+test_invalid_pacing_rejected_before_model_calls (test_evaluation.EvaluationTests.test_invalid_pacing_rejected_before_model_calls) ... ok
+test_rate_limit_failures_remain_in_acceptance_denominator (test_evaluation.EvaluationTests.test_rate_limit_failures_remain_in_acceptance_denominator) ... ok
 test_429_retries_once_in_parser (test_gemini_sdk.GeminiSDK.test_429_retries_once_in_parser) ... ok
 test_auth_error_no_retry_and_no_body_leak (test_gemini_sdk.GeminiSDK.test_auth_error_no_retry_and_no_body_leak) ... ok
 test_blocked_prompt_stops (test_gemini_sdk.GeminiSDK.test_blocked_prompt_stops) ... ok
@@ -38,6 +40,34 @@ test_r03_clarifies (test_golden_cases.GoldenCases.test_r03_clarifies) ... ok
 test_r08_refuses_trial_limit (test_golden_cases.GoldenCases.test_r08_refuses_trial_limit) ... ok
 test_r09_allocates (test_golden_cases.GoldenCases.test_r09_allocates) ... ok
 test_r25_honours_exclusion (test_golden_cases.GoldenCases.test_r25_honours_exclusion) ... ok
+test_allocation_and_event_share_idempotency_namespace (test_lifecycle.LifecycleTests.test_allocation_and_event_share_idempotency_namespace) ... ok
+test_audit_fault_rolls_back_successful_business_change (test_lifecycle.LifecycleTests.test_audit_fault_rolls_back_successful_business_change) ... ok
+test_audit_preserves_removed_allocation_actor_reason_and_decision (test_lifecycle.LifecycleTests.test_audit_preserves_removed_allocation_actor_reason_and_decision) ... ok
+test_backward_date_is_rejected_and_audited (test_lifecycle.LifecycleTests.test_backward_date_is_rejected_and_audited) ... ok
+test_bad_completion_and_unknown_order_leave_business_unchanged (test_lifecycle.LifecycleTests.test_bad_completion_and_unknown_order_leave_business_unchanged) ... ok
+test_cancel_replay_conflict_and_stale_version (test_lifecycle.LifecycleTests.test_cancel_replay_conflict_and_stale_version) ... ok
+test_concurrent_completions_same_key_and_stale_versions (test_lifecycle.LifecycleTests.test_concurrent_completions_same_key_and_stale_versions) ... ok
+test_concurrent_different_events_cannot_both_apply_same_version (test_lifecycle.LifecycleTests.test_concurrent_different_events_cannot_both_apply_same_version) ... ok
+test_expired_forecast_is_not_confirmed_completion (test_lifecycle.LifecycleTests.test_expired_forecast_is_not_confirmed_completion) ... ok
+test_fifo_elapsed_queue_cancel_preserves_later_order (test_lifecycle.LifecycleTests.test_fifo_elapsed_queue_cancel_preserves_later_order) ... ok
+test_forecast_decay_and_confirmed_completion_do_not_double_release (test_lifecycle.LifecycleTests.test_forecast_decay_and_confirmed_completion_do_not_double_release) ... ok
+test_infeasible_hard_deadline_reassign_restores_assignment (test_lifecycle.LifecycleTests.test_infeasible_hard_deadline_reassign_restores_assignment) ... ok
+test_infeasible_reassign_restores_every_business_table (test_lifecycle.LifecycleTests.test_infeasible_reassign_restores_every_business_table) ... ok
+test_invalid_inputs_are_rejected_before_writes (test_lifecycle.LifecycleTests.test_invalid_inputs_are_rejected_before_writes) ... ok
+test_lapse_unassigned_cleans_retry_record (test_lifecycle.LifecycleTests.test_lapse_unassigned_cleans_retry_record) ... ok
+test_lapse_working_and_ready_orders_and_terminal_protection (test_lifecycle.LifecycleTests.test_lapse_working_and_ready_orders_and_terminal_protection) ... ok
+test_missing_queue_blocks_cancellation_without_losing_assignment (test_lifecycle.LifecycleTests.test_missing_queue_blocks_cancellation_without_losing_assignment) ... ok
+test_new_event_key_cannot_repeat_completion_with_stale_version (test_lifecycle.LifecycleTests.test_new_event_key_cannot_repeat_completion_with_stale_version) ... ok
+test_partial_complete_cancel_and_allocate_only_remaining (test_lifecycle.LifecycleTests.test_partial_complete_cancel_and_allocate_only_remaining) ... ok
+test_queue_fault_rolls_back_and_records_failed_event (test_lifecycle.LifecycleTests.test_queue_fault_rolls_back_and_records_failed_event) ... ok
+test_reassign_insert_failure_restores_old_assignment_and_queue (test_lifecycle.LifecycleTests.test_reassign_insert_failure_restores_old_assignment_and_queue) ... ok
+test_reassign_preserves_completed_pieces_and_releases_old_queue (test_lifecycle.LifecycleTests.test_reassign_preserves_completed_pieces_and_releases_old_queue) ... ok
+test_split_completion_does_not_complete_whole_order_early (test_lifecycle.LifecycleTests.test_split_completion_does_not_complete_whole_order_early) ... ok
+test_split_partial_completion_then_reassign_conserves_quantity (test_lifecycle.LifecycleTests.test_split_partial_completion_then_reassign_conserves_quantity) ... ok
+test_failed_upgrade_rolls_back_ddl_and_preserves_v1 (test_lifecycle.MigrationTests.test_failed_upgrade_rolls_back_ddl_and_preserves_v1) ... ok
+test_unknown_future_version_is_refused (test_lifecycle.MigrationTests.test_unknown_future_version_is_refused) ... ok
+test_upgrade_preserves_old_queue_and_recovers_only_unelapsed_work (test_lifecycle.MigrationTests.test_upgrade_preserves_old_queue_and_recovers_only_unelapsed_work) ... ok
+test_inspect_complete_and_stale_event_exit_codes (test_lifecycle_cli.LifecycleCLITests.test_inspect_complete_and_stale_event_exit_codes) ... ok
 test_P01_complete (test_parser.ParserGolden.test_P01_complete) ... ok
 test_P02_complete (test_parser.ParserGolden.test_P02_complete) ... ok
 test_P03_objective (test_parser.ParserGolden.test_P03_objective) ... ok
@@ -112,11 +142,14 @@ test_twice_invalid_stops (test_parser.ParserValidation.test_twice_invalid_stops)
 test_unrecognized_constraints_and_negative_action_stop (test_parser.ParserValidation.test_unrecognized_constraints_and_negative_action_stop) ... ok
 test_bad_inputs_and_cross_origin (test_server.LocalAPI.test_bad_inputs_and_cross_origin) ... ok
 test_http_flow_and_history (test_server.LocalAPI.test_http_flow_and_history) ... ok
+test_lifecycle_api_partial_cancel_reallocate_reassign_complete (test_server.LocalAPI.test_lifecycle_api_partial_cancel_reallocate_reassign_complete) ... ok
+test_lifecycle_api_rejects_stale_version_unknown_order_and_bad_fields (test_server.LocalAPI.test_lifecycle_api_rejects_stale_version_unknown_order_and_bad_fields) ... ok
+test_lifecycle_page_exposes_review_and_explicit_operations (test_server.LocalAPI.test_lifecycle_page_exposes_review_and_explicit_operations) ... ok
 test_cap_is_ineligible (test_tools.ToolTests.test_cap_is_ineligible) ... ok
 test_order_resolution (test_tools.ToolTests.test_order_resolution) ... ok
 test_suspended_is_ineligible (test_tools.ToolTests.test_suspended_is_ineligible) ... ok
 
 ----------------------------------------------------------------------
-Ran 117 tests in 1.644s
+Ran 150 tests in 3.844s
 
 OK

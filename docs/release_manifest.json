@@ -4,7 +4,7 @@
   "prompt_version": "parser_v1",
   "database_version": 2,
   "freeze_date": "2026-10-02",
-  "status": "Lifecycle transaction and migration tests passed; live Gemini smoke passed, full acceptance failed with HTTP 429",
+  "status": "MVP v0.2: 150 tests passed, lifecycle/UI verified; live Gemini smoke passed, full acceptance blocked by HTTP 429",
   "sha256": {
     "app/schemas/parser_schema.py": "0ccbf4887429aa6501a1b4e6a6061f50390a6dfd3b4746370374df05a4155211",
     "app/agent/prompts.py": "1bf3e459dcd2868b88413537cf582816affa1e303739f9f2b76a79db8d68348f",
@@ -27,7 +27,14 @@
     "app/repositories/queue_repository.py": "2ac60549eeb7f3b62727c97cef9d6611ce7ec2a391cbbb124b982627523f9874",
     "tests/test_lifecycle.py": "eabcecb515993f12c497c945ac2fd9f5e6860503eefd881fed29fee3e67ade3f",
     "evaluation/evaluate_parser.py": "c8ca8163b7b3026c28c8791978cc636026c6ab279a0b6f780fae2e22c7a3b1cb",
-    "tests/test_evaluation.py": "7a6a015a3cfa08be96034973b25c96c3c7dc7f2f7607ec62a42bca4a7541ab40"
+    "tests/test_evaluation.py": "7a6a015a3cfa08be96034973b25c96c3c7dc7f2f7607ec62a42bca4a7541ab40",
+    "app/server.py": "85f3395b4c17b3728c212928cd94e4e67958ebd917a4d91a51178d3f202601f3",
+    "app/ui/index.html": "68dbe3bc2dc4f0c2d44dc5fa0fca1f7b303823d9c479bbfd99908658488f892c",
+    "app/lifecycle_cli.py": "b30caef9c38220d7c36dbccb68c12695979cd5eada2920ba586f5612e2d67e8d",
+    "demos/lifecycle_demo.py": "80cb82c22d63f420add96519ca627544300d899808fc5d1fc973c0cec9caccd3",
+    "tests/test_server.py": "9deb5092a16c2e9ed15aa612665219f61c38dc49515aec730d63a80c109c2727",
+    "tests/test_lifecycle_cli.py": "e3890cd482269f46b65c3dffd05d707c902c8b89a5360216af22cb53a72e08b4",
+    "evaluation/verify_mvp.py": "bfbf8123f81e3707caa0d6c626c3d74014f02185a212d8deeb8fe9caf00f2f33"
   },
   "llm": {
     "provider": "google_gemini",
