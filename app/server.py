@@ -6,9 +6,10 @@ import sqlite3
 from datetime import date
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from urllib.parse import urlparse
+from urllib.parse import unquote, urlparse
 from app.db.database import Database
-from app.pipeline import process_request
+from app.pipeline import PIPELINE_VERSION, process_request
+from app.lifecycle import inspect_order, process_event
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -36,19 +37,26 @@ def make_server(port=8000, db_path=None, backend="offline", as_of=date(2026, 4, 
             if path == "/":
                 return self.send(200, (ROOT / "app/ui/index.html").read_bytes(), "text/html; charset=utf-8")
             if path == "/api/health":
-                return self.send(200, {"status": "ok", "backend": backend, "as_of_date": as_of.isoformat(), "version": "mvp_v0.1"})
+                return self.send(200, {"status": "ok", "backend": backend, "as_of_date": as_of.isoformat(), "version": PIPELINE_VERSION})
+            if path.startswith("/api/orders/"):
+                try:
+                    order = inspect_order(unquote(path[len("/api/orders/"):]), db_path=db_path)
+                    return self.send(200, order) if order else self.send(404, {"error": "ORDER_NOT_FOUND"})
+                except (sqlite3.Error, OSError, ValueError):
+                    return self.send(503, {"error": "DB_ERROR"})
             if path == "/api/history":
                 try:
                     with Database(db_path) as db:
                         rows = db.connection.execute("SELECT request_id,request_date_time,status,response_json FROM requests ORDER BY request_date_time DESC LIMIT 30").fetchall()
                         return self.send(200, [{"request_id": r["request_id"], "time": r["request_date_time"], "status": r["status"],
-                            "order_id": (json.loads(r["response_json"]).get("parsed") or {}).get("order_id")} for r in rows])
+                            "order_id": (json.loads(r["response_json"]).get("parsed") or
+                                         json.loads(r["response_json"]).get("event") or {}).get("order_id")} for r in rows])
                 except sqlite3.Error:
                     return self.send(503, {"error": "DB_ERROR"})
             return self.send(404, {"error": "NOT_FOUND"})
 
         def do_POST(self):
-            if self.path != "/api/requests":
+            if self.path not in ("/api/requests", "/api/events"):
                 return self.send(404, {"error": "NOT_FOUND"})
             # JSON-only, same-origin local endpoint; no credential-bearing CORS.
             origin = self.headers.get("Origin")
@@ -61,6 +69,21 @@ def make_server(port=8000, db_path=None, backend="offline", as_of=date(2026, 4, 
                 if not 0 < length <= 50000:
                     return self.send(413, {"error": "INVALID_BODY_SIZE"})
                 data = json.loads(self.rfile.read(length))
+                if self.path == "/api/events":
+                    required = {"action", "order_id", "actor", "reason", "expected_version", "event_id"}
+                    allowed = required | {"workshop_id", "pieces", "objective", "exclusion", "max_workshops",
+                                          "preferred_workshop", "deadline_required"}
+                    if not isinstance(data, dict) or set(data) - allowed or not required <= set(data):
+                        return self.send(400, {"error": "INVALID_FIELDS"})
+                    payload = process_event(**data, db_path=db_path, as_of=as_of)
+                    codes = payload["result"]["reason_codes"]
+                    status = (400 if "INVALID_ARGUMENT" in codes else 404 if "ORDER_NOT_FOUND" in codes else
+                              503 if payload["result"]["decision_status"] == "ERROR" else
+                              409 if not payload["result"]["success"] else 200)
+                    # Key reuse with different input is a conflict, not an infrastructure error.
+                    if "IDEMPOTENCY_CONFLICT" in codes:
+                        status = 409
+                    return self.send(status, payload)
                 if not isinstance(data, dict) or set(data) - {"message", "objective", "request_id"}:
                     return self.send(400, {"error": "INVALID_FIELDS"})
                 if not isinstance(data.get("message"), str) or not data["message"].strip() or len(data["message"]) > 10000:

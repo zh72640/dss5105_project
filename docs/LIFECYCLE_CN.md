@@ -61,3 +61,43 @@ response = process_event(
 ```
 
 重派可携带 `objective`、`exclusion`（W ID 数组）、`max_workshops`（1–8）、`preferred_workshop` 和 `deadline_required`；未指定时默认最快、最多 1 个工坊、软交期。它是一次完整的新约束提交，不自动继承旧请求约束；有硬性限制时需在重派表单/参数中再次明确填写。
+
+## 页面、HTTP 与 CLI
+
+启动 `python3 -m app.server` 后，在“生产进度与分配调整”中输入订单号并读取。核对已完工/未完工数，填写操作人和原因，选择操作后保存。版本来自本次读取；网络失败重试同一操作沿用 event_id。页面下方可查看订单操作历史，完整事件响应在审计区展示。
+
+| 接口 | 用途 |
+|---|---|
+| GET /api/orders/ORD-045 | 当前状态、version、活动分配和最近 30 条事件概要 |
+| POST /api/events | 显式生产操作，使用与消息接口相同的 JSON 和同源要求 |
+| GET /api/history | 同时展示分配请求和人工操作 |
+
+完工请求示例（只适用于当前版本确实为 1 且 W6 已分配的订单）：
+
+```json
+{"action":"complete","order_id":"ORD-045","actor":"operator-a","reason":"工坊确认首批完成","expected_version":1,"event_id":"event-045-001","workshop_id":"W6","pieces":50}
+```
+
+必填：action、order_id、actor、reason、expected_version、event_id。complete 另须 workshop_id/pieces；reassign 才接受重派约束。HTTP 200 表示事件成功或成功重放，409 表示版本/幂等冲突或业务不允许，404 表示订单不存在，400 表示字段错误，503 表示系统错误。失败事件相同 ID 也重放原失败，修正后使用新 ID。
+
+HTTP 业务日期由服务端 `--as-of` 控制，不接受请求自行指定数据库或日期。返回 `order` 是事件发生时的快照；若后来又有操作，幂等重放仍返回历史快照，应重新 GET 获取当前状态。
+
+```bash
+# 查询当前版本、分配及生产进度
+python3 -m app.lifecycle_cli inspect ORD-045
+
+# 下面的版本值和工坊必须按实际查询结果填写
+python3 -m app.lifecycle_cli complete ORD-045 --workshop-id W6 --pieces 50 \
+  --actor operator-a --reason '工坊确认首批完成' --expected-version 1 --event-id event-045-001
+
+# 使用单独的持久化临时数据库，一次演示完整流程，不改 runtime
+python3 -m demos.lifecycle_demo
+```
+
+CLI 支持 `inspect/complete/cancel/lapse/reassign`、`--db`、`--as-of`；重派约束为 `--objective`、可重复的 `--exclude`、`--max-workshops`、`--preferred-workshop`、`--deadline-required`。成功或成功重放退出 0；业务拒绝/系统错误退出 1；缺必填命令行参数退出 2。
+
+## 本轮验收
+
+专项测试覆盖部分完工、拆单完工、撤销后只重派剩余数量、失效、重复事件、跨接口 key 冲突、并发同 key、并发不同操作争用版本、日期倒退、队列 FIFO 衰减和避免重复扣减、缺失队列、重派中途失败、审计失败、旧库升级/重复打开/迁移回滚/未知版本，以及真实 HTTP 和 CLI 流程。
+
+2026-10-02 在 Chrome 对独立 `/tmp` 数据库实际提交 ORD-045：分配 W6 150 件 → 完成 50 件 → 重派 W8 100 件 → 刷新页面仍保留进度 → 完成 100 件。页面最终显示 COMPLETED、150/150、剩余 0、版本 4；历史显示 COMPLETE / REASSIGNED 等记录。操作人/原因必填也实际触发并验证。界面检查修复了切换操作时隐藏字段仍占位的问题。

@@ -22,11 +22,13 @@ class LocalAPI(unittest.TestCase):
         with urlopen(self.base+path,timeout=5) as response:
             return response.status,json.load(response)
 
-    def post(self,data,**headers):
-        request=Request(self.base+'/api/requests',data=json.dumps(data).encode(),headers={'Content-Type':'application/json',**headers})
+    def post(self,data,path='/api/requests',**headers):
+        request=Request(self.base+path,data=json.dumps(data).encode(),headers={'Content-Type':'application/json',**headers})
         try:
             with urlopen(request,timeout=5) as response:return response.status,json.load(response)
-        except HTTPError as error:return error.code,json.load(error)
+        except HTTPError as error:
+            with error:
+                return error.code,json.load(error)
 
     def test_http_flow_and_history(self):
         self.assertEqual(self.get('/api/health')[1]['backend'],'offline')
@@ -43,3 +45,47 @@ class LocalAPI(unittest.TestCase):
             self.assertEqual(self.post(value)[0],400)
         self.assertEqual(self.post({'message':'Allocate ORD-045.'},Origin='https://example.com')[0],403)
         self.assertEqual(self.get('/api/history')[1],[])
+
+    def test_lifecycle_api_partial_cancel_reallocate_reassign_complete(self):
+        self.post({'message':'Allocate ORD-045 to Nimble Needle.'})
+        def event(action, **kwargs):
+            order = self.get('/api/orders/ORD-045')[1]
+            body = {'action':action,'order_id':'ORD-045','actor':'api-operator','reason':'Production confirmation',
+                    'expected_version':order['version'],'event_id':f"event-{order['version']}",**kwargs}
+            status,result = self.post(body,path='/api/events')
+            self.assertEqual(status,200,result)
+            return body,result
+        body,partial = event('complete',workshop_id='W6',pieces=50)
+        self.assertEqual(partial['order']['completed_pieces'],50)
+        replay = self.post(body,path='/api/events')[1]
+        self.assertTrue(replay['replayed'])
+        event('cancel')
+        allocation = self.post({'message':'Allocate ORD-045 to Nimble Needle.'})[1]
+        self.assertEqual(allocation['result']['allocation'][0]['pieces'],100)
+        event('reassign',preferred_workshop='W8')
+        _,final = event('complete',workshop_id='W8',pieces=100)
+        self.assertEqual(final['order']['state'],'COMPLETED')
+        self.assertEqual(len(self.get('/api/orders/ORD-045')[1]['events']),4)
+        latest = self.get('/api/history')[1][0]
+        self.assertEqual(latest['order_id'],'ORD-045')
+        self.assertEqual(latest['status'],'COMPLETE')
+
+    def test_lifecycle_api_rejects_stale_version_unknown_order_and_bad_fields(self):
+        self.post({'message':'Allocate ORD-045.'})
+        body = {'action':'cancel','order_id':'ORD-045','actor':'api-operator','reason':'Change allocation',
+                'expected_version':0,'event_id':'stale'}
+        self.assertEqual(self.post(body,path='/api/events')[0],409)
+        self.assertEqual(self.post({**body,'expected_version':1},path='/api/events')[0],409)
+        self.assertEqual(self.post({**body,'order_id':'ORD-999','event_id':'missing'},path='/api/events')[0],404)
+        for data in ([],{}, {**body,'actor':''},{**body,'expected_version':True}, {**body,'db':'/tmp/other'},
+                     {**body,'as_of':'2026-04-03'}, {**body,'action':[]}):
+            with self.subTest(data=data):
+                self.assertEqual(self.post(data,path='/api/events')[0],400)
+        self.assertEqual(self.post(body,path='/api/events',Origin='https://example.com')[0],403)
+        self.assertEqual(self.get('/api/orders/ORD-045')[1]['state'],'WORKING')
+
+    def test_lifecycle_page_exposes_review_and_explicit_operations(self):
+        with urlopen(self.base+'/',timeout=5) as response:
+            page=response.read()
+        for marker in (b'/api/events',b'/api/orders/',b'expected_version',b'event-actor',b'event-reason'):
+            self.assertIn(marker,page)
