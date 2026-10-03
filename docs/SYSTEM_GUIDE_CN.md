@@ -1,6 +1,6 @@
 # 当前系统说明与操作手册
 
-版本：MVP v0.2，Parser/Prompt v1，SQLite migrations 001 + 002。实际工作目录是 `Workspace`（不是另建 `WorkSpace`）。
+版本：MVP v0.3，Parser/Prompt v1、Session v1，SQLite migrations 001–003。原分配 Pipeline v0.2 保持稳定。安装/升级参见 [部署说明](DEPLOYMENT_CN.md)，架构见 [整体项目说明](PROJECT_OVERVIEW_CN.md)。
 
 系统已支持从一条自然语言消息完成解析、真实订单检索、资格筛选、队列计算、单工坊或整数拆单、数据库事务更新和页面显示。默认是可重复的离线规则模式；LLM 接口代码已实现，服务商已固定为 Google Gemini / gemini-3.5-flash；2026-10-02 真实冒烟成功，完整评估因 46/60 条 HTTP 429 未通过；详见 [在线验收](GEMINI_LIVE_ACCEPTANCE_CN.md)。**离线成功不代表真实模型验收已经完成。**
 
@@ -37,7 +37,7 @@ python3 -m app.server
 python3 -m app.server --port 8001
 ```
 
-首次自动生成 `runtime/dispatch.sqlite3` 并导入 CSV，后续启动不会覆盖数据；旧 v1 库自动事务升级到 v2，首次升级前先停服务备份。页面显示当前 backend 和业务日期；输入完整消息后点击“执行分配并保存”。成功分配立即记入本地数据库。
+首次自动生成 `runtime/dispatch.sqlite3` 并导入 CSV，后续启动不会覆盖数据；旧 v1/v2 库自动事务升级到 v3，首次升级前先停服务备份。原单消息入口点击“执行分配并保存”直接写入分配；新增“多轮澄清与分配确认”入口先保存草稿，显式确认才分配。
 
 生产操作位于“生产进度与分配调整”，支持登记部分/全部完工、撤销分配、失效和原子重派。必须先读取订单并填写操作人和原因；规则、CLI 和接口见 [生命周期手册](LIFECYCLE_CN.md)。
 
@@ -58,7 +58,7 @@ Cancel order ORD-045.
 
 第一条在干净库推荐 Nimble Needle，150 件，费用 180，预计 3.1538 天。第二条允许最多两个工坊，干净库会拆成 Little Loom 58 件、Nimble Needle 42 件，预计约 2.3286 天，并提示该订单已过目标交期。消息里的“最多两个”允许系统只用一个；不代表必须拆单。
 
-`CLARIFY` 时，需要你核对订单号/数量/日期，并**重新提交一条完整消息**。暂不支持只回答“就是那个”或“改成两个”的多轮会话。
+原单消息入口出现 `CLARIFY` 时仍需重填完整消息。需要补充回复时，使用会话入口：新建 → `Allocate cheapest; exclude W03.` → `ORD-045` → `改成两个工坊` → 核对 → 确认。支持刷新恢复与幂等重试；任意自由表达仍有限制，详见 [会话手册](SESSIONS_CN.md)。
 
 ## 3. 命令行
 
@@ -145,7 +145,7 @@ python evaluation/verify_gemini_live.py --full
 python3 evaluation/verify_mvp.py
 ```
 
-请在安装 requirements.txt 的虚拟环境内运行。这一命令运行 150 条测试、60 条解析回归、30 条原始语言行为回归、Week 5 mock demo、Week 6真实数据 demo、生命周期持久库连续 demo、官方标准与 shock 模拟器比对；报告写到 `evaluation/results/`，失败返回非零。
+请在安装 requirements.txt 的虚拟环境内运行。这一命令运行 168 条测试、60 条解析回归、30 条原始语言行为回归、Week 5/6 demo、生命周期及会话持久库 demo、官方基线一致性和 14 组新策略对比；报告写到 `evaluation/results/`，失败或跳过测试返回非零。
 
 也可分别运行：
 
@@ -171,6 +171,9 @@ HTTP 测试会短暂监听 `127.0.0.1` 随机端口；在受限执行沙箱中�
 | /api/requests | POST | 处理并提交一条消息 |
 | /api/orders/ORD-045 | GET | 当前状态、version、分配、事件历史 |
 | /api/events | POST | complete/cancel/lapse/reassign，详见生命周期手册 |
+| /api/sessions | POST | 新建会话，固定默认目标、解析 backend 和业务日期 |
+| /api/sessions/{id} | GET | 草稿、版本、消息及上次结果 |
+| /api/sessions/{id}/turns | POST | 发送、替换、确认、结束，详见会话手册 |
 
 POST Content-Type 必须为 application/json：
 
@@ -201,7 +204,7 @@ print(response["result"])
 你需要手动做的事情：
 
 1. 启动服务并打开浏览器；启用在线解析前安装 SDK 并设置 GEMINI_API_KEY；模型已经固定。
-2. 对 CLARIFY 请求核对真实订单信息，重新提交完整消息。
+2. 对 CLARIFY 请求核对真实订单信息；单消息入口重填完整请求，会话入口按允许语法补充或替换。
 3. 对 REFUSE/ESCALATE 查看原因，确认工坊状态或约束后提交新请求。当前系统不会替你发消息联系工坊或安排实际运输。
 4. 团队确认逾期/失效、交期硬约束、拆单默认、完工和撤销等业务规则，并核对 Data Schema2 原始定义。
 5. 第二位人工复核 60 条 golden case 及原始 30 条行为标签，进行真实 LLM 在线评估。
@@ -232,7 +235,7 @@ print(response["result"])
 
 ## 8. 当前边界
 
-已实现功能和待办分别见 [验收表](WEEK5_WEEK6_ACCEPTANCE_CN.md)、[已知限制](../KNOWN_ISSUES.md) 和 [下一阶段说明](NEXT_STAGE_CN.md)。已实现显式生产操作；目前未实现 Session、自动完工/过期、订单主数据修改、工坊系统对接和公网部署。真实模型完整验收仍受服务限流影响；hybrid 是启发式，官方模拟器仍是原始基线，不代表新分配器已经优于三种 baseline。
+已实现功能和待办分别见 [Week 8/9 验收](WEEK8_WEEK9_ACCEPTANCE_CN.md)、[已知限制](../KNOWN_ISSUES.md) 和 [下一阶段说明](NEXT_STAGE_CN.md)。已实现会话和显式生产操作；自动完工/过期、订单主数据修改、工坊系统对接和公网部署尚未实现。真实模型完整验收仍受服务限流影响；hybrid 是启发式。新分配器在官方模拟器的时间指标上占优，成本、缺陷和集中程度存在基线更优的情形，见 [完整结果](../evaluation/results/simulator_comparison_CN.md)。
 
 ## 9. Gemini HTTP 404 的进一步诊断（2026-09-14）
 

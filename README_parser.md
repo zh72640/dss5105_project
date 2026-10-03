@@ -88,3 +88,7 @@ python3 evaluation/verify_gemini_live.py --full
 真实冒烟已通过；60 条完整回归中 14 条匹配、46 条 HTTP 429，未达到质量验收阈值。报告增加服务错误统计、实际收到输出的用例数和可配置间隔；详见 [在线验收记录](docs/GEMINI_LIVE_ACCEPTANCE_CN.md)。
 
 下游升级为 MVP v0.2 / migration 002，支持显式生产事件；Parser/Prompt v1 与单消息限制保持不变。自然语言中的 pieces 仍为原订单总数，下游根据累计完工数仅分配剩余数量；complete/cancel/lapse/reassign 不通过本 Parser 执行。
+
+### 2026-10-03 会话层扩展
+
+发布版 MVP v0.3 / migration 003 增加独立 `session_v1` 状态机。首条和完整替换仍调用本 Parser，后续命令显式合并已确认字段；非空 context_messages 报错规则不变。会话审计保存合并草稿，字段来源沿 session_messages 和 telemetry.field_sources 回溯，不能对当前短回复直接计算 Parser 单句准确率。见 [多轮会话说明](docs/SESSIONS_CN.md)。

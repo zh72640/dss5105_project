@@ -51,3 +51,7 @@ the old `conversation.gate_request()`; use the new pipeline, or explicitly use
 ## MVP v0.2 增量（2026-10-02）
 
 以上为历史契约。当前分配入口输出 mvp_v0.2，Parser/Prompt v1 不变。数据库迁移 002 增加累计完工、版本、FIFO 预留和 lifecycle_events；生产操作由 `app.lifecycle.process_event()` 提供独立结构化接口，详见 [生命周期手册](LIFECYCLE_CN.md)。活动分配未完工件数加已确认完工数守恒，不再要求部分完工后的活动 working_order.pieces 总和始终等于原订单总量。
+
+### MVP v0.3 会话扩展（2026-10-03）
+
+应用发布为 mvp_v0.3；原分配入口仍输出 mvp_v0.2，以保留既有幂等指纹。migration003 新增 sessions/session_messages，独立 session_v1 接口提供消息、完整替换、确认、关闭。Parser v1 仍是单消息契约，会话命令层负责显式合并；合并结果审计需要回溯整段会话。详见 [会话契约](SESSIONS_CN.md) 和 [数据库说明](DATABASE_SCHEMA_CN.md)。
