@@ -1,0 +1,2930 @@
+{
+  "verified": true,
+  "draft_only_before_confirmation": true,
+  "replay_is_idempotent": true,
+  "isolated_session_empty": true,
+  "foreign_keys_ok": true,
+  "turns": [
+    {
+      "request_id": "demo-0",
+      "session_id": "demo",
+      "session_version": "session_v1",
+      "raw_message": "Allocate cheapest; exclude W03.",
+      "parsed": {
+        "order_id": null,
+        "customer": null,
+        "product": null,
+        "category": null,
+        "pieces": null,
+        "order_date": null,
+        "due_date": null,
+        "objective": "min_cost",
+        "exclusion": [
+          "W3"
+        ],
+        "num_workshop_allowed": null,
+        "parse_status": "needs_clarification",
+        "missing_fields": [
+          "order_id"
+        ],
+        "ambiguities": [],
+        "preferred_workshop": null,
+        "deadline_required": false
+      },
+      "parser_telemetry": {
+        "prompt_version": "parser_v1",
+        "schema_version": "parser_v1",
+        "backend": "offline",
+        "model": "rules_v1",
+        "temperature": null,
+        "retry_count": 0,
+        "attempts": [
+          {
+            "raw_output": "{\"order_id\": null, \"customer\": null, \"product\": null, \"category\": null, \"pieces\": null, \"order_date\": null, \"due_date\": null, \"objective\": \"min_cost\", \"exclusion\": [\"W3\"], \"num_workshop_allowed\": null, \"parse_status\": \"needs_clarification\", \"missing_fields\": [\"order_id\"], \"ambiguities\": [], \"preferred_workshop\": null, \"deadline_required\": false}",
+            "validated_output": {
+              "order_id": null,
+              "customer": null,
+              "product": null,
+              "category": null,
+              "pieces": null,
+              "order_date": null,
+              "due_date": null,
+              "objective": "min_cost",
+              "exclusion": [
+                "W3"
+              ],
+              "num_workshop_allowed": null,
+              "parse_status": "needs_clarification",
+              "missing_fields": [
+                "order_id"
+              ],
+              "ambiguities": [],
+              "preferred_workshop": null,
+              "deadline_required": false
+            },
+            "error": null
+          }
+        ],
+        "latency_ms": 0.164,
+        "validation_result": "valid",
+        "field_sources": {
+          "base_session_version": 0,
+          "action": "message",
+          "merged_draft": {
+            "order_id": null,
+            "customer": null,
+            "product": null,
+            "category": null,
+            "pieces": null,
+            "order_date": null,
+            "due_date": null,
+            "objective": "min_cost",
+            "exclusion": [
+              "W3"
+            ],
+            "num_workshop_allowed": null,
+            "parse_status": "needs_clarification",
+            "missing_fields": [
+              "order_id"
+            ],
+            "ambiguities": [],
+            "preferred_workshop": null,
+            "deadline_required": false
+          },
+          "issue": null
+        }
+      },
+      "trace": {
+        "db_changes": []
+      },
+      "result": {
+        "success": false,
+        "decision_status": "CLARIFY",
+        "allocation": [],
+        "reason_codes": [
+          "PARSER_NEEDS_CLARIFICATION"
+        ],
+        "warnings": [],
+        "message": "Please provide a complete new message: order_id 请补充订单号，或输入：改成两个工坊、不要 W3、取消刚才的排除、最低成本、最快、最低缺陷。复杂修改请用“替换完整请求”。核对草稿后点击确认分配。",
+        "candidate_ranking": []
+      },
+      "replayed": false,
+      "committed": false,
+      "session": {
+        "session_id": "demo",
+        "state": "AWAITING_CLARIFICATION",
+        "version": 1,
+        "objective": "min_delay",
+        "backend": "offline",
+        "as_of_date": "2026-04-01",
+        "reviewed_order_version": null,
+        "created_at": "2026-10-03T02:39:34.303832+00:00",
+        "updated_at": "2026-10-03T02:39:34.304857+00:00",
+        "draft": {
+          "order_id": null,
+          "customer": null,
+          "product": null,
+          "category": null,
+          "pieces": null,
+          "order_date": null,
+          "due_date": null,
+          "objective": "min_cost",
+          "exclusion": [
+            "W3"
+          ],
+          "num_workshop_allowed": null,
+          "parse_status": "needs_clarification",
+          "missing_fields": [
+            "order_id"
+          ],
+          "ambiguities": [],
+          "preferred_workshop": null,
+          "deadline_required": false
+        },
+        "blockers": [
+          "order_id"
+        ]
+      }
+    },
+    {
+      "request_id": "demo-1",
+      "session_id": "demo",
+      "session_version": "session_v1",
+      "raw_message": "ORD-045",
+      "parsed": {
+        "order_id": "ORD-045",
+        "customer": null,
+        "product": null,
+        "category": null,
+        "pieces": null,
+        "order_date": null,
+        "due_date": null,
+        "objective": "min_cost",
+        "exclusion": [
+          "W3"
+        ],
+        "num_workshop_allowed": null,
+        "parse_status": "ok",
+        "missing_fields": [],
+        "ambiguities": [],
+        "preferred_workshop": null,
+        "deadline_required": false
+      },
+      "parser_telemetry": {
+        "backend": "session_commands",
+        "schema_version": "session_v1",
+        "source_request_id": "demo-1",
+        "field_sources": {
+          "base_session_version": 1,
+          "action": "message",
+          "merged_draft": {
+            "order_id": "ORD-045",
+            "customer": null,
+            "product": null,
+            "category": null,
+            "pieces": null,
+            "order_date": null,
+            "due_date": null,
+            "objective": "min_cost",
+            "exclusion": [
+              "W3"
+            ],
+            "num_workshop_allowed": null,
+            "parse_status": "ok",
+            "missing_fields": [],
+            "ambiguities": [],
+            "preferred_workshop": null,
+            "deadline_required": false
+          },
+          "issue": null
+        }
+      },
+      "trace": {
+        "db_changes": [],
+        "order": {
+          "order_id": "ORD-045",
+          "customer": "Cotton Club",
+          "product": "Vest",
+          "category": "TOPS",
+          "pieces": 150,
+          "order_date": "2026-03-21",
+          "due_date": "2026-04-09",
+          "source_status": "IN_PROGRESS",
+          "state": "READY",
+          "version": 0,
+          "completed_pieces": 0
+        },
+        "workshop_count": 8,
+        "queue": {
+          "W1": 4.0,
+          "W2": 2.5,
+          "W3": 5.0,
+          "W4": 0.5,
+          "W5": 3.0,
+          "W6": 1.0,
+          "W7": 0.0,
+          "W8": 0.0
+        },
+        "eligible_workshops": [
+          "W1",
+          "W2",
+          "W5",
+          "W6",
+          "W8"
+        ],
+        "rejected_workshops": {
+          "W3": "excluded_by_user",
+          "W4": "cannot_make_tops",
+          "W7": "status_suspended"
+        }
+      },
+      "result": {
+        "success": true,
+        "decision_status": "REVIEW",
+        "allocation": [
+          {
+            "workshop_id": "W8",
+            "workshop_name": "FreshStart",
+            "pieces": 150,
+            "queue_days": 0.0,
+            "processing_days": 1.5,
+            "transport_days": 2,
+            "estimated_days": 3.5,
+            "estimated_cost": 150.0,
+            "defect_rate": 0.04
+          }
+        ],
+        "objective": "min_cost",
+        "rejected": {
+          "W3": "excluded_by_user",
+          "W4": "cannot_make_tops",
+          "W7": "status_suspended"
+        },
+        "reason_codes": [
+          "ELIGIBLE",
+          "BEST_CONFIGURED_SCORE",
+          "INTEGER_PIECES_CONSERVED"
+        ],
+        "warnings": [],
+        "eligible_workshops": [
+          "W1",
+          "W2",
+          "W5",
+          "W6",
+          "W8"
+        ],
+        "candidate_ranking": [
+          {
+            "workshop_id": "W8",
+            "workshop_name": "FreshStart",
+            "allocation": [
+              {
+                "workshop_id": "W8",
+                "workshop_name": "FreshStart",
+                "pieces": 150,
+                "queue_days": 0.0,
+                "processing_days": 1.5,
+                "transport_days": 2,
+                "estimated_days": 3.5,
+                "estimated_cost": 150.0,
+                "defect_rate": 0.04
+              }
+            ],
+            "estimated_days": 3.5,
+            "estimated_cost": 150.0,
+            "expected_defect_rate": 0.04,
+            "score": 150.0
+          },
+          {
+            "workshop_id": "W5",
+            "workshop_name": "GiantWeave",
+            "allocation": [
+              {
+                "workshop_id": "W5",
+                "workshop_name": "GiantWeave",
+                "pieces": 150,
+                "queue_days": 3.0,
+                "processing_days": 0.375,
+                "transport_days": 4,
+                "estimated_days": 7.375,
+                "estimated_cost": 165.0,
+                "defect_rate": 0.06
+              }
+            ],
+            "estimated_days": 7.375,
+            "estimated_cost": 165.0,
+            "expected_defect_rate": 0.06,
+            "score": 165.0
+          },
+          {
+            "workshop_id": "W6",
+            "workshop_name": "Nimble Needle",
+            "allocation": [
+              {
+                "workshop_id": "W6",
+                "workshop_name": "Nimble Needle",
+                "pieces": 150,
+                "queue_days": 1.0,
+                "processing_days": 1.1538461538461537,
+                "transport_days": 1,
+                "estimated_days": 3.1538461538461537,
+                "estimated_cost": 180.0,
+                "defect_rate": 0.05
+              }
+            ],
+            "estimated_days": 3.1538461538461537,
+            "estimated_cost": 180.0,
+            "expected_defect_rate": 0.05,
+            "score": 180.0
+          },
+          {
+            "workshop_id": "W2",
+            "workshop_name": "SteadyHands",
+            "allocation": [
+              {
+                "workshop_id": "W2",
+                "workshop_name": "SteadyHands",
+                "pieces": 150,
+                "queue_days": 2.5,
+                "processing_days": 0.8823529411764706,
+                "transport_days": 2,
+                "estimated_days": 5.382352941176471,
+                "estimated_cost": 195.0,
+                "defect_rate": 0.03
+              }
+            ],
+            "estimated_days": 5.382352941176471,
+            "estimated_cost": 195.0,
+            "expected_defect_rate": 0.03,
+            "score": 195.0
+          },
+          {
+            "workshop_id": "W1",
+            "workshop_name": "QuickStitch",
+            "allocation": [
+              {
+                "workshop_id": "W1",
+                "workshop_name": "QuickStitch",
+                "pieces": 150,
+                "queue_days": 4.0,
+                "processing_days": 0.5,
+                "transport_days": 1,
+                "estimated_days": 5.5,
+                "estimated_cost": 225.0,
+                "defect_rate": 0.12
+              }
+            ],
+            "estimated_days": 5.5,
+            "estimated_cost": 225.0,
+            "expected_defect_rate": 0.12,
+            "score": 225.0
+          }
+        ],
+        "estimated_days": 3.5,
+        "estimated_cost": 150.0,
+        "expected_defect_rate": 0.04,
+        "score": 150.0,
+        "recommended_workshop_id": "W8",
+        "recommended_workshop_name": "FreshStart",
+        "estimated_delivery_date": "2026-04-05",
+        "deadline_met": true,
+        "message": "草稿已更新；请核对方案并确认分配。"
+      },
+      "replayed": false,
+      "committed": false,
+      "session": {
+        "session_id": "demo",
+        "state": "ACTIVE",
+        "version": 2,
+        "objective": "min_delay",
+        "backend": "offline",
+        "as_of_date": "2026-04-01",
+        "reviewed_order_version": 0,
+        "created_at": "2026-10-03T02:39:34.303832+00:00",
+        "updated_at": "2026-10-03T02:39:34.305873+00:00",
+        "draft": {
+          "order_id": "ORD-045",
+          "customer": null,
+          "product": null,
+          "category": null,
+          "pieces": null,
+          "order_date": null,
+          "due_date": null,
+          "objective": "min_cost",
+          "exclusion": [
+            "W3"
+          ],
+          "num_workshop_allowed": null,
+          "parse_status": "ok",
+          "missing_fields": [],
+          "ambiguities": [],
+          "preferred_workshop": null,
+          "deadline_required": false
+        },
+        "blockers": []
+      }
+    },
+    {
+      "request_id": "demo-2",
+      "session_id": "demo",
+      "session_version": "session_v1",
+      "raw_message": "改成两个工坊",
+      "parsed": {
+        "order_id": "ORD-045",
+        "customer": null,
+        "product": null,
+        "category": null,
+        "pieces": null,
+        "order_date": null,
+        "due_date": null,
+        "objective": "min_cost",
+        "exclusion": [
+          "W3"
+        ],
+        "num_workshop_allowed": 2,
+        "parse_status": "ok",
+        "missing_fields": [],
+        "ambiguities": [],
+        "preferred_workshop": null,
+        "deadline_required": false
+      },
+      "parser_telemetry": {
+        "backend": "session_commands",
+        "schema_version": "session_v1",
+        "source_request_id": "demo-2",
+        "field_sources": {
+          "base_session_version": 2,
+          "action": "message",
+          "merged_draft": {
+            "order_id": "ORD-045",
+            "customer": null,
+            "product": null,
+            "category": null,
+            "pieces": null,
+            "order_date": null,
+            "due_date": null,
+            "objective": "min_cost",
+            "exclusion": [
+              "W3"
+            ],
+            "num_workshop_allowed": 2,
+            "parse_status": "ok",
+            "missing_fields": [],
+            "ambiguities": [],
+            "preferred_workshop": null,
+            "deadline_required": false
+          },
+          "issue": null
+        }
+      },
+      "trace": {
+        "db_changes": [],
+        "order": {
+          "order_id": "ORD-045",
+          "customer": "Cotton Club",
+          "product": "Vest",
+          "category": "TOPS",
+          "pieces": 150,
+          "order_date": "2026-03-21",
+          "due_date": "2026-04-09",
+          "source_status": "IN_PROGRESS",
+          "state": "READY",
+          "version": 0,
+          "completed_pieces": 0
+        },
+        "workshop_count": 8,
+        "queue": {
+          "W1": 4.0,
+          "W2": 2.5,
+          "W3": 5.0,
+          "W4": 0.5,
+          "W5": 3.0,
+          "W6": 1.0,
+          "W7": 0.0,
+          "W8": 0.0
+        },
+        "eligible_workshops": [
+          "W1",
+          "W2",
+          "W5",
+          "W6",
+          "W8"
+        ],
+        "rejected_workshops": {
+          "W3": "excluded_by_user",
+          "W4": "cannot_make_tops",
+          "W7": "status_suspended"
+        }
+      },
+      "result": {
+        "success": true,
+        "decision_status": "REVIEW",
+        "allocation": [
+          {
+            "workshop_id": "W8",
+            "workshop_name": "FreshStart",
+            "pieces": 150,
+            "queue_days": 0.0,
+            "processing_days": 1.5,
+            "transport_days": 2,
+            "estimated_days": 3.5,
+            "estimated_cost": 150.0,
+            "defect_rate": 0.04
+          }
+        ],
+        "objective": "min_cost",
+        "rejected": {
+          "W3": "excluded_by_user",
+          "W4": "cannot_make_tops",
+          "W7": "status_suspended"
+        },
+        "reason_codes": [
+          "ELIGIBLE",
+          "BEST_CONFIGURED_SCORE",
+          "INTEGER_PIECES_CONSERVED"
+        ],
+        "warnings": [],
+        "eligible_workshops": [
+          "W1",
+          "W2",
+          "W5",
+          "W6",
+          "W8"
+        ],
+        "candidate_ranking": [
+          {
+            "workshop_id": "W8",
+            "workshop_name": "FreshStart",
+            "allocation": [
+              {
+                "workshop_id": "W8",
+                "workshop_name": "FreshStart",
+                "pieces": 150,
+                "queue_days": 0.0,
+                "processing_days": 1.5,
+                "transport_days": 2,
+                "estimated_days": 3.5,
+                "estimated_cost": 150.0,
+                "defect_rate": 0.04
+              }
+            ],
+            "estimated_days": 3.5,
+            "estimated_cost": 150.0,
+            "expected_defect_rate": 0.04,
+            "score": 150.0
+          },
+          {
+            "workshop_id": "W8",
+            "workshop_name": "FreshStart",
+            "allocation": [
+              {
+                "workshop_id": "W8",
+                "workshop_name": "FreshStart",
+                "pieces": 150,
+                "queue_days": 0.0,
+                "processing_days": 1.5,
+                "transport_days": 2,
+                "estimated_days": 3.5,
+                "estimated_cost": 150.0,
+                "defect_rate": 0.04
+              }
+            ],
+            "estimated_days": 3.5,
+            "estimated_cost": 150.0,
+            "expected_defect_rate": 0.04,
+            "score": 150.0
+          },
+          {
+            "workshop_id": "W8",
+            "workshop_name": "FreshStart",
+            "allocation": [
+              {
+                "workshop_id": "W8",
+                "workshop_name": "FreshStart",
+                "pieces": 150,
+                "queue_days": 0.0,
+                "processing_days": 1.5,
+                "transport_days": 2,
+                "estimated_days": 3.5,
+                "estimated_cost": 150.0,
+                "defect_rate": 0.04
+              }
+            ],
+            "estimated_days": 3.5,
+            "estimated_cost": 150.0,
+            "expected_defect_rate": 0.04,
+            "score": 150.0
+          },
+          {
+            "workshop_id": "W8",
+            "workshop_name": "FreshStart",
+            "allocation": [
+              {
+                "workshop_id": "W8",
+                "workshop_name": "FreshStart",
+                "pieces": 150,
+                "queue_days": 0.0,
+                "processing_days": 1.5,
+                "transport_days": 2,
+                "estimated_days": 3.5,
+                "estimated_cost": 150.0,
+                "defect_rate": 0.04
+              }
+            ],
+            "estimated_days": 3.5,
+            "estimated_cost": 150.0,
+            "expected_defect_rate": 0.04,
+            "score": 150.0
+          },
+          {
+            "workshop_id": "W8",
+            "workshop_name": "FreshStart",
+            "allocation": [
+              {
+                "workshop_id": "W8",
+                "workshop_name": "FreshStart",
+                "pieces": 150,
+                "queue_days": 0.0,
+                "processing_days": 1.5,
+                "transport_days": 2,
+                "estimated_days": 3.5,
+                "estimated_cost": 150.0,
+                "defect_rate": 0.04
+              }
+            ],
+            "estimated_days": 3.5,
+            "estimated_cost": 150.0,
+            "expected_defect_rate": 0.04,
+            "score": 150.0
+          },
+          {
+            "workshop_id": "W5",
+            "workshop_name": "GiantWeave",
+            "allocation": [
+              {
+                "workshop_id": "W5",
+                "workshop_name": "GiantWeave",
+                "pieces": 150,
+                "queue_days": 3.0,
+                "processing_days": 0.375,
+                "transport_days": 4,
+                "estimated_days": 7.375,
+                "estimated_cost": 165.0,
+                "defect_rate": 0.06
+              }
+            ],
+            "estimated_days": 7.375,
+            "estimated_cost": 165.0,
+            "expected_defect_rate": 0.06,
+            "score": 165.0
+          },
+          {
+            "workshop_id": "W5",
+            "workshop_name": "GiantWeave",
+            "allocation": [
+              {
+                "workshop_id": "W5",
+                "workshop_name": "GiantWeave",
+                "pieces": 150,
+                "queue_days": 3.0,
+                "processing_days": 0.375,
+                "transport_days": 4,
+                "estimated_days": 7.375,
+                "estimated_cost": 165.0,
+                "defect_rate": 0.06
+              }
+            ],
+            "estimated_days": 7.375,
+            "estimated_cost": 165.0,
+            "expected_defect_rate": 0.06,
+            "score": 165.0
+          },
+          {
+            "workshop_id": "W5",
+            "workshop_name": "GiantWeave",
+            "allocation": [
+              {
+                "workshop_id": "W5",
+                "workshop_name": "GiantWeave",
+                "pieces": 150,
+                "queue_days": 3.0,
+                "processing_days": 0.375,
+                "transport_days": 4,
+                "estimated_days": 7.375,
+                "estimated_cost": 165.0,
+                "defect_rate": 0.06
+              }
+            ],
+            "estimated_days": 7.375,
+            "estimated_cost": 165.0,
+            "expected_defect_rate": 0.06,
+            "score": 165.0
+          },
+          {
+            "workshop_id": "W5",
+            "workshop_name": "GiantWeave",
+            "allocation": [
+              {
+                "workshop_id": "W5",
+                "workshop_name": "GiantWeave",
+                "pieces": 150,
+                "queue_days": 3.0,
+                "processing_days": 0.375,
+                "transport_days": 4,
+                "estimated_days": 7.375,
+                "estimated_cost": 165.0,
+                "defect_rate": 0.06
+              }
+            ],
+            "estimated_days": 7.375,
+            "estimated_cost": 165.0,
+            "expected_defect_rate": 0.06,
+            "score": 165.0
+          },
+          {
+            "workshop_id": "W6",
+            "workshop_name": "Nimble Needle",
+            "allocation": [
+              {
+                "workshop_id": "W6",
+                "workshop_name": "Nimble Needle",
+                "pieces": 150,
+                "queue_days": 1.0,
+                "processing_days": 1.1538461538461537,
+                "transport_days": 1,
+                "estimated_days": 3.1538461538461537,
+                "estimated_cost": 180.0,
+                "defect_rate": 0.05
+              }
+            ],
+            "estimated_days": 3.1538461538461537,
+            "estimated_cost": 180.0,
+            "expected_defect_rate": 0.05,
+            "score": 180.0
+          },
+          {
+            "workshop_id": "W6",
+            "workshop_name": "Nimble Needle",
+            "allocation": [
+              {
+                "workshop_id": "W6",
+                "workshop_name": "Nimble Needle",
+                "pieces": 150,
+                "queue_days": 1.0,
+                "processing_days": 1.1538461538461537,
+                "transport_days": 1,
+                "estimated_days": 3.1538461538461537,
+                "estimated_cost": 180.0,
+                "defect_rate": 0.05
+              }
+            ],
+            "estimated_days": 3.1538461538461537,
+            "estimated_cost": 180.0,
+            "expected_defect_rate": 0.05,
+            "score": 180.0
+          },
+          {
+            "workshop_id": "W6",
+            "workshop_name": "Nimble Needle",
+            "allocation": [
+              {
+                "workshop_id": "W6",
+                "workshop_name": "Nimble Needle",
+                "pieces": 150,
+                "queue_days": 1.0,
+                "processing_days": 1.1538461538461537,
+                "transport_days": 1,
+                "estimated_days": 3.1538461538461537,
+                "estimated_cost": 180.0,
+                "defect_rate": 0.05
+              }
+            ],
+            "estimated_days": 3.1538461538461537,
+            "estimated_cost": 180.0,
+            "expected_defect_rate": 0.05,
+            "score": 180.0
+          },
+          {
+            "workshop_id": "W2",
+            "workshop_name": "SteadyHands",
+            "allocation": [
+              {
+                "workshop_id": "W2",
+                "workshop_name": "SteadyHands",
+                "pieces": 150,
+                "queue_days": 2.5,
+                "processing_days": 0.8823529411764706,
+                "transport_days": 2,
+                "estimated_days": 5.382352941176471,
+                "estimated_cost": 195.0,
+                "defect_rate": 0.03
+              }
+            ],
+            "estimated_days": 5.382352941176471,
+            "estimated_cost": 195.0,
+            "expected_defect_rate": 0.03,
+            "score": 195.0
+          },
+          {
+            "workshop_id": "W2",
+            "workshop_name": "SteadyHands",
+            "allocation": [
+              {
+                "workshop_id": "W2",
+                "workshop_name": "SteadyHands",
+                "pieces": 150,
+                "queue_days": 2.5,
+                "processing_days": 0.8823529411764706,
+                "transport_days": 2,
+                "estimated_days": 5.382352941176471,
+                "estimated_cost": 195.0,
+                "defect_rate": 0.03
+              }
+            ],
+            "estimated_days": 5.382352941176471,
+            "estimated_cost": 195.0,
+            "expected_defect_rate": 0.03,
+            "score": 195.0
+          },
+          {
+            "workshop_id": "W1",
+            "workshop_name": "QuickStitch",
+            "allocation": [
+              {
+                "workshop_id": "W1",
+                "workshop_name": "QuickStitch",
+                "pieces": 150,
+                "queue_days": 4.0,
+                "processing_days": 0.5,
+                "transport_days": 1,
+                "estimated_days": 5.5,
+                "estimated_cost": 225.0,
+                "defect_rate": 0.12
+              }
+            ],
+            "estimated_days": 5.5,
+            "estimated_cost": 225.0,
+            "expected_defect_rate": 0.12,
+            "score": 225.0
+          }
+        ],
+        "estimated_days": 3.5,
+        "estimated_cost": 150.0,
+        "expected_defect_rate": 0.04,
+        "score": 150.0,
+        "recommended_workshop_id": "W8",
+        "recommended_workshop_name": "FreshStart",
+        "estimated_delivery_date": "2026-04-05",
+        "deadline_met": true,
+        "message": "草稿已更新；请核对方案并确认分配。"
+      },
+      "replayed": false,
+      "committed": false,
+      "session": {
+        "session_id": "demo",
+        "state": "ACTIVE",
+        "version": 3,
+        "objective": "min_delay",
+        "backend": "offline",
+        "as_of_date": "2026-04-01",
+        "reviewed_order_version": 0,
+        "created_at": "2026-10-03T02:39:34.303832+00:00",
+        "updated_at": "2026-10-03T02:39:34.306990+00:00",
+        "draft": {
+          "order_id": "ORD-045",
+          "customer": null,
+          "product": null,
+          "category": null,
+          "pieces": null,
+          "order_date": null,
+          "due_date": null,
+          "objective": "min_cost",
+          "exclusion": [
+            "W3"
+          ],
+          "num_workshop_allowed": 2,
+          "parse_status": "ok",
+          "missing_fields": [],
+          "ambiguities": [],
+          "preferred_workshop": null,
+          "deadline_required": false
+        },
+        "blockers": []
+      }
+    },
+    {
+      "request_id": "demo-3",
+      "session_id": "demo",
+      "session_version": "session_v1",
+      "raw_message": "不要 W6",
+      "parsed": {
+        "order_id": "ORD-045",
+        "customer": null,
+        "product": null,
+        "category": null,
+        "pieces": null,
+        "order_date": null,
+        "due_date": null,
+        "objective": "min_cost",
+        "exclusion": [
+          "W3",
+          "W6"
+        ],
+        "num_workshop_allowed": 2,
+        "parse_status": "ok",
+        "missing_fields": [],
+        "ambiguities": [],
+        "preferred_workshop": null,
+        "deadline_required": false
+      },
+      "parser_telemetry": {
+        "backend": "session_commands",
+        "schema_version": "session_v1",
+        "source_request_id": "demo-3",
+        "field_sources": {
+          "base_session_version": 3,
+          "action": "message",
+          "merged_draft": {
+            "order_id": "ORD-045",
+            "customer": null,
+            "product": null,
+            "category": null,
+            "pieces": null,
+            "order_date": null,
+            "due_date": null,
+            "objective": "min_cost",
+            "exclusion": [
+              "W3",
+              "W6"
+            ],
+            "num_workshop_allowed": 2,
+            "parse_status": "ok",
+            "missing_fields": [],
+            "ambiguities": [],
+            "preferred_workshop": null,
+            "deadline_required": false
+          },
+          "issue": null
+        }
+      },
+      "trace": {
+        "db_changes": [],
+        "order": {
+          "order_id": "ORD-045",
+          "customer": "Cotton Club",
+          "product": "Vest",
+          "category": "TOPS",
+          "pieces": 150,
+          "order_date": "2026-03-21",
+          "due_date": "2026-04-09",
+          "source_status": "IN_PROGRESS",
+          "state": "READY",
+          "version": 0,
+          "completed_pieces": 0
+        },
+        "workshop_count": 8,
+        "queue": {
+          "W1": 4.0,
+          "W2": 2.5,
+          "W3": 5.0,
+          "W4": 0.5,
+          "W5": 3.0,
+          "W6": 1.0,
+          "W7": 0.0,
+          "W8": 0.0
+        },
+        "eligible_workshops": [
+          "W1",
+          "W2",
+          "W5",
+          "W8"
+        ],
+        "rejected_workshops": {
+          "W3": "excluded_by_user",
+          "W4": "cannot_make_tops",
+          "W6": "excluded_by_user",
+          "W7": "status_suspended"
+        }
+      },
+      "result": {
+        "success": true,
+        "decision_status": "REVIEW",
+        "allocation": [
+          {
+            "workshop_id": "W8",
+            "workshop_name": "FreshStart",
+            "pieces": 150,
+            "queue_days": 0.0,
+            "processing_days": 1.5,
+            "transport_days": 2,
+            "estimated_days": 3.5,
+            "estimated_cost": 150.0,
+            "defect_rate": 0.04
+          }
+        ],
+        "objective": "min_cost",
+        "rejected": {
+          "W3": "excluded_by_user",
+          "W4": "cannot_make_tops",
+          "W6": "excluded_by_user",
+          "W7": "status_suspended"
+        },
+        "reason_codes": [
+          "ELIGIBLE",
+          "BEST_CONFIGURED_SCORE",
+          "INTEGER_PIECES_CONSERVED"
+        ],
+        "warnings": [],
+        "eligible_workshops": [
+          "W1",
+          "W2",
+          "W5",
+          "W8"
+        ],
+        "candidate_ranking": [
+          {
+            "workshop_id": "W8",
+            "workshop_name": "FreshStart",
+            "allocation": [
+              {
+                "workshop_id": "W8",
+                "workshop_name": "FreshStart",
+                "pieces": 150,
+                "queue_days": 0.0,
+                "processing_days": 1.5,
+                "transport_days": 2,
+                "estimated_days": 3.5,
+                "estimated_cost": 150.0,
+                "defect_rate": 0.04
+              }
+            ],
+            "estimated_days": 3.5,
+            "estimated_cost": 150.0,
+            "expected_defect_rate": 0.04,
+            "score": 150.0
+          },
+          {
+            "workshop_id": "W8",
+            "workshop_name": "FreshStart",
+            "allocation": [
+              {
+                "workshop_id": "W8",
+                "workshop_name": "FreshStart",
+                "pieces": 150,
+                "queue_days": 0.0,
+                "processing_days": 1.5,
+                "transport_days": 2,
+                "estimated_days": 3.5,
+                "estimated_cost": 150.0,
+                "defect_rate": 0.04
+              }
+            ],
+            "estimated_days": 3.5,
+            "estimated_cost": 150.0,
+            "expected_defect_rate": 0.04,
+            "score": 150.0
+          },
+          {
+            "workshop_id": "W8",
+            "workshop_name": "FreshStart",
+            "allocation": [
+              {
+                "workshop_id": "W8",
+                "workshop_name": "FreshStart",
+                "pieces": 150,
+                "queue_days": 0.0,
+                "processing_days": 1.5,
+                "transport_days": 2,
+                "estimated_days": 3.5,
+                "estimated_cost": 150.0,
+                "defect_rate": 0.04
+              }
+            ],
+            "estimated_days": 3.5,
+            "estimated_cost": 150.0,
+            "expected_defect_rate": 0.04,
+            "score": 150.0
+          },
+          {
+            "workshop_id": "W8",
+            "workshop_name": "FreshStart",
+            "allocation": [
+              {
+                "workshop_id": "W8",
+                "workshop_name": "FreshStart",
+                "pieces": 150,
+                "queue_days": 0.0,
+                "processing_days": 1.5,
+                "transport_days": 2,
+                "estimated_days": 3.5,
+                "estimated_cost": 150.0,
+                "defect_rate": 0.04
+              }
+            ],
+            "estimated_days": 3.5,
+            "estimated_cost": 150.0,
+            "expected_defect_rate": 0.04,
+            "score": 150.0
+          },
+          {
+            "workshop_id": "W5",
+            "workshop_name": "GiantWeave",
+            "allocation": [
+              {
+                "workshop_id": "W5",
+                "workshop_name": "GiantWeave",
+                "pieces": 150,
+                "queue_days": 3.0,
+                "processing_days": 0.375,
+                "transport_days": 4,
+                "estimated_days": 7.375,
+                "estimated_cost": 165.0,
+                "defect_rate": 0.06
+              }
+            ],
+            "estimated_days": 7.375,
+            "estimated_cost": 165.0,
+            "expected_defect_rate": 0.06,
+            "score": 165.0
+          },
+          {
+            "workshop_id": "W5",
+            "workshop_name": "GiantWeave",
+            "allocation": [
+              {
+                "workshop_id": "W5",
+                "workshop_name": "GiantWeave",
+                "pieces": 150,
+                "queue_days": 3.0,
+                "processing_days": 0.375,
+                "transport_days": 4,
+                "estimated_days": 7.375,
+                "estimated_cost": 165.0,
+                "defect_rate": 0.06
+              }
+            ],
+            "estimated_days": 7.375,
+            "estimated_cost": 165.0,
+            "expected_defect_rate": 0.06,
+            "score": 165.0
+          },
+          {
+            "workshop_id": "W5",
+            "workshop_name": "GiantWeave",
+            "allocation": [
+              {
+                "workshop_id": "W5",
+                "workshop_name": "GiantWeave",
+                "pieces": 150,
+                "queue_days": 3.0,
+                "processing_days": 0.375,
+                "transport_days": 4,
+                "estimated_days": 7.375,
+                "estimated_cost": 165.0,
+                "defect_rate": 0.06
+              }
+            ],
+            "estimated_days": 7.375,
+            "estimated_cost": 165.0,
+            "expected_defect_rate": 0.06,
+            "score": 165.0
+          },
+          {
+            "workshop_id": "W2",
+            "workshop_name": "SteadyHands",
+            "allocation": [
+              {
+                "workshop_id": "W2",
+                "workshop_name": "SteadyHands",
+                "pieces": 150,
+                "queue_days": 2.5,
+                "processing_days": 0.8823529411764706,
+                "transport_days": 2,
+                "estimated_days": 5.382352941176471,
+                "estimated_cost": 195.0,
+                "defect_rate": 0.03
+              }
+            ],
+            "estimated_days": 5.382352941176471,
+            "estimated_cost": 195.0,
+            "expected_defect_rate": 0.03,
+            "score": 195.0
+          },
+          {
+            "workshop_id": "W2",
+            "workshop_name": "SteadyHands",
+            "allocation": [
+              {
+                "workshop_id": "W2",
+                "workshop_name": "SteadyHands",
+                "pieces": 150,
+                "queue_days": 2.5,
+                "processing_days": 0.8823529411764706,
+                "transport_days": 2,
+                "estimated_days": 5.382352941176471,
+                "estimated_cost": 195.0,
+                "defect_rate": 0.03
+              }
+            ],
+            "estimated_days": 5.382352941176471,
+            "estimated_cost": 195.0,
+            "expected_defect_rate": 0.03,
+            "score": 195.0
+          },
+          {
+            "workshop_id": "W1",
+            "workshop_name": "QuickStitch",
+            "allocation": [
+              {
+                "workshop_id": "W1",
+                "workshop_name": "QuickStitch",
+                "pieces": 150,
+                "queue_days": 4.0,
+                "processing_days": 0.5,
+                "transport_days": 1,
+                "estimated_days": 5.5,
+                "estimated_cost": 225.0,
+                "defect_rate": 0.12
+              }
+            ],
+            "estimated_days": 5.5,
+            "estimated_cost": 225.0,
+            "expected_defect_rate": 0.12,
+            "score": 225.0
+          }
+        ],
+        "estimated_days": 3.5,
+        "estimated_cost": 150.0,
+        "expected_defect_rate": 0.04,
+        "score": 150.0,
+        "recommended_workshop_id": "W8",
+        "recommended_workshop_name": "FreshStart",
+        "estimated_delivery_date": "2026-04-05",
+        "deadline_met": true,
+        "message": "草稿已更新；请核对方案并确认分配。"
+      },
+      "replayed": false,
+      "committed": false,
+      "session": {
+        "session_id": "demo",
+        "state": "ACTIVE",
+        "version": 4,
+        "objective": "min_delay",
+        "backend": "offline",
+        "as_of_date": "2026-04-01",
+        "reviewed_order_version": 0,
+        "created_at": "2026-10-03T02:39:34.303832+00:00",
+        "updated_at": "2026-10-03T02:39:34.308114+00:00",
+        "draft": {
+          "order_id": "ORD-045",
+          "customer": null,
+          "product": null,
+          "category": null,
+          "pieces": null,
+          "order_date": null,
+          "due_date": null,
+          "objective": "min_cost",
+          "exclusion": [
+            "W3",
+            "W6"
+          ],
+          "num_workshop_allowed": 2,
+          "parse_status": "ok",
+          "missing_fields": [],
+          "ambiguities": [],
+          "preferred_workshop": null,
+          "deadline_required": false
+        },
+        "blockers": []
+      }
+    },
+    {
+      "request_id": "demo-4",
+      "session_id": "demo",
+      "session_version": "session_v1",
+      "raw_message": "取消刚才的排除",
+      "parsed": {
+        "order_id": "ORD-045",
+        "customer": null,
+        "product": null,
+        "category": null,
+        "pieces": null,
+        "order_date": null,
+        "due_date": null,
+        "objective": "min_cost",
+        "exclusion": [],
+        "num_workshop_allowed": 2,
+        "parse_status": "ok",
+        "missing_fields": [],
+        "ambiguities": [],
+        "preferred_workshop": null,
+        "deadline_required": false
+      },
+      "parser_telemetry": {
+        "backend": "session_commands",
+        "schema_version": "session_v1",
+        "source_request_id": "demo-4",
+        "field_sources": {
+          "base_session_version": 4,
+          "action": "message",
+          "merged_draft": {
+            "order_id": "ORD-045",
+            "customer": null,
+            "product": null,
+            "category": null,
+            "pieces": null,
+            "order_date": null,
+            "due_date": null,
+            "objective": "min_cost",
+            "exclusion": [],
+            "num_workshop_allowed": 2,
+            "parse_status": "ok",
+            "missing_fields": [],
+            "ambiguities": [],
+            "preferred_workshop": null,
+            "deadline_required": false
+          },
+          "issue": null
+        }
+      },
+      "trace": {
+        "db_changes": [],
+        "order": {
+          "order_id": "ORD-045",
+          "customer": "Cotton Club",
+          "product": "Vest",
+          "category": "TOPS",
+          "pieces": 150,
+          "order_date": "2026-03-21",
+          "due_date": "2026-04-09",
+          "source_status": "IN_PROGRESS",
+          "state": "READY",
+          "version": 0,
+          "completed_pieces": 0
+        },
+        "workshop_count": 8,
+        "queue": {
+          "W1": 4.0,
+          "W2": 2.5,
+          "W3": 5.0,
+          "W4": 0.5,
+          "W5": 3.0,
+          "W6": 1.0,
+          "W7": 0.0,
+          "W8": 0.0
+        },
+        "eligible_workshops": [
+          "W1",
+          "W2",
+          "W3",
+          "W5",
+          "W6",
+          "W8"
+        ],
+        "rejected_workshops": {
+          "W4": "cannot_make_tops",
+          "W7": "status_suspended"
+        }
+      },
+      "result": {
+        "success": true,
+        "decision_status": "REVIEW",
+        "allocation": [
+          {
+            "workshop_id": "W3",
+            "workshop_name": "BudgetWorks",
+            "pieces": 150,
+            "queue_days": 5.0,
+            "processing_days": 0.6521739130434783,
+            "transport_days": 3,
+            "estimated_days": 8.652173913043478,
+            "estimated_cost": 120.0,
+            "defect_rate": 0.09
+          }
+        ],
+        "objective": "min_cost",
+        "rejected": {
+          "W4": "cannot_make_tops",
+          "W7": "status_suspended"
+        },
+        "reason_codes": [
+          "ELIGIBLE",
+          "BEST_CONFIGURED_SCORE",
+          "INTEGER_PIECES_CONSERVED"
+        ],
+        "warnings": [
+          "ESTIMATED_DEADLINE_MISS"
+        ],
+        "eligible_workshops": [
+          "W1",
+          "W2",
+          "W3",
+          "W5",
+          "W6",
+          "W8"
+        ],
+        "candidate_ranking": [
+          {
+            "workshop_id": "W3",
+            "workshop_name": "BudgetWorks",
+            "allocation": [
+              {
+                "workshop_id": "W3",
+                "workshop_name": "BudgetWorks",
+                "pieces": 150,
+                "queue_days": 5.0,
+                "processing_days": 0.6521739130434783,
+                "transport_days": 3,
+                "estimated_days": 8.652173913043478,
+                "estimated_cost": 120.0,
+                "defect_rate": 0.09
+              }
+            ],
+            "estimated_days": 8.652173913043478,
+            "estimated_cost": 120.0,
+            "expected_defect_rate": 0.09,
+            "score": 120.0
+          },
+          {
+            "workshop_id": "W3",
+            "workshop_name": "BudgetWorks",
+            "allocation": [
+              {
+                "workshop_id": "W3",
+                "workshop_name": "BudgetWorks",
+                "pieces": 150,
+                "queue_days": 5.0,
+                "processing_days": 0.6521739130434783,
+                "transport_days": 3,
+                "estimated_days": 8.652173913043478,
+                "estimated_cost": 120.0,
+                "defect_rate": 0.09
+              }
+            ],
+            "estimated_days": 8.652173913043478,
+            "estimated_cost": 120.0,
+            "expected_defect_rate": 0.09,
+            "score": 120.0
+          },
+          {
+            "workshop_id": "W3",
+            "workshop_name": "BudgetWorks",
+            "allocation": [
+              {
+                "workshop_id": "W3",
+                "workshop_name": "BudgetWorks",
+                "pieces": 150,
+                "queue_days": 5.0,
+                "processing_days": 0.6521739130434783,
+                "transport_days": 3,
+                "estimated_days": 8.652173913043478,
+                "estimated_cost": 120.0,
+                "defect_rate": 0.09
+              }
+            ],
+            "estimated_days": 8.652173913043478,
+            "estimated_cost": 120.0,
+            "expected_defect_rate": 0.09,
+            "score": 120.0
+          },
+          {
+            "workshop_id": "W3",
+            "workshop_name": "BudgetWorks",
+            "allocation": [
+              {
+                "workshop_id": "W3",
+                "workshop_name": "BudgetWorks",
+                "pieces": 150,
+                "queue_days": 5.0,
+                "processing_days": 0.6521739130434783,
+                "transport_days": 3,
+                "estimated_days": 8.652173913043478,
+                "estimated_cost": 120.0,
+                "defect_rate": 0.09
+              }
+            ],
+            "estimated_days": 8.652173913043478,
+            "estimated_cost": 120.0,
+            "expected_defect_rate": 0.09,
+            "score": 120.0
+          },
+          {
+            "workshop_id": "W3",
+            "workshop_name": "BudgetWorks",
+            "allocation": [
+              {
+                "workshop_id": "W3",
+                "workshop_name": "BudgetWorks",
+                "pieces": 150,
+                "queue_days": 5.0,
+                "processing_days": 0.6521739130434783,
+                "transport_days": 3,
+                "estimated_days": 8.652173913043478,
+                "estimated_cost": 120.0,
+                "defect_rate": 0.09
+              }
+            ],
+            "estimated_days": 8.652173913043478,
+            "estimated_cost": 120.0,
+            "expected_defect_rate": 0.09,
+            "score": 120.0
+          },
+          {
+            "workshop_id": "W3",
+            "workshop_name": "BudgetWorks",
+            "allocation": [
+              {
+                "workshop_id": "W3",
+                "workshop_name": "BudgetWorks",
+                "pieces": 150,
+                "queue_days": 5.0,
+                "processing_days": 0.6521739130434783,
+                "transport_days": 3,
+                "estimated_days": 8.652173913043478,
+                "estimated_cost": 120.0,
+                "defect_rate": 0.09
+              }
+            ],
+            "estimated_days": 8.652173913043478,
+            "estimated_cost": 120.0,
+            "expected_defect_rate": 0.09,
+            "score": 120.0
+          },
+          {
+            "workshop_id": "W8",
+            "workshop_name": "FreshStart",
+            "allocation": [
+              {
+                "workshop_id": "W8",
+                "workshop_name": "FreshStart",
+                "pieces": 150,
+                "queue_days": 0.0,
+                "processing_days": 1.5,
+                "transport_days": 2,
+                "estimated_days": 3.5,
+                "estimated_cost": 150.0,
+                "defect_rate": 0.04
+              }
+            ],
+            "estimated_days": 3.5,
+            "estimated_cost": 150.0,
+            "expected_defect_rate": 0.04,
+            "score": 150.0
+          },
+          {
+            "workshop_id": "W8",
+            "workshop_name": "FreshStart",
+            "allocation": [
+              {
+                "workshop_id": "W8",
+                "workshop_name": "FreshStart",
+                "pieces": 150,
+                "queue_days": 0.0,
+                "processing_days": 1.5,
+                "transport_days": 2,
+                "estimated_days": 3.5,
+                "estimated_cost": 150.0,
+                "defect_rate": 0.04
+              }
+            ],
+            "estimated_days": 3.5,
+            "estimated_cost": 150.0,
+            "expected_defect_rate": 0.04,
+            "score": 150.0
+          },
+          {
+            "workshop_id": "W8",
+            "workshop_name": "FreshStart",
+            "allocation": [
+              {
+                "workshop_id": "W8",
+                "workshop_name": "FreshStart",
+                "pieces": 150,
+                "queue_days": 0.0,
+                "processing_days": 1.5,
+                "transport_days": 2,
+                "estimated_days": 3.5,
+                "estimated_cost": 150.0,
+                "defect_rate": 0.04
+              }
+            ],
+            "estimated_days": 3.5,
+            "estimated_cost": 150.0,
+            "expected_defect_rate": 0.04,
+            "score": 150.0
+          },
+          {
+            "workshop_id": "W8",
+            "workshop_name": "FreshStart",
+            "allocation": [
+              {
+                "workshop_id": "W8",
+                "workshop_name": "FreshStart",
+                "pieces": 150,
+                "queue_days": 0.0,
+                "processing_days": 1.5,
+                "transport_days": 2,
+                "estimated_days": 3.5,
+                "estimated_cost": 150.0,
+                "defect_rate": 0.04
+              }
+            ],
+            "estimated_days": 3.5,
+            "estimated_cost": 150.0,
+            "expected_defect_rate": 0.04,
+            "score": 150.0
+          },
+          {
+            "workshop_id": "W8",
+            "workshop_name": "FreshStart",
+            "allocation": [
+              {
+                "workshop_id": "W8",
+                "workshop_name": "FreshStart",
+                "pieces": 150,
+                "queue_days": 0.0,
+                "processing_days": 1.5,
+                "transport_days": 2,
+                "estimated_days": 3.5,
+                "estimated_cost": 150.0,
+                "defect_rate": 0.04
+              }
+            ],
+            "estimated_days": 3.5,
+            "estimated_cost": 150.0,
+            "expected_defect_rate": 0.04,
+            "score": 150.0
+          },
+          {
+            "workshop_id": "W5",
+            "workshop_name": "GiantWeave",
+            "allocation": [
+              {
+                "workshop_id": "W5",
+                "workshop_name": "GiantWeave",
+                "pieces": 150,
+                "queue_days": 3.0,
+                "processing_days": 0.375,
+                "transport_days": 4,
+                "estimated_days": 7.375,
+                "estimated_cost": 165.0,
+                "defect_rate": 0.06
+              }
+            ],
+            "estimated_days": 7.375,
+            "estimated_cost": 165.0,
+            "expected_defect_rate": 0.06,
+            "score": 165.0
+          },
+          {
+            "workshop_id": "W5",
+            "workshop_name": "GiantWeave",
+            "allocation": [
+              {
+                "workshop_id": "W5",
+                "workshop_name": "GiantWeave",
+                "pieces": 150,
+                "queue_days": 3.0,
+                "processing_days": 0.375,
+                "transport_days": 4,
+                "estimated_days": 7.375,
+                "estimated_cost": 165.0,
+                "defect_rate": 0.06
+              }
+            ],
+            "estimated_days": 7.375,
+            "estimated_cost": 165.0,
+            "expected_defect_rate": 0.06,
+            "score": 165.0
+          },
+          {
+            "workshop_id": "W5",
+            "workshop_name": "GiantWeave",
+            "allocation": [
+              {
+                "workshop_id": "W5",
+                "workshop_name": "GiantWeave",
+                "pieces": 150,
+                "queue_days": 3.0,
+                "processing_days": 0.375,
+                "transport_days": 4,
+                "estimated_days": 7.375,
+                "estimated_cost": 165.0,
+                "defect_rate": 0.06
+              }
+            ],
+            "estimated_days": 7.375,
+            "estimated_cost": 165.0,
+            "expected_defect_rate": 0.06,
+            "score": 165.0
+          },
+          {
+            "workshop_id": "W5",
+            "workshop_name": "GiantWeave",
+            "allocation": [
+              {
+                "workshop_id": "W5",
+                "workshop_name": "GiantWeave",
+                "pieces": 150,
+                "queue_days": 3.0,
+                "processing_days": 0.375,
+                "transport_days": 4,
+                "estimated_days": 7.375,
+                "estimated_cost": 165.0,
+                "defect_rate": 0.06
+              }
+            ],
+            "estimated_days": 7.375,
+            "estimated_cost": 165.0,
+            "expected_defect_rate": 0.06,
+            "score": 165.0
+          },
+          {
+            "workshop_id": "W6",
+            "workshop_name": "Nimble Needle",
+            "allocation": [
+              {
+                "workshop_id": "W6",
+                "workshop_name": "Nimble Needle",
+                "pieces": 150,
+                "queue_days": 1.0,
+                "processing_days": 1.1538461538461537,
+                "transport_days": 1,
+                "estimated_days": 3.1538461538461537,
+                "estimated_cost": 180.0,
+                "defect_rate": 0.05
+              }
+            ],
+            "estimated_days": 3.1538461538461537,
+            "estimated_cost": 180.0,
+            "expected_defect_rate": 0.05,
+            "score": 180.0
+          },
+          {
+            "workshop_id": "W6",
+            "workshop_name": "Nimble Needle",
+            "allocation": [
+              {
+                "workshop_id": "W6",
+                "workshop_name": "Nimble Needle",
+                "pieces": 150,
+                "queue_days": 1.0,
+                "processing_days": 1.1538461538461537,
+                "transport_days": 1,
+                "estimated_days": 3.1538461538461537,
+                "estimated_cost": 180.0,
+                "defect_rate": 0.05
+              }
+            ],
+            "estimated_days": 3.1538461538461537,
+            "estimated_cost": 180.0,
+            "expected_defect_rate": 0.05,
+            "score": 180.0
+          },
+          {
+            "workshop_id": "W6",
+            "workshop_name": "Nimble Needle",
+            "allocation": [
+              {
+                "workshop_id": "W6",
+                "workshop_name": "Nimble Needle",
+                "pieces": 150,
+                "queue_days": 1.0,
+                "processing_days": 1.1538461538461537,
+                "transport_days": 1,
+                "estimated_days": 3.1538461538461537,
+                "estimated_cost": 180.0,
+                "defect_rate": 0.05
+              }
+            ],
+            "estimated_days": 3.1538461538461537,
+            "estimated_cost": 180.0,
+            "expected_defect_rate": 0.05,
+            "score": 180.0
+          },
+          {
+            "workshop_id": "W2",
+            "workshop_name": "SteadyHands",
+            "allocation": [
+              {
+                "workshop_id": "W2",
+                "workshop_name": "SteadyHands",
+                "pieces": 150,
+                "queue_days": 2.5,
+                "processing_days": 0.8823529411764706,
+                "transport_days": 2,
+                "estimated_days": 5.382352941176471,
+                "estimated_cost": 195.0,
+                "defect_rate": 0.03
+              }
+            ],
+            "estimated_days": 5.382352941176471,
+            "estimated_cost": 195.0,
+            "expected_defect_rate": 0.03,
+            "score": 195.0
+          },
+          {
+            "workshop_id": "W2",
+            "workshop_name": "SteadyHands",
+            "allocation": [
+              {
+                "workshop_id": "W2",
+                "workshop_name": "SteadyHands",
+                "pieces": 150,
+                "queue_days": 2.5,
+                "processing_days": 0.8823529411764706,
+                "transport_days": 2,
+                "estimated_days": 5.382352941176471,
+                "estimated_cost": 195.0,
+                "defect_rate": 0.03
+              }
+            ],
+            "estimated_days": 5.382352941176471,
+            "estimated_cost": 195.0,
+            "expected_defect_rate": 0.03,
+            "score": 195.0
+          },
+          {
+            "workshop_id": "W1",
+            "workshop_name": "QuickStitch",
+            "allocation": [
+              {
+                "workshop_id": "W1",
+                "workshop_name": "QuickStitch",
+                "pieces": 150,
+                "queue_days": 4.0,
+                "processing_days": 0.5,
+                "transport_days": 1,
+                "estimated_days": 5.5,
+                "estimated_cost": 225.0,
+                "defect_rate": 0.12
+              }
+            ],
+            "estimated_days": 5.5,
+            "estimated_cost": 225.0,
+            "expected_defect_rate": 0.12,
+            "score": 225.0
+          }
+        ],
+        "estimated_days": 8.652173913043478,
+        "estimated_cost": 120.0,
+        "expected_defect_rate": 0.09,
+        "score": 120.0,
+        "recommended_workshop_id": "W3",
+        "recommended_workshop_name": "BudgetWorks",
+        "estimated_delivery_date": "2026-04-10",
+        "deadline_met": false,
+        "message": "草稿已更新；请核对方案并确认分配。"
+      },
+      "replayed": false,
+      "committed": false,
+      "session": {
+        "session_id": "demo",
+        "state": "ACTIVE",
+        "version": 5,
+        "objective": "min_delay",
+        "backend": "offline",
+        "as_of_date": "2026-04-01",
+        "reviewed_order_version": 0,
+        "created_at": "2026-10-03T02:39:34.303832+00:00",
+        "updated_at": "2026-10-03T02:39:34.309386+00:00",
+        "draft": {
+          "order_id": "ORD-045",
+          "customer": null,
+          "product": null,
+          "category": null,
+          "pieces": null,
+          "order_date": null,
+          "due_date": null,
+          "objective": "min_cost",
+          "exclusion": [],
+          "num_workshop_allowed": 2,
+          "parse_status": "ok",
+          "missing_fields": [],
+          "ambiguities": [],
+          "preferred_workshop": null,
+          "deadline_required": false
+        },
+        "blockers": []
+      }
+    },
+    {
+      "request_id": "demo-5",
+      "session_id": "demo",
+      "session_version": "session_v1",
+      "raw_message": "不要 W3",
+      "parsed": {
+        "order_id": "ORD-045",
+        "customer": null,
+        "product": null,
+        "category": null,
+        "pieces": null,
+        "order_date": null,
+        "due_date": null,
+        "objective": "min_cost",
+        "exclusion": [
+          "W3"
+        ],
+        "num_workshop_allowed": 2,
+        "parse_status": "ok",
+        "missing_fields": [],
+        "ambiguities": [],
+        "preferred_workshop": null,
+        "deadline_required": false
+      },
+      "parser_telemetry": {
+        "backend": "session_commands",
+        "schema_version": "session_v1",
+        "source_request_id": "demo-5",
+        "field_sources": {
+          "base_session_version": 5,
+          "action": "message",
+          "merged_draft": {
+            "order_id": "ORD-045",
+            "customer": null,
+            "product": null,
+            "category": null,
+            "pieces": null,
+            "order_date": null,
+            "due_date": null,
+            "objective": "min_cost",
+            "exclusion": [
+              "W3"
+            ],
+            "num_workshop_allowed": 2,
+            "parse_status": "ok",
+            "missing_fields": [],
+            "ambiguities": [],
+            "preferred_workshop": null,
+            "deadline_required": false
+          },
+          "issue": null
+        }
+      },
+      "trace": {
+        "db_changes": [],
+        "order": {
+          "order_id": "ORD-045",
+          "customer": "Cotton Club",
+          "product": "Vest",
+          "category": "TOPS",
+          "pieces": 150,
+          "order_date": "2026-03-21",
+          "due_date": "2026-04-09",
+          "source_status": "IN_PROGRESS",
+          "state": "READY",
+          "version": 0,
+          "completed_pieces": 0
+        },
+        "workshop_count": 8,
+        "queue": {
+          "W1": 4.0,
+          "W2": 2.5,
+          "W3": 5.0,
+          "W4": 0.5,
+          "W5": 3.0,
+          "W6": 1.0,
+          "W7": 0.0,
+          "W8": 0.0
+        },
+        "eligible_workshops": [
+          "W1",
+          "W2",
+          "W5",
+          "W6",
+          "W8"
+        ],
+        "rejected_workshops": {
+          "W3": "excluded_by_user",
+          "W4": "cannot_make_tops",
+          "W7": "status_suspended"
+        }
+      },
+      "result": {
+        "success": true,
+        "decision_status": "REVIEW",
+        "allocation": [
+          {
+            "workshop_id": "W8",
+            "workshop_name": "FreshStart",
+            "pieces": 150,
+            "queue_days": 0.0,
+            "processing_days": 1.5,
+            "transport_days": 2,
+            "estimated_days": 3.5,
+            "estimated_cost": 150.0,
+            "defect_rate": 0.04
+          }
+        ],
+        "objective": "min_cost",
+        "rejected": {
+          "W3": "excluded_by_user",
+          "W4": "cannot_make_tops",
+          "W7": "status_suspended"
+        },
+        "reason_codes": [
+          "ELIGIBLE",
+          "BEST_CONFIGURED_SCORE",
+          "INTEGER_PIECES_CONSERVED"
+        ],
+        "warnings": [],
+        "eligible_workshops": [
+          "W1",
+          "W2",
+          "W5",
+          "W6",
+          "W8"
+        ],
+        "candidate_ranking": [
+          {
+            "workshop_id": "W8",
+            "workshop_name": "FreshStart",
+            "allocation": [
+              {
+                "workshop_id": "W8",
+                "workshop_name": "FreshStart",
+                "pieces": 150,
+                "queue_days": 0.0,
+                "processing_days": 1.5,
+                "transport_days": 2,
+                "estimated_days": 3.5,
+                "estimated_cost": 150.0,
+                "defect_rate": 0.04
+              }
+            ],
+            "estimated_days": 3.5,
+            "estimated_cost": 150.0,
+            "expected_defect_rate": 0.04,
+            "score": 150.0
+          },
+          {
+            "workshop_id": "W8",
+            "workshop_name": "FreshStart",
+            "allocation": [
+              {
+                "workshop_id": "W8",
+                "workshop_name": "FreshStart",
+                "pieces": 150,
+                "queue_days": 0.0,
+                "processing_days": 1.5,
+                "transport_days": 2,
+                "estimated_days": 3.5,
+                "estimated_cost": 150.0,
+                "defect_rate": 0.04
+              }
+            ],
+            "estimated_days": 3.5,
+            "estimated_cost": 150.0,
+            "expected_defect_rate": 0.04,
+            "score": 150.0
+          },
+          {
+            "workshop_id": "W8",
+            "workshop_name": "FreshStart",
+            "allocation": [
+              {
+                "workshop_id": "W8",
+                "workshop_name": "FreshStart",
+                "pieces": 150,
+                "queue_days": 0.0,
+                "processing_days": 1.5,
+                "transport_days": 2,
+                "estimated_days": 3.5,
+                "estimated_cost": 150.0,
+                "defect_rate": 0.04
+              }
+            ],
+            "estimated_days": 3.5,
+            "estimated_cost": 150.0,
+            "expected_defect_rate": 0.04,
+            "score": 150.0
+          },
+          {
+            "workshop_id": "W8",
+            "workshop_name": "FreshStart",
+            "allocation": [
+              {
+                "workshop_id": "W8",
+                "workshop_name": "FreshStart",
+                "pieces": 150,
+                "queue_days": 0.0,
+                "processing_days": 1.5,
+                "transport_days": 2,
+                "estimated_days": 3.5,
+                "estimated_cost": 150.0,
+                "defect_rate": 0.04
+              }
+            ],
+            "estimated_days": 3.5,
+            "estimated_cost": 150.0,
+            "expected_defect_rate": 0.04,
+            "score": 150.0
+          },
+          {
+            "workshop_id": "W8",
+            "workshop_name": "FreshStart",
+            "allocation": [
+              {
+                "workshop_id": "W8",
+                "workshop_name": "FreshStart",
+                "pieces": 150,
+                "queue_days": 0.0,
+                "processing_days": 1.5,
+                "transport_days": 2,
+                "estimated_days": 3.5,
+                "estimated_cost": 150.0,
+                "defect_rate": 0.04
+              }
+            ],
+            "estimated_days": 3.5,
+            "estimated_cost": 150.0,
+            "expected_defect_rate": 0.04,
+            "score": 150.0
+          },
+          {
+            "workshop_id": "W5",
+            "workshop_name": "GiantWeave",
+            "allocation": [
+              {
+                "workshop_id": "W5",
+                "workshop_name": "GiantWeave",
+                "pieces": 150,
+                "queue_days": 3.0,
+                "processing_days": 0.375,
+                "transport_days": 4,
+                "estimated_days": 7.375,
+                "estimated_cost": 165.0,
+                "defect_rate": 0.06
+              }
+            ],
+            "estimated_days": 7.375,
+            "estimated_cost": 165.0,
+            "expected_defect_rate": 0.06,
+            "score": 165.0
+          },
+          {
+            "workshop_id": "W5",
+            "workshop_name": "GiantWeave",
+            "allocation": [
+              {
+                "workshop_id": "W5",
+                "workshop_name": "GiantWeave",
+                "pieces": 150,
+                "queue_days": 3.0,
+                "processing_days": 0.375,
+                "transport_days": 4,
+                "estimated_days": 7.375,
+                "estimated_cost": 165.0,
+                "defect_rate": 0.06
+              }
+            ],
+            "estimated_days": 7.375,
+            "estimated_cost": 165.0,
+            "expected_defect_rate": 0.06,
+            "score": 165.0
+          },
+          {
+            "workshop_id": "W5",
+            "workshop_name": "GiantWeave",
+            "allocation": [
+              {
+                "workshop_id": "W5",
+                "workshop_name": "GiantWeave",
+                "pieces": 150,
+                "queue_days": 3.0,
+                "processing_days": 0.375,
+                "transport_days": 4,
+                "estimated_days": 7.375,
+                "estimated_cost": 165.0,
+                "defect_rate": 0.06
+              }
+            ],
+            "estimated_days": 7.375,
+            "estimated_cost": 165.0,
+            "expected_defect_rate": 0.06,
+            "score": 165.0
+          },
+          {
+            "workshop_id": "W5",
+            "workshop_name": "GiantWeave",
+            "allocation": [
+              {
+                "workshop_id": "W5",
+                "workshop_name": "GiantWeave",
+                "pieces": 150,
+                "queue_days": 3.0,
+                "processing_days": 0.375,
+                "transport_days": 4,
+                "estimated_days": 7.375,
+                "estimated_cost": 165.0,
+                "defect_rate": 0.06
+              }
+            ],
+            "estimated_days": 7.375,
+            "estimated_cost": 165.0,
+            "expected_defect_rate": 0.06,
+            "score": 165.0
+          },
+          {
+            "workshop_id": "W6",
+            "workshop_name": "Nimble Needle",
+            "allocation": [
+              {
+                "workshop_id": "W6",
+                "workshop_name": "Nimble Needle",
+                "pieces": 150,
+                "queue_days": 1.0,
+                "processing_days": 1.1538461538461537,
+                "transport_days": 1,
+                "estimated_days": 3.1538461538461537,
+                "estimated_cost": 180.0,
+                "defect_rate": 0.05
+              }
+            ],
+            "estimated_days": 3.1538461538461537,
+            "estimated_cost": 180.0,
+            "expected_defect_rate": 0.05,
+            "score": 180.0
+          },
+          {
+            "workshop_id": "W6",
+            "workshop_name": "Nimble Needle",
+            "allocation": [
+              {
+                "workshop_id": "W6",
+                "workshop_name": "Nimble Needle",
+                "pieces": 150,
+                "queue_days": 1.0,
+                "processing_days": 1.1538461538461537,
+                "transport_days": 1,
+                "estimated_days": 3.1538461538461537,
+                "estimated_cost": 180.0,
+                "defect_rate": 0.05
+              }
+            ],
+            "estimated_days": 3.1538461538461537,
+            "estimated_cost": 180.0,
+            "expected_defect_rate": 0.05,
+            "score": 180.0
+          },
+          {
+            "workshop_id": "W6",
+            "workshop_name": "Nimble Needle",
+            "allocation": [
+              {
+                "workshop_id": "W6",
+                "workshop_name": "Nimble Needle",
+                "pieces": 150,
+                "queue_days": 1.0,
+                "processing_days": 1.1538461538461537,
+                "transport_days": 1,
+                "estimated_days": 3.1538461538461537,
+                "estimated_cost": 180.0,
+                "defect_rate": 0.05
+              }
+            ],
+            "estimated_days": 3.1538461538461537,
+            "estimated_cost": 180.0,
+            "expected_defect_rate": 0.05,
+            "score": 180.0
+          },
+          {
+            "workshop_id": "W2",
+            "workshop_name": "SteadyHands",
+            "allocation": [
+              {
+                "workshop_id": "W2",
+                "workshop_name": "SteadyHands",
+                "pieces": 150,
+                "queue_days": 2.5,
+                "processing_days": 0.8823529411764706,
+                "transport_days": 2,
+                "estimated_days": 5.382352941176471,
+                "estimated_cost": 195.0,
+                "defect_rate": 0.03
+              }
+            ],
+            "estimated_days": 5.382352941176471,
+            "estimated_cost": 195.0,
+            "expected_defect_rate": 0.03,
+            "score": 195.0
+          },
+          {
+            "workshop_id": "W2",
+            "workshop_name": "SteadyHands",
+            "allocation": [
+              {
+                "workshop_id": "W2",
+                "workshop_name": "SteadyHands",
+                "pieces": 150,
+                "queue_days": 2.5,
+                "processing_days": 0.8823529411764706,
+                "transport_days": 2,
+                "estimated_days": 5.382352941176471,
+                "estimated_cost": 195.0,
+                "defect_rate": 0.03
+              }
+            ],
+            "estimated_days": 5.382352941176471,
+            "estimated_cost": 195.0,
+            "expected_defect_rate": 0.03,
+            "score": 195.0
+          },
+          {
+            "workshop_id": "W1",
+            "workshop_name": "QuickStitch",
+            "allocation": [
+              {
+                "workshop_id": "W1",
+                "workshop_name": "QuickStitch",
+                "pieces": 150,
+                "queue_days": 4.0,
+                "processing_days": 0.5,
+                "transport_days": 1,
+                "estimated_days": 5.5,
+                "estimated_cost": 225.0,
+                "defect_rate": 0.12
+              }
+            ],
+            "estimated_days": 5.5,
+            "estimated_cost": 225.0,
+            "expected_defect_rate": 0.12,
+            "score": 225.0
+          }
+        ],
+        "estimated_days": 3.5,
+        "estimated_cost": 150.0,
+        "expected_defect_rate": 0.04,
+        "score": 150.0,
+        "recommended_workshop_id": "W8",
+        "recommended_workshop_name": "FreshStart",
+        "estimated_delivery_date": "2026-04-05",
+        "deadline_met": true,
+        "message": "草稿已更新；请核对方案并确认分配。"
+      },
+      "replayed": false,
+      "committed": false,
+      "session": {
+        "session_id": "demo",
+        "state": "ACTIVE",
+        "version": 6,
+        "objective": "min_delay",
+        "backend": "offline",
+        "as_of_date": "2026-04-01",
+        "reviewed_order_version": 0,
+        "created_at": "2026-10-03T02:39:34.303832+00:00",
+        "updated_at": "2026-10-03T02:39:34.310840+00:00",
+        "draft": {
+          "order_id": "ORD-045",
+          "customer": null,
+          "product": null,
+          "category": null,
+          "pieces": null,
+          "order_date": null,
+          "due_date": null,
+          "objective": "min_cost",
+          "exclusion": [
+            "W3"
+          ],
+          "num_workshop_allowed": 2,
+          "parse_status": "ok",
+          "missing_fields": [],
+          "ambiguities": [],
+          "preferred_workshop": null,
+          "deadline_required": false
+        },
+        "blockers": []
+      }
+    }
+  ],
+  "confirmation": {
+    "request_id": "demo-confirm",
+    "session_id": "demo",
+    "session_version": "session_v1",
+    "raw_message": "",
+    "parsed": {
+      "order_id": "ORD-045",
+      "customer": null,
+      "product": null,
+      "category": null,
+      "pieces": null,
+      "order_date": null,
+      "due_date": null,
+      "objective": "min_cost",
+      "exclusion": [
+        "W3"
+      ],
+      "num_workshop_allowed": 2,
+      "parse_status": "ok",
+      "missing_fields": [],
+      "ambiguities": [],
+      "preferred_workshop": null,
+      "deadline_required": false
+    },
+    "parser_telemetry": {
+      "backend": "session_commands",
+      "schema_version": "session_v1",
+      "source_request_id": "demo-confirm",
+      "field_sources": {
+        "base_session_version": 6,
+        "action": "confirm",
+        "merged_draft": {
+          "order_id": "ORD-045",
+          "customer": null,
+          "product": null,
+          "category": null,
+          "pieces": null,
+          "order_date": null,
+          "due_date": null,
+          "objective": "min_cost",
+          "exclusion": [
+            "W3"
+          ],
+          "num_workshop_allowed": 2,
+          "parse_status": "ok",
+          "missing_fields": [],
+          "ambiguities": [],
+          "preferred_workshop": null,
+          "deadline_required": false
+        },
+        "issue": null
+      }
+    },
+    "trace": {
+      "db_changes": [
+        {
+          "table": "workshop_queue",
+          "workshop_id": "W8",
+          "before": 0.0,
+          "after": 1.5
+        },
+        {
+          "table": "working_order",
+          "inserted_rows": 1,
+          "order_id": "ORD-045"
+        }
+      ],
+      "order": {
+        "order_id": "ORD-045",
+        "customer": "Cotton Club",
+        "product": "Vest",
+        "category": "TOPS",
+        "pieces": 150,
+        "order_date": "2026-03-21",
+        "due_date": "2026-04-09",
+        "source_status": "IN_PROGRESS",
+        "state": "READY",
+        "version": 0,
+        "completed_pieces": 0
+      },
+      "workshop_count": 8,
+      "queue": {
+        "W1": 4.0,
+        "W2": 2.5,
+        "W3": 5.0,
+        "W4": 0.5,
+        "W5": 3.0,
+        "W6": 1.0,
+        "W7": 0.0,
+        "W8": 0.0
+      },
+      "eligible_workshops": [
+        "W1",
+        "W2",
+        "W5",
+        "W6",
+        "W8"
+      ],
+      "rejected_workshops": {
+        "W3": "excluded_by_user",
+        "W4": "cannot_make_tops",
+        "W7": "status_suspended"
+      }
+    },
+    "result": {
+      "success": true,
+      "decision_status": "ALLOCATE",
+      "allocation": [
+        {
+          "workshop_id": "W8",
+          "workshop_name": "FreshStart",
+          "pieces": 150,
+          "queue_days": 0.0,
+          "processing_days": 1.5,
+          "transport_days": 2,
+          "estimated_days": 3.5,
+          "estimated_cost": 150.0,
+          "defect_rate": 0.04
+        }
+      ],
+      "objective": "min_cost",
+      "rejected": {
+        "W3": "excluded_by_user",
+        "W4": "cannot_make_tops",
+        "W7": "status_suspended"
+      },
+      "reason_codes": [
+        "ELIGIBLE",
+        "BEST_CONFIGURED_SCORE",
+        "INTEGER_PIECES_CONSERVED"
+      ],
+      "warnings": [],
+      "eligible_workshops": [
+        "W1",
+        "W2",
+        "W5",
+        "W6",
+        "W8"
+      ],
+      "candidate_ranking": [
+        {
+          "workshop_id": "W8",
+          "workshop_name": "FreshStart",
+          "allocation": [
+            {
+              "workshop_id": "W8",
+              "workshop_name": "FreshStart",
+              "pieces": 150,
+              "queue_days": 0.0,
+              "processing_days": 1.5,
+              "transport_days": 2,
+              "estimated_days": 3.5,
+              "estimated_cost": 150.0,
+              "defect_rate": 0.04
+            }
+          ],
+          "estimated_days": 3.5,
+          "estimated_cost": 150.0,
+          "expected_defect_rate": 0.04,
+          "score": 150.0
+        },
+        {
+          "workshop_id": "W8",
+          "workshop_name": "FreshStart",
+          "allocation": [
+            {
+              "workshop_id": "W8",
+              "workshop_name": "FreshStart",
+              "pieces": 150,
+              "queue_days": 0.0,
+              "processing_days": 1.5,
+              "transport_days": 2,
+              "estimated_days": 3.5,
+              "estimated_cost": 150.0,
+              "defect_rate": 0.04
+            }
+          ],
+          "estimated_days": 3.5,
+          "estimated_cost": 150.0,
+          "expected_defect_rate": 0.04,
+          "score": 150.0
+        },
+        {
+          "workshop_id": "W8",
+          "workshop_name": "FreshStart",
+          "allocation": [
+            {
+              "workshop_id": "W8",
+              "workshop_name": "FreshStart",
+              "pieces": 150,
+              "queue_days": 0.0,
+              "processing_days": 1.5,
+              "transport_days": 2,
+              "estimated_days": 3.5,
+              "estimated_cost": 150.0,
+              "defect_rate": 0.04
+            }
+          ],
+          "estimated_days": 3.5,
+          "estimated_cost": 150.0,
+          "expected_defect_rate": 0.04,
+          "score": 150.0
+        },
+        {
+          "workshop_id": "W8",
+          "workshop_name": "FreshStart",
+          "allocation": [
+            {
+              "workshop_id": "W8",
+              "workshop_name": "FreshStart",
+              "pieces": 150,
+              "queue_days": 0.0,
+              "processing_days": 1.5,
+              "transport_days": 2,
+              "estimated_days": 3.5,
+              "estimated_cost": 150.0,
+              "defect_rate": 0.04
+            }
+          ],
+          "estimated_days": 3.5,
+          "estimated_cost": 150.0,
+          "expected_defect_rate": 0.04,
+          "score": 150.0
+        },
+        {
+          "workshop_id": "W8",
+          "workshop_name": "FreshStart",
+          "allocation": [
+            {
+              "workshop_id": "W8",
+              "workshop_name": "FreshStart",
+              "pieces": 150,
+              "queue_days": 0.0,
+              "processing_days": 1.5,
+              "transport_days": 2,
+              "estimated_days": 3.5,
+              "estimated_cost": 150.0,
+              "defect_rate": 0.04
+            }
+          ],
+          "estimated_days": 3.5,
+          "estimated_cost": 150.0,
+          "expected_defect_rate": 0.04,
+          "score": 150.0
+        },
+        {
+          "workshop_id": "W5",
+          "workshop_name": "GiantWeave",
+          "allocation": [
+            {
+              "workshop_id": "W5",
+              "workshop_name": "GiantWeave",
+              "pieces": 150,
+              "queue_days": 3.0,
+              "processing_days": 0.375,
+              "transport_days": 4,
+              "estimated_days": 7.375,
+              "estimated_cost": 165.0,
+              "defect_rate": 0.06
+            }
+          ],
+          "estimated_days": 7.375,
+          "estimated_cost": 165.0,
+          "expected_defect_rate": 0.06,
+          "score": 165.0
+        },
+        {
+          "workshop_id": "W5",
+          "workshop_name": "GiantWeave",
+          "allocation": [
+            {
+              "workshop_id": "W5",
+              "workshop_name": "GiantWeave",
+              "pieces": 150,
+              "queue_days": 3.0,
+              "processing_days": 0.375,
+              "transport_days": 4,
+              "estimated_days": 7.375,
+              "estimated_cost": 165.0,
+              "defect_rate": 0.06
+            }
+          ],
+          "estimated_days": 7.375,
+          "estimated_cost": 165.0,
+          "expected_defect_rate": 0.06,
+          "score": 165.0
+        },
+        {
+          "workshop_id": "W5",
+          "workshop_name": "GiantWeave",
+          "allocation": [
+            {
+              "workshop_id": "W5",
+              "workshop_name": "GiantWeave",
+              "pieces": 150,
+              "queue_days": 3.0,
+              "processing_days": 0.375,
+              "transport_days": 4,
+              "estimated_days": 7.375,
+              "estimated_cost": 165.0,
+              "defect_rate": 0.06
+            }
+          ],
+          "estimated_days": 7.375,
+          "estimated_cost": 165.0,
+          "expected_defect_rate": 0.06,
+          "score": 165.0
+        },
+        {
+          "workshop_id": "W5",
+          "workshop_name": "GiantWeave",
+          "allocation": [
+            {
+              "workshop_id": "W5",
+              "workshop_name": "GiantWeave",
+              "pieces": 150,
+              "queue_days": 3.0,
+              "processing_days": 0.375,
+              "transport_days": 4,
+              "estimated_days": 7.375,
+              "estimated_cost": 165.0,
+              "defect_rate": 0.06
+            }
+          ],
+          "estimated_days": 7.375,
+          "estimated_cost": 165.0,
+          "expected_defect_rate": 0.06,
+          "score": 165.0
+        },
+        {
+          "workshop_id": "W6",
+          "workshop_name": "Nimble Needle",
+          "allocation": [
+            {
+              "workshop_id": "W6",
+              "workshop_name": "Nimble Needle",
+              "pieces": 150,
+              "queue_days": 1.0,
+              "processing_days": 1.1538461538461537,
+              "transport_days": 1,
+              "estimated_days": 3.1538461538461537,
+              "estimated_cost": 180.0,
+              "defect_rate": 0.05
+            }
+          ],
+          "estimated_days": 3.1538461538461537,
+          "estimated_cost": 180.0,
+          "expected_defect_rate": 0.05,
+          "score": 180.0
+        },
+        {
+          "workshop_id": "W6",
+          "workshop_name": "Nimble Needle",
+          "allocation": [
+            {
+              "workshop_id": "W6",
+              "workshop_name": "Nimble Needle",
+              "pieces": 150,
+              "queue_days": 1.0,
+              "processing_days": 1.1538461538461537,
+              "transport_days": 1,
+              "estimated_days": 3.1538461538461537,
+              "estimated_cost": 180.0,
+              "defect_rate": 0.05
+            }
+          ],
+          "estimated_days": 3.1538461538461537,
+          "estimated_cost": 180.0,
+          "expected_defect_rate": 0.05,
+          "score": 180.0
+        },
+        {
+          "workshop_id": "W6",
+          "workshop_name": "Nimble Needle",
+          "allocation": [
+            {
+              "workshop_id": "W6",
+              "workshop_name": "Nimble Needle",
+              "pieces": 150,
+              "queue_days": 1.0,
+              "processing_days": 1.1538461538461537,
+              "transport_days": 1,
+              "estimated_days": 3.1538461538461537,
+              "estimated_cost": 180.0,
+              "defect_rate": 0.05
+            }
+          ],
+          "estimated_days": 3.1538461538461537,
+          "estimated_cost": 180.0,
+          "expected_defect_rate": 0.05,
+          "score": 180.0
+        },
+        {
+          "workshop_id": "W2",
+          "workshop_name": "SteadyHands",
+          "allocation": [
+            {
+              "workshop_id": "W2",
+              "workshop_name": "SteadyHands",
+              "pieces": 150,
+              "queue_days": 2.5,
+              "processing_days": 0.8823529411764706,
+              "transport_days": 2,
+              "estimated_days": 5.382352941176471,
+              "estimated_cost": 195.0,
+              "defect_rate": 0.03
+            }
+          ],
+          "estimated_days": 5.382352941176471,
+          "estimated_cost": 195.0,
+          "expected_defect_rate": 0.03,
+          "score": 195.0
+        },
+        {
+          "workshop_id": "W2",
+          "workshop_name": "SteadyHands",
+          "allocation": [
+            {
+              "workshop_id": "W2",
+              "workshop_name": "SteadyHands",
+              "pieces": 150,
+              "queue_days": 2.5,
+              "processing_days": 0.8823529411764706,
+              "transport_days": 2,
+              "estimated_days": 5.382352941176471,
+              "estimated_cost": 195.0,
+              "defect_rate": 0.03
+            }
+          ],
+          "estimated_days": 5.382352941176471,
+          "estimated_cost": 195.0,
+          "expected_defect_rate": 0.03,
+          "score": 195.0
+        },
+        {
+          "workshop_id": "W1",
+          "workshop_name": "QuickStitch",
+          "allocation": [
+            {
+              "workshop_id": "W1",
+              "workshop_name": "QuickStitch",
+              "pieces": 150,
+              "queue_days": 4.0,
+              "processing_days": 0.5,
+              "transport_days": 1,
+              "estimated_days": 5.5,
+              "estimated_cost": 225.0,
+              "defect_rate": 0.12
+            }
+          ],
+          "estimated_days": 5.5,
+          "estimated_cost": 225.0,
+          "expected_defect_rate": 0.12,
+          "score": 225.0
+        }
+      ],
+      "estimated_days": 3.5,
+      "estimated_cost": 150.0,
+      "expected_defect_rate": 0.04,
+      "score": 150.0,
+      "recommended_workshop_id": "W8",
+      "recommended_workshop_name": "FreshStart",
+      "estimated_delivery_date": "2026-04-05",
+      "deadline_met": true,
+      "message": "Allocated 150 pieces to 1 workshop(s) using min_cost."
+    },
+    "replayed": false,
+    "committed": true,
+    "session": {
+      "session_id": "demo",
+      "state": "CLOSED",
+      "version": 7,
+      "objective": "min_delay",
+      "backend": "offline",
+      "as_of_date": "2026-04-01",
+      "reviewed_order_version": 0,
+      "created_at": "2026-10-03T02:39:34.303832+00:00",
+      "updated_at": "2026-10-03T02:39:34.312523+00:00",
+      "draft": {
+        "order_id": "ORD-045",
+        "customer": null,
+        "product": null,
+        "category": null,
+        "pieces": null,
+        "order_date": null,
+        "due_date": null,
+        "objective": "min_cost",
+        "exclusion": [
+          "W3"
+        ],
+        "num_workshop_allowed": 2,
+        "parse_status": "ok",
+        "missing_fields": [],
+        "ambiguities": [],
+        "preferred_workshop": null,
+        "deadline_required": false
+      },
+      "blockers": []
+    }
+  },
+  "order_after": {
+    "order_id": "ORD-045",
+    "customer": "Cotton Club",
+    "product": "Vest",
+    "category": "TOPS",
+    "pieces": 150,
+    "order_date": "2026-03-21",
+    "due_date": "2026-04-09",
+    "source_status": "IN_PROGRESS",
+    "state": "WORKING",
+    "version": 1,
+    "completed_pieces": 0,
+    "remaining_pieces": 150,
+    "allocations": [
+      {
+        "order_id": "ORD-045",
+        "workshop_id": "W8",
+        "request_id": "demo-confirm",
+        "pieces": 150,
+        "estimated_days": 3.5,
+        "estimated_cost": 150.0,
+        "objective": "min_cost",
+        "assigned_at": "2026-10-03T02:39:34.312447+00:00",
+        "completed_pieces": 0,
+        "capacity_at_assignment": 100,
+        "queue_remaining_days": 1.5
+      }
+    ],
+    "events": []
+  }
+}

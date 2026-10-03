@@ -1,0 +1,434 @@
+{
+  "scope": "Workspace",
+  "excluded_generated": [
+    ".git",
+    "__pycache__",
+    ".DS_Store",
+    ".venv",
+    "live_results",
+    ".env",
+    "runtime databases"
+  ],
+  "changes": [
+    {
+      "path": ".env.example",
+      "status": "added",
+      "before_sha256": null,
+      "after_sha256": "062e9df78e686eba43252c7d45d8eb7d65241a2f6297b1dda8837df66ef0ca49",
+      "description": "新增环境变量说明；不含密钥，不自动加载。"
+    },
+    {
+      "path": ".gitignore",
+      "status": "added",
+      "before_sha256": null,
+      "after_sha256": "6e1b29c770d2513c4c1d0972be103b9e41324c1e8c653dda39bedbeaa9d65c24",
+      "description": "忽略运行数据库、缓存和私密 .env。"
+    },
+    {
+      "path": "README_parser.md",
+      "status": "added",
+      "before_sha256": null,
+      "after_sha256": "d3da0518ca5d9ff866d3155317b0974b33e45c71dda6ccca856c38320d056155",
+      "description": "新增 Parser v1 字段、调用、状态、重试、telemetry、兼容迁移及在线评估说明。"
+    },
+    {
+      "path": "app/agent/legacy_parser.py",
+      "status": "added",
+      "before_sha256": null,
+      "after_sha256": "8d7a737ced1e637ebffdeb7f8eac8e540b9d090799246322503c16fa1ae0eee0",
+      "description": "保留原 Week 4 固定样例实现，供 fake_parse_request 显式兼容调用。"
+    },
+    {
+      "path": "app/agent/llm_client.py",
+      "status": "added",
+      "before_sha256": null,
+      "after_sha256": "b3de9fc5a157279ffa5605b627475c2129388596e31ae27bf636915ab194fd61",
+      "description": "根据用户指定改为Google官方Gemini SDK；gemini-3.5-flash，仅读GEMINI_API_KEY。"
+    },
+    {
+      "path": "app/agent/normalization.py",
+      "status": "added",
+      "before_sha256": null,
+      "after_sha256": "07c0d7bb94e8e437d6e46605d85d201ae68b417897a2628a21edf403beb59de9",
+      "description": "新增产品/工坊/数量词的可核对词典，不包含订单主数据。"
+    },
+    {
+      "path": "app/agent/rule_parser.py",
+      "status": "added",
+      "before_sha256": null,
+      "after_sha256": "2b7a6fecd8de303b91f6c01da4f3ce38752de8b597f379af180daf4ed7fdca80",
+      "description": "新增按语言模式提取的离线解析，不根据 R09 等标签猜字段。"
+    },
+    {
+      "path": "app/agent/validator.py",
+      "status": "added",
+      "before_sha256": null,
+      "after_sha256": "6499911bad5a4e0524021caf1aaf9f0668a0dea70ecce78703496f341112836f",
+      "description": "新增 JSON/schema/业务/原文证据校验，阻止补造和漏掉已识别约束。"
+    },
+    {
+      "path": "app/allocator/planner.py",
+      "status": "added",
+      "before_sha256": null,
+      "after_sha256": "3664b4ced6b931ad58f51c7ec28a732f035bd234e582aa35911b9639e2e9e681",
+      "description": "新增确定性单工坊/整数拆单、最大工坊数、目标和硬交期筛选。"
+    },
+    {
+      "path": "app/db/__init__.py",
+      "status": "added",
+      "before_sha256": null,
+      "after_sha256": "e738671f5a626b87f4aec443a8fe2559ba0c003308b66be164649afcb5f3e59a",
+      "description": "新增数据库包。"
+    },
+    {
+      "path": "app/db/database.py",
+      "status": "added",
+      "before_sha256": null,
+      "after_sha256": "47bf0bf8323e5bccf652a668f7007148ec82dbc3c9c75b87239d891779f3fa21",
+      "description": "新增版本化 SQLite 建库、CSV 导入、连接与事务管理。"
+    },
+    {
+      "path": "app/db/migrations/001_initial.sql",
+      "status": "added",
+      "before_sha256": null,
+      "after_sha256": "f1c60bc20c201af5a1c5b524777e15e80ab1e381f86130586584b3cd43a77467",
+      "description": "新增 orders/workshops/queue/request/parsing/working/unassigned/completed/lapsed/decision 表结构。"
+    },
+    {
+      "path": "app/repositories/__init__.py",
+      "status": "added",
+      "before_sha256": null,
+      "after_sha256": "4e692d41bd30774e87f2665c648deb1b8d8b8d063dab68a39630619fe8f7e79d",
+      "description": "新增仓储包。"
+    },
+    {
+      "path": "app/repositories/order_repository.py",
+      "status": "added",
+      "before_sha256": null,
+      "after_sha256": "eff6ac42d227cd0607d421cdf269372f767b9176dde9fcf8e186117674ceefd2",
+      "description": "新增真实订单精确检索及字段冲突检查。"
+    },
+    {
+      "path": "app/repositories/workshop_repository.py",
+      "status": "added",
+      "before_sha256": null,
+      "after_sha256": "7d52f2ad7f39790d68ea4b866be2edfb189b46df7e9135fdf9d6d6c213aab4ca",
+      "description": "新增真实工坊和 current queue 检索，缺失/时间倒退阻断。"
+    },
+    {
+      "path": "app/schemas/parser_schema.py",
+      "status": "added",
+      "before_sha256": null,
+      "after_sha256": "0ccbf4887429aa6501a1b4e6a6061f50390a6dfd3b4746370374df05a4155211",
+      "description": "新增 ParseResult 与 JSON Schema v1，和 parsing_history 对齐。"
+    },
+    {
+      "path": "app/server.py",
+      "status": "added",
+      "before_sha256": null,
+      "after_sha256": "433df657037744f8eed5837562c284b51a1b379364e4cd52de092d38898c44e7",
+      "description": "新增本地 HTTP JSON API 和页面服务。"
+    },
+    {
+      "path": "demos/day1_retrieval.py",
+      "status": "added",
+      "before_sha256": null,
+      "after_sha256": "dec00a2a4e3d3cab911806075624829892fce2625b2c0f27580ce647666bf8d5",
+      "description": "新增 Day 1 真实检索 trace 演示。"
+    },
+    {
+      "path": "demos/week5_mock.py",
+      "status": "added",
+      "before_sha256": null,
+      "after_sha256": "0de9eea6c8c68c0e0c94bfaf8452395f99b960da226d5944a9fc5222ab0dda31",
+      "description": "新增 5 条 Week 5 mock backend 链路演示。"
+    },
+    {
+      "path": "demos/week6_demo.py",
+      "status": "added",
+      "before_sha256": null,
+      "after_sha256": "e41b6326b38cc0c5a01cae5a7db5a659de68ca0924fafd99d27567f4bec491e0",
+      "description": "新增独立临时数据库的一键分配与幂等重放演示。"
+    },
+    {
+      "path": "docs/CHANGELOG_GEMINI_CN.md",
+      "status": "added",
+      "before_sha256": null,
+      "after_sha256": "5827658da245e15921ce1f02491c3da9205762cc21604a51bfff6606a938d124",
+      "description": "Google Gemini适配增量日志；累计日志之外可单独核对本次修改。"
+    },
+    {
+      "path": "docs/CHANGELOG_WEEK5_WEEK6_CN.md",
+      "status": "added",
+      "before_sha256": null,
+      "after_sha256": "66e7c27e5c9b027a28f976fa8b6294749f161bf17553f951d4f01726fd5551ed",
+      "description": "本文件：逐项记录此次文件增删改及验证范围。"
+    },
+    {
+      "path": "docs/DATABASE_SCHEMA_CN.md",
+      "status": "added",
+      "before_sha256": null,
+      "after_sha256": "93bc346b14277e37ad109a6c94e7bfb676a33586aee57aadf0f9052fb299c430",
+      "description": "新增 Schema2 计划字段映射、状态/幂等/队列/事务/迁移政策。"
+    },
+    {
+      "path": "docs/NEXT_STAGE_CN.md",
+      "status": "added",
+      "before_sha256": null,
+      "after_sha256": "7500f2d381526a24401d71bc1c0396d83064f493e97c839d659aa2d76e86c23d",
+      "description": "新增下一阶段优先级、责任建议、输入输出与验收标准。"
+    },
+    {
+      "path": "docs/SYSTEM_GUIDE_CN.md",
+      "status": "added",
+      "before_sha256": null,
+      "after_sha256": "1ac719fea33fe77a195a8ef42e21e0e97478cf2ec6a8f107b37f5c8535564314",
+      "description": "新增中文系统结构、运行、页面/CLI/API、人工操作、配置、排错与备份手册。"
+    },
+    {
+      "path": "docs/WEEK5_WEEK6_ACCEPTANCE_CN.md",
+      "status": "added",
+      "before_sha256": null,
+      "after_sha256": "9d95a73c1e4a26fd96550567798b4fb0cee31d66c46c732f767eee966bd46a38",
+      "description": "新增两份计划逐项交付对照，明确离线已完成与在线待验证。"
+    },
+    {
+      "path": "docs/file_change_manifest.json",
+      "status": "added",
+      "before_sha256": null,
+      "after_sha256": null,
+      "description": "新增作业前后 SHA-256 对照，方便审计源文件是否改动。"
+    },
+    {
+      "path": "docs/release_manifest.json",
+      "status": "added",
+      "before_sha256": null,
+      "after_sha256": "7209e709490e5d57792c0673c5995b2b868b529fb7a4ce93a6e0cebaf1f255cd",
+      "description": "新增 Parser/Prompt/Pipeline/DB 本地版本冻结及 SHA-256。"
+    },
+    {
+      "path": "evaluation/diagnose_gemini.py",
+      "status": "added",
+      "before_sha256": null,
+      "after_sha256": "92b336144b4a5f92fdf9b47900214668e7e4d88f2c1388f56119c996dffbe17f",
+      "description": "新增官方SDK模型查询/最小生成诊断；不输出密钥，不修改业务库。"
+    },
+    {
+      "path": "evaluation/evaluate_dispatch.py",
+      "status": "added",
+      "before_sha256": null,
+      "after_sha256": "5c6664e672b26b8fabf45f5fbfcf60973fe706a28e566044da41c170fbc66d3f",
+      "description": "新增对原始 30 条请求的实际行为回归；不修改原标签。"
+    },
+    {
+      "path": "evaluation/evaluate_parser.py",
+      "status": "added",
+      "before_sha256": null,
+      "after_sha256": "95d6c3d3ec295645e214eb4b9da9b47ad3db16dfc9cfd84133a551facd636383",
+      "description": "新增字段 exact/normalized、首轮有效率、补造率、模型日志评估。"
+    },
+    {
+      "path": "evaluation/results/dispatch_behavior_metrics.json",
+      "status": "added",
+      "before_sha256": null,
+      "after_sha256": "03c376ad482135d6f5f2158e588bec3d64eb83862df70029472679bd87964930",
+      "description": "保存原始 30 条请求的行为匹配结果。"
+    },
+    {
+      "path": "evaluation/results/dispatch_runs.jsonl",
+      "status": "added",
+      "before_sha256": null,
+      "after_sha256": "3dcff09e34c7e6f606effe51200a082d0fbaa84c10d0f127c0ebdb443f0725b9",
+      "description": "保存 30 条真实数据独立运行结果与 trace。"
+    },
+    {
+      "path": "evaluation/results/gemini_live_status.json",
+      "status": "added",
+      "before_sha256": null,
+      "after_sha256": "bfb8ebbea2e42ddc7343bcbcb0f14b3173d23a521305628d33f664b58682e449",
+      "description": "在线预检结果：缺GEMINI_API_KEY，未调用真实模型。"
+    },
+    {
+      "path": "evaluation/results/parser_offline_metrics.json",
+      "status": "added",
+      "before_sha256": null,
+      "after_sha256": "95c7f79d32d695ab1540f07ae759b6017e5d2230eb7b70db36a180c368374a98",
+      "description": "保存本次 60 条 offline 解析指标，明确不是 LLM 成绩。"
+    },
+    {
+      "path": "evaluation/results/parser_offline_runs.jsonl",
+      "status": "added",
+      "before_sha256": null,
+      "after_sha256": "401d8a354ba8f2167e8f4c3e3651645c138adc94a59c4f754f40cc984b04af1e",
+      "description": "保存每条 parser 输入/expected/raw/validated/telemetry/差异。"
+    },
+    {
+      "path": "evaluation/results/test_results.txt",
+      "status": "added",
+      "before_sha256": null,
+      "after_sha256": "827523fd45e02b47954fbaaf333748b40e56d39c3c30843ce6e1ddd1d603f4a3",
+      "description": "保存完整自动化测试报告。"
+    },
+    {
+      "path": "evaluation/results/verification_summary.json",
+      "status": "added",
+      "before_sha256": null,
+      "after_sha256": "7ff72edf79573acf57b9cb2fac25af725291ca6d87a4e4e5e151fdbe78b6acfd",
+      "description": "保存 Python 版本、验证时间、通过数和外部验收缺口。"
+    },
+    {
+      "path": "evaluation/results/week5_mock_demo.jsonl",
+      "status": "added",
+      "before_sha256": null,
+      "after_sha256": "355d8a9ed599223b8cb5cfdc4af678faaf73d2becfb92be7666ce7188ad41247",
+      "description": "保存 5 条 Week 5 mock demo 原始输出。"
+    },
+    {
+      "path": "evaluation/results/week6_demo.json",
+      "status": "added",
+      "before_sha256": null,
+      "after_sha256": "3bd2cff28edda5656e2cea3ad90d9b68985832e679c9192f565776535321466f",
+      "description": "保存 Week 6 真实数据分配/队列变化/幂等重放和表行数。"
+    },
+    {
+      "path": "evaluation/verify_gemini_live.py",
+      "status": "added",
+      "before_sha256": null,
+      "after_sha256": "71402429a5fcdbb0f856280eac743d7bfd3d1920beb5ea0e3f3a5fffa8b269ba",
+      "description": "新增在线单请求/60条完整验收脚本，明确区分NOT_RUN与通过。"
+    },
+    {
+      "path": "evaluation/verify_mvp.py",
+      "status": "added",
+      "before_sha256": null,
+      "after_sha256": "3afd7977d17a1643abeeb1b095b97c1d39cab02998bc10dd3b4186071703709c",
+      "description": "新增一键测试、两周 demo、语言回归及官方 baseline 一致性验证。"
+    },
+    {
+      "path": "requirements.txt",
+      "status": "added",
+      "before_sha256": null,
+      "after_sha256": "b1452900f43733650c64ef5f37b6995270fde517d8d485db935b5424c426f615",
+      "description": "新增Google官方SDK固定版本依赖；离线核心仍无第三方依赖。"
+    },
+    {
+      "path": "runtime/.gitkeep",
+      "status": "added",
+      "before_sha256": null,
+      "after_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "description": "预留运行数据库目录；本次验收不写入默认持久库。"
+    },
+    {
+      "path": "tests/parser_golden.jsonl",
+      "status": "added",
+      "before_sha256": null,
+      "after_sha256": "8d821599b21837a3f4aa16e78ca94358b122907a8381be8866ee12d8d5131d61",
+      "description": "新增 60 条显式完整 expected JSON，46 条 edge case。"
+    },
+    {
+      "path": "tests/test_allocator.py",
+      "status": "added",
+      "before_sha256": null,
+      "after_sha256": "edd00cdbbbba00fb0c119effbc3919e9d9063b3cafbbdd36c7847d6436900d16",
+      "description": "新增小规模整数穷举对照和硬交期容量测试。"
+    },
+    {
+      "path": "tests/test_e2e.py",
+      "status": "added",
+      "before_sha256": null,
+      "after_sha256": "e9eafe2879015fb2372c79adb4d8d25b310dcbdcbef10dc244beba90b356a4b1",
+      "description": "新增 20 个编号 E2E 主场景及异常补充测试，含并发、状态、SQL 故障回滚。"
+    },
+    {
+      "path": "tests/test_gemini_sdk.py",
+      "status": "added",
+      "before_sha256": null,
+      "after_sha256": "8deb914765a006e9ef196c5f734000796dd31fb630d97f97d51e9d23bcad902b",
+      "description": "新增11条真实SDK + 模拟HTTP专项测试。"
+    },
+    {
+      "path": "tests/test_parser.py",
+      "status": "added",
+      "before_sha256": null,
+      "after_sha256": "26fd34028c81857814d36bbc8aa3a57c29667f6f13368f727fd1bb1c97ff433d",
+      "description": "新增 golden、schema、重试、补造和 LLM transport 替身测试。"
+    },
+    {
+      "path": "tests/test_server.py",
+      "status": "added",
+      "before_sha256": null,
+      "after_sha256": "4c511f2fd5d501a6a4d5de683fc27b4e783a81398b8cbc7736f7fe16ec09777b",
+      "description": "新增真实 HTTP 提交、历史、重放、参数和跨源检查。"
+    },
+    {
+      "path": "KNOWN_ISSUES.md",
+      "status": "modified",
+      "before_sha256": "e9d5e7c19d3dc765c00b56e7bc5b4191026b42362f6555382177474e57ecb40e",
+      "after_sha256": "9ecfeb91f41bdc87a43a68b1aa9d85652442315f5b96f1d35bb61cbf9bd0f4d7",
+      "description": "更新当前未完成/待确认项，移除已经实现的队列、DB、UI、拆单待办。"
+    },
+    {
+      "path": "README.md",
+      "status": "modified",
+      "before_sha256": "cf2d937c0470d51ab36bfb622fd20a9846085b200750f1c074fc56f90f207eab",
+      "after_sha256": "e2f3fdfa808f6ed67944403ab839123880e23ff34a70d06310f0e09526c13edc",
+      "description": "将 Week 4 骨架说明更新为 Week 5/6 入口、运行命令和验收边界。"
+    },
+    {
+      "path": "app/agent/parser.py",
+      "status": "modified",
+      "before_sha256": "8d7a737ced1e637ebffdeb7f8eac8e540b9d090799246322503c16fa1ae0eee0",
+      "after_sha256": "b9b1a100902a9c5940d6404c0baf5591c1e8bfadd1fe36f61c833e9a8464433a",
+      "description": "替换按 R 编号返回固定内容的主解析器，接入 offline/llm、校验及一次重试。"
+    },
+    {
+      "path": "app/agent/prompts.py",
+      "status": "modified",
+      "before_sha256": "d9fe8779bf9bfef4edb2d6f74857ea0ed04d4d82bed2c41e185e8ed24b4d839d",
+      "after_sha256": "1bf3e459dcd2868b88413537cf582816affa1e303739f9f2b76a79db8d68348f",
+      "description": "冻结 Prompt v1、few-shot、字段/否定/日期/业务隔离规则。"
+    },
+    {
+      "path": "app/cli.py",
+      "status": "modified",
+      "before_sha256": "e8535e7a490a338e987eb02fd23fa91271cc55268f2598a1c9e14ccbfaba6ee1",
+      "after_sha256": "3195ecf1ba67ac1c5507bab6607086f85e5be73434bfe7b1720f19f26fb8f19a",
+      "description": "增加自由消息、数据库、backend、业务日期和幂等 key 参数；保留 R 标签入口。"
+    },
+    {
+      "path": "app/pipeline.py",
+      "status": "modified",
+      "before_sha256": "1d6d82c28ea86cb1f926fac8adddef2168b0d18d6f5c2e9c914a30f029b2120c",
+      "after_sha256": "7e6d197b76a29d7f0da0131dd3a0c562c373ff77b110eb2ce2d71b9c260b08ea",
+      "description": "改为真实数据库主流程，增加事务、状态保护、幂等及可追踪返回值。"
+    },
+    {
+      "path": "app/ui/index.html",
+      "status": "modified",
+      "before_sha256": "9fe4c9ebd1308d9e0d4a945600c1779c613be2a3751677a5c10a9cde61f28b18",
+      "after_sha256": "648c0fb5a38db8cb7d805f625ed6e3bfdba3a73deee67499aa9fbea2d9c030ce",
+      "description": "将静态 R09 mock 更新为可提交/展示/查看历史与审计的实际页面。"
+    },
+    {
+      "path": "docs/schema_contracts.md",
+      "status": "modified",
+      "before_sha256": "b7252db81b2defdf5f6eec9d80dac4192a7e54534f5c43e242619edd8a7a81a7",
+      "after_sha256": "db5477809de5ec69a22b32d27f4e6931117e85753148eb7d3d06d63bb46957c9",
+      "description": "保留 Week 4 契约，追加新旧版本迁移说明。"
+    },
+    {
+      "path": "tests/test_golden_cases.py",
+      "status": "modified",
+      "before_sha256": "b55d6c72567d89bae5b12f4334e3825747efd5aa0cf9263c296673bdf14b0c38",
+      "after_sha256": "d8f2c7996d929eb859b9365331c2d31e8a21a9be0f2415bda3b4079d46da791c",
+      "description": "只显式固定 offline backend，保留原 Week 4 断言，避免环境变量意外触发外部模型。"
+    },
+    {
+      "path": "tests/test_tools.py",
+      "status": "modified",
+      "before_sha256": "0afd7574e52e8efa0b547fead666d400e6b17a3012ae3da2b8dc794d0364d493",
+      "after_sha256": "117700d3817a13478aeb8fb50fa66185ffc5a035b0e94b11d567b62a24d45048",
+      "description": "只显式固定 offline backend，保留原工具测试断言。"
+    }
+  ]
+}

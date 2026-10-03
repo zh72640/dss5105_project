@@ -34,3 +34,24 @@ objective, warnings, and a human-facing message.
 - Ineligible preferred workshop: `REFUSE` with exact hard-rule reason.
 - No eligible candidate: `ESCALATE` with options added in a later iteration.
 
+
+## Week 5/6 migration note (2026-09-14)
+
+The contracts above remain the **historical Week 4** contracts. The active entry
+point is now `app.pipeline.process_request()`, producing a versioned v0.1 envelope
+with `parsed`, `parser_telemetry`, `trace`, and `result`. The new frozen ParseResult
+lives in `app/schemas/parser_schema.py`; see [Parser v1](../README_parser.md).
+
+Week 4 `StructuredRequest`/`CandidateMetrics`/`AllocationResult` and legacy tools
+remain available for historical fixtures and baselines. Do not pass ParseResult to
+the old `conversation.gate_request()`; use the new pipeline, or explicitly use
+`fake_parse_request()` for the old fixture contract. `result` now includes integer
+`allocation` parts, success/status, rejected reasons and queue/database traces.
+
+## MVP v0.2 增量（2026-10-02）
+
+以上为历史契约。当前分配入口输出 mvp_v0.2，Parser/Prompt v1 不变。数据库迁移 002 增加累计完工、版本、FIFO 预留和 lifecycle_events；生产操作由 `app.lifecycle.process_event()` 提供独立结构化接口，详见 [生命周期手册](LIFECYCLE_CN.md)。活动分配未完工件数加已确认完工数守恒，不再要求部分完工后的活动 working_order.pieces 总和始终等于原订单总量。
+
+### MVP v0.3 会话扩展（2026-10-03）
+
+应用发布为 mvp_v0.3；原分配入口仍输出 mvp_v0.2，以保留既有幂等指纹。migration003 新增 sessions/session_messages，独立 session_v1 接口提供消息、完整替换、确认、关闭。Parser v1 仍是单消息契约，会话命令层负责显式合并；合并结果审计需要回溯整段会话。详见 [会话契约](SESSIONS_CN.md) 和 [数据库说明](DATABASE_SCHEMA_CN.md)。

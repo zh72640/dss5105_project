@@ -1,15 +1,20 @@
-# Known issues and next steps
+# 已知限制 — MVP v0.3
 
-- `parse_request()` is a deterministic golden-case adapter, not a production LLM
-  integration. Its interface is stable so an LLM structured-output adapter can be
-  substituted without changing downstream modules.
-- The HTML UI uses a checked-in R09 payload. Connect it to a small API in the next
-  integration sprint.
-- Allocation uses the dataset's initial queue snapshot. Stateful queue updates are
-  handled by the shared simulator, not the single-request demo pipeline.
-- Split allocation and human escalation are represented in the schema but are not
-  implemented yet.
-- The language ground truth is an initial behaviour-level pass and needs a second
-  human review before it is treated as evaluation truth.
-- Shock response is not adaptive yet; Week 4 only captures the official baselines.
+- **真实 LLM 完整验收未通过**：2026-10-02 冒烟与幂等重放成功；完整评估 14/60 匹配，其余 46 条因 HTTP 429 失败，尝试中另有 503。收到输出的 14 条均匹配，但不能剔除服务失败后宣布验收通过。见 [在线证据](docs/GEMINI_LIVE_ACCEPTANCE_CN.md)。已提供用例间隔参数，生产请求尚无全局限速和有界退避。
+- **Data Schema2 原件缺失**：当前 SQLite 根据两份计划列出的字段/表设计；需要和原始 ERD/DDL 核对。
+- **解析覆盖有限**：离线模式以英文课程请求为主，含少量中文模式；保守证据校验也会限制真实 LLM 可接受的日期、数量和约束表达。复杂否定、金额预算、精确拆分、更多自由表达仍需扩展与 holdout 测试。
+- **多轮语言范围有限**：已实现 sessions/messages、草稿预览、显式确认和恢复；后续回复使用有限完整匹配语法，每条只改一项。任意自由表达需完整 replace；Parser v1 的非空 context_messages 仍报错。会话隔离不等于账号权限隔离。
+- **订单精确检索**：缺 ID 不做客户猜测；消息字段与数据库冲突时澄清，不自动更改订单、日期或数量。
+- **生命周期政策待团队确认**：已实现 complete/cancel/lapse/reassign 及页面/API/CLI；cancel 返回 READY，lapse 终止订单，部分完工后只分配未完工数。未实现恢复 LAPSED、人工改订单主数据、自动完工或自动联系工坊。操作人由调用方填写，尚无账号认证。
+- **逾期是软提示**：原课程中的逾期订单仍可分配；显式 hard deadline 才阻止迟交方案。自动 lapsed 政策需团队确认。
+- **队列和时间简化**：预留按 FIFO 和日历天衰减，预测归零不等于确认完工；迁移假设旧库未在系统外改过队列/产能，不支持直接手工 SQL 调整。日历天、确定性产能，不模拟周日停工或随机返工；UI 交付日期使用 ceil，官方 harness 使用 round，二者需区分。
+- **混合目标为启发式**：小规模 min_delay/min_cost/min_defects 已用穷举验证；hybrid 未声称全局最优。已完成官方单工坊模拟器 14 组比较；拆单、独立数据、多 seed 的稳健性结论待扩展。min_delay 是周转时间目标，团队课程主目标尚待确认。standard/shock 返工样本不同，差值不等于纯停工效应。
+- **预览与确认的时间差**：确认会重算最新队列；其他订单占用工坊可能改变最终方案。目标订单版本变化会拒绝旧确认，需要重新预览。会话业务日期固定于创建时，跨业务日期应新建会话。
+- **课程最终评估尚未齐备**：原始 30 条仅完成行为标签匹配；解释中的数值和理由仍需独立评分，不能把行为 30/30 宣称为解释忠实性 100%。本次 10 个算法不利案例也不等于最终完整失败分析。
+- **初始标注待第二位人工复核**：60 条 parser golden 和原始 30 条行为标签不是独立盲测集。
+- **本地服务**：绑定 127.0.0.1，无用户认证/角色/公网部署；只适合当前本机课程 MVP。
+- **数据库错误日志有限**：业务事务回滚后尽量另记审计；整库不可用时 error_logged=false，需要调用方保存返回值。
 
+- **Gemini SDK 是在线依赖**：固定 google-genai==2.23.0，已安装至项目 .venv；离线模式不需要 SDK。在线模式缺 SDK 会明确报 gemini_sdk_missing，不会静默降级。
+
+后续操作入口：[下一阶段交接](docs/NEXT_STAGE_CN.md)。
