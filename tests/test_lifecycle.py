@@ -301,13 +301,13 @@ class MigrationTests(unittest.TestCase):
                 row = db.connection.execute("SELECT * FROM working_order").fetchone()
                 self.assertAlmostEqual(row["queue_remaining_days"], 150 / 130 - 1)
                 self.assertEqual(row["capacity_at_assignment"], 130)
-                self.assertEqual(db.connection.execute("SELECT MAX(version) FROM schema_migrations").fetchone()[0], 2)
+                self.assertEqual(db.connection.execute("SELECT MAX(version) FROM schema_migrations").fetchone()[0], 3)
                 r = process_event("cancel", "ORD-045", actor="operator", reason="Migrated cancellation", expected_version=0,
                                   event_id="migration-event", database=db, as_of=date(2026, 4, 3))
                 self.assertTrue(r["result"]["success"])
                 self.assertAlmostEqual(db.connection.execute("SELECT current_queue_days FROM workshop_queue").fetchone()[0], 0)
             with Database(path) as db:
-                self.assertEqual(db.connection.execute("SELECT COUNT(*) FROM schema_migrations").fetchone()[0], 2)
+                self.assertEqual(db.connection.execute("SELECT COUNT(*) FROM schema_migrations").fetchone()[0], 3)
                 self.assertEqual(db.connection.execute("SELECT COUNT(*) FROM orders").fetchone()[0], 1)
 
     def test_failed_upgrade_rolls_back_ddl_and_preserves_v1(self):
