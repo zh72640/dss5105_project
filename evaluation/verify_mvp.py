@@ -15,6 +15,11 @@ from evaluation.evaluate_parser import evaluate
 from evaluation.evaluate_dispatch import evaluate as evaluate_dispatch
 from demos.week6_demo import run
 from demos.lifecycle_demo import run as run_lifecycle
+from demos.session_demo import run as run_session
+from evaluation.compare_simulator import compare, markdown
+from app import APP_VERSION
+from app.db.database import DB_VERSION
+from app.pipeline import PIPELINE_VERSION
 from demos.week5_mock import MESSAGES, handle_message
 from app.agent.llm_client import GEMINI_MODEL, GEMINI_PROVIDER
 
@@ -32,6 +37,12 @@ def main():
     (out/'week6_demo.json').write_text(json.dumps(demo,indent=2,ensure_ascii=False)+'\n')
     lifecycle = run_lifecycle()
     (out/'lifecycle_demo.json').write_text(json.dumps(lifecycle,indent=2,ensure_ascii=False)+'\n')
+    session = run_session()
+    (out/'session_demo.json').write_text(json.dumps(session,indent=2,ensure_ascii=False)+'\n')
+    comparison = compare()
+    (out/'simulator_comparison.json').write_text(json.dumps(comparison,indent=2)+'\n')
+    (out/'simulator_comparison_CN.md').write_text(markdown(comparison))
+    comparison_complete = len(comparison['runs']) == 14 and all(r['metrics']['batches'] == 120 for r in comparison['runs'])
     (out/'week5_mock_demo.jsonl').write_text(''.join(json.dumps({'request_id':f'week5-demo-{i}',**handle_message(m)},ensure_ascii=False)+'\n' for i,m in enumerate(MESSAGES,1)))
     dispatch,dispatch_records=evaluate_dispatch()
     (out/'dispatch_behavior_metrics.json').write_text(json.dumps(dispatch,indent=2)+'\n')
@@ -46,6 +57,7 @@ def main():
     except PackageNotFoundError:
         sdk_version = None
     summary={'checked_at':datetime.now(timezone.utc).isoformat(),'python':platform.python_version(),
+             'release':APP_VERSION,'pipeline_version':PIPELINE_VERSION,'database_version':DB_VERSION,
              'tests_run':result.testsRun,'failures':len(result.failures),'errors':len(result.errors),
              'tests_skipped':len(result.skipped),'google_genai_version':sdk_version,
              'golden_cases':metrics['golden_cases'],'golden_passed':metrics['passed_cases'],
@@ -53,6 +65,11 @@ def main():
              'lifecycle_demo_verified':lifecycle['verified'],
              'lifecycle_queue_consistent':lifecycle['queue_consistent'],
              'lifecycle_foreign_keys_ok':lifecycle['foreign_keys_ok'],
+             'session_demo_verified':session['verified'],
+             'session_draft_only_before_confirmation':session['draft_only_before_confirmation'],
+             'session_idempotent_replay':session['replay_is_idempotent'],
+             'simulator_comparison_complete':comparison_complete,
+             'simulator_policy_runs':len(comparison['runs']),
              'original_dispatch_behavior_matches':dispatch['behavior_matches'],
              'official_simulator_matches_week4':baseline_matches,
              'llm_provider':GEMINI_PROVIDER,'llm_model':GEMINI_MODEL,
@@ -61,7 +78,9 @@ def main():
     (out/'verification_summary.json').write_text(json.dumps(summary,indent=2)+'\n')
     print(json.dumps(summary,indent=2))
     if not result.wasSuccessful(): print(stream.getvalue())
-    return 0 if result.wasSuccessful() and metrics['passed_cases']==60 and summary['demo_success'] and summary['idempotent_replay'] and lifecycle['verified'] and dispatch['behavior_matches']==30 and baseline_matches else 1
+    return 0 if (result.wasSuccessful() and not result.skipped and metrics['passed_cases']==60
+                 and summary['demo_success'] and summary['idempotent_replay'] and lifecycle['verified']
+                 and session['verified'] and comparison_complete and dispatch['behavior_matches']==30 and baseline_matches) else 1
 
 
 if __name__=='__main__':raise SystemExit(main())

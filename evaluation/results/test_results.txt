@@ -145,11 +145,29 @@ test_http_flow_and_history (test_server.LocalAPI.test_http_flow_and_history) ...
 test_lifecycle_api_partial_cancel_reallocate_reassign_complete (test_server.LocalAPI.test_lifecycle_api_partial_cancel_reallocate_reassign_complete) ... ok
 test_lifecycle_api_rejects_stale_version_unknown_order_and_bad_fields (test_server.LocalAPI.test_lifecycle_api_rejects_stale_version_unknown_order_and_bad_fields) ... ok
 test_lifecycle_page_exposes_review_and_explicit_operations (test_server.LocalAPI.test_lifecycle_page_exposes_review_and_explicit_operations) ... ok
+test_session_http_clarification_preview_confirm_and_restore (test_server.LocalAPI.test_session_http_clarification_preview_confirm_and_restore) ... ok
+test_session_http_validation_version_and_origin (test_server.LocalAPI.test_session_http_validation_version_and_origin) ... ok
+test_persistent_cli_roundtrip_and_conflict (test_session_cli.SessionCLI.test_persistent_cli_roundtrip_and_conflict) ... ok
+test_ambiguous_initial_request_requires_replacement (test_sessions.Sessions.test_ambiguous_initial_request_requires_replacement) ... ok
+test_audit_failure_rolls_back_draft_allocation_and_retry (test_sessions.Sessions.test_audit_failure_rolls_back_draft_allocation_and_retry) ... ok
+test_clarify_edit_preview_confirm_and_replay (test_sessions.Sessions.test_clarify_edit_preview_confirm_and_replay) ... ok
+test_close_and_global_idempotency_conflicts (test_sessions.Sessions.test_close_and_global_idempotency_conflicts) ... ok
+test_competing_edits_and_cross_session_key_are_isolated (test_sessions.Sessions.test_competing_edits_and_cross_session_key_are_isolated) ... ok
+test_external_order_change_requires_new_review (test_sessions.Sessions.test_external_order_change_requires_new_review) ... ok
+test_invalid_inputs_and_create_replay (test_sessions.Sessions.test_invalid_inputs_and_create_replay) ... ok
+test_parser_failure_is_audited_and_cannot_confirm (test_sessions.Sessions.test_parser_failure_is_audited_and_cannot_confirm) ... ok
+test_restart_and_concurrent_confirm (test_sessions.Sessions.test_restart_and_concurrent_confirm) ... ok
+test_session_isolation_and_switch_requires_new_session (test_sessions.Sessions.test_session_isolation_and_switch_requires_new_session) ... ok
+test_unknown_exclusion_and_remove (test_sessions.Sessions.test_unknown_exclusion_and_remove) ... ok
+test_unknown_reply_cannot_drop_constraints_or_confirm_old_draft (test_sessions.Sessions.test_unknown_reply_cannot_drop_constraints_or_confirm_old_draft) ... ok
+test_v2_migration_preserves_business_data_and_rolls_back_on_failure (test_sessions.Sessions.test_v2_migration_preserves_business_data_and_rolls_back_on_failure) ... ok
+test_official_runs_are_repeatable_complete_and_report_losses (test_simulator_adapter.SimulatorAdapter.test_official_runs_are_repeatable_complete_and_report_losses) ... ok
+test_reports_match_official_metrics_and_preserve_inputs (test_simulator_adapter.SimulatorAdapter.test_reports_match_official_metrics_and_preserve_inputs) ... ok
 test_cap_is_ineligible (test_tools.ToolTests.test_cap_is_ineligible) ... ok
 test_order_resolution (test_tools.ToolTests.test_order_resolution) ... ok
 test_suspended_is_ineligible (test_tools.ToolTests.test_suspended_is_ineligible) ... ok
 
 ----------------------------------------------------------------------
-Ran 150 tests in 3.844s
+Ran 168 tests in 5.513s
 
 OK

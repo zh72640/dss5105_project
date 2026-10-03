@@ -4,7 +4,9 @@ import tempfile
 import unittest
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
+from unittest.mock import patch
 
+from app.agent.parser import ParserOutcome
 from app.db.database import Database
 from app.lifecycle import inspect_order, process_event
 from app.pipeline import process_request
@@ -152,6 +154,34 @@ class Sessions(unittest.TestCase):
                 with Database(path) as db:
                     self.assertEqual(db.connection.execute("SELECT COUNT(*) FROM working_order").fetchone()[0], 1)
                     self.assertEqual(list(db.connection.execute("PRAGMA foreign_key_check")), [])
+
+    def test_parser_failure_is_audited_and_cannot_confirm(self):
+        create_session(session_id="online", backend="llm", database=self.db)
+        failed = ParserOutcome(None, {"backend":"llm","attempts":[{"error":"gemini_http_429"}]}, "gemini_http_429")
+        with patch("app.sessions.parse_with_telemetry", return_value=failed) as parse:
+            r = self.turn("Allocate ORD-045.", session_id="online")
+        self.assertEqual(parse.call_args.kwargs["backend"], "llm")
+        self.assertEqual(r["session"]["blockers"], ["PARSER_ERROR"])
+        self.assertIsNone(r["parsed"]["order_id"])
+        self.assertFalse(self.turn(action="confirm", session_id="online")["committed"])
+        self.assertEqual(self.order()["state"], "READY")
+
+    def test_competing_edits_and_cross_session_key_are_isolated(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "edits.sqlite3"
+            create_session(session_id="s", db_path=path)
+            session_turn("s", expected_version=0, request_id="initial", message="Allocate ORD-045.", db_path=path)
+            def edit(message):
+                return session_turn("s", expected_version=1, request_id=message, message=message, db_path=path)
+            with ThreadPoolExecutor(max_workers=2) as executor:
+                results = list(executor.map(edit, ["fastest", "cheapest"]))
+            self.assertEqual(sum("session" in r for r in results), 1)
+            self.assertEqual(sum(r["result"]["reason_codes"] == ["SESSION_VERSION_CONFLICT"] for r in results), 1)
+            self.assertEqual(inspect_session("s", db_path=path)["version"], 2)
+            create_session(session_id="other", db_path=path)
+            r = session_turn("other", expected_version=0, request_id="initial", message="Allocate ORD-045.", db_path=path)
+            self.assertEqual(r["result"]["reason_codes"], ["IDEMPOTENCY_CONFLICT"])
+            self.assertEqual(inspect_session("other", db_path=path)["version"], 0)
 
     def test_v2_migration_preserves_business_data_and_rolls_back_on_failure(self):
         for fail in (False, True):

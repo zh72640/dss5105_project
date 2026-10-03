@@ -8,6 +8,7 @@ from datetime import date
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import unquote, urlparse
+from app import APP_VERSION
 from app.db.database import Database
 from app.pipeline import PIPELINE_VERSION, process_request
 from app.lifecycle import inspect_order, process_event
@@ -41,7 +42,8 @@ def make_server(port=8000, db_path=None, backend="offline", as_of=date(2026, 4, 
             if path == "/sessions.js":
                 return self.send(200, (ROOT / "app/ui/sessions.js").read_bytes(), "text/javascript; charset=utf-8")
             if path == "/api/health":
-                return self.send(200, {"status": "ok", "backend": backend, "as_of_date": as_of.isoformat(), "version": PIPELINE_VERSION})
+                return self.send(200, {"status": "ok", "backend": backend, "as_of_date": as_of.isoformat(),
+                                       "version": APP_VERSION, "pipeline_version": PIPELINE_VERSION})
             if path.startswith("/api/sessions/"):
                 try:
                     session = inspect_session(unquote(path[len("/api/sessions/"):]), db_path=db_path)
