@@ -1,71 +1,62 @@
 # 下一阶段交接说明
 
-更新：2026-10-02。GitHub 分支：`ningtao`；当前版本 **MVP v0.2 / Parser、Prompt v1 / Database v2**。先阅读 [本轮变更](CHANGELOG_LIFECYCLE_CN.md) 和 [生命周期手册](LIFECYCLE_CN.md)，再按下列顺序继续。
+更新：2026-10-03；GitHub分支 ningtao；当前发布 **MVP v0.3 / Session v1 / Parser、Prompt v1 / Database v3**。原分配Pipeline仍为v0.2，保留既有幂等语义。先阅读 [本轮修改](CHANGELOG_WEEK8_WEEK9_CN.md)、[部署说明](DEPLOYMENT_CN.md) 和 [整体项目说明](PROJECT_OVERVIEW_CN.md)。
 
-## 本轮已经完成，不必重复实现
+## 已经完成，不重复开发
 
-1. 真实 Gemini 冒烟成功；首次完整 60 条在线回归已执行并留下证据，但因 46 条 HTTP 429 **未通过完整验收**。已补服务错误分类和评估用例间隔参数。
-2. 原交接“第二优先级第 1 项”完成：complete/cancel/lapse/reassign、部分完工、操作人/原因、版本检查、幂等、事务回滚及审计。
-3. 已提供页面、HTTP、CLI 和在同一个持久化临时数据库上的生命周期连续演示。已验证旧 v1 库事务升级、队列不重置及迁移失败回滚。
-4. 当前 **150 条测试通过、0 跳过**；60 条离线解析、30 条行为标签、官方 standard/shock 基线均通过。Chrome 实际完成部分完工、重派和整单完工。
+1. 生命周期：部分/全部完工、撤销、失效、原子重派；订单版本、幂等、数量与队列守恒。
+2. 持久化会话：sessions/messages、缺订单号澄清、显式约束修改、预览、确认、关闭、刷新恢复；页面/API/CLI及临时持久库演示。
+3. 并发编辑/确认、跨会话隔离、模型失败阻断、审计故障回滚、v1/v2到v3迁移已验证。Parser v1本身没有开放任意上下文。
+4. 官方模拟器适配：生产planner单工坊模式，对三基线及四目标运行standard/shock，共14组；原harness和基线未修改。
+5. 168条测试通过、0跳过；60/60离线解析、30/30行为标签；会话/生命周期demo和Chrome实际会话流程通过。
+6. 中文部署、整体说明、修改说明、Week8/9验收与Sprint1讲稿已整理。正式slides、团队信息和课程上传仍未完成。
 
-完整验收入口：`evaluation/verify_mvp.py`；最新摘要：`evaluation/results/verification_summary.json`。`docs/release_manifest.json` 是当前冻结版本；`docs/file_change_manifest.json` 是 2026-09-14 历史清单，勿把它当作 v0.2 文件状态。
+证据入口：`evaluation/results/verification_summary.json`、`simulator_comparison_CN.md`、`session_demo.json`。当前冻结清单为 `docs/release_manifest.json`；历史 `file_change_manifest.json` 和Week5/6文档不代表最新版本。
 
-## 第一优先级：补齐在线与外部验收
+## 第一优先级：在线可靠性与外部验收
 
-| 工作 | 输入 / 前提 | 下一步操作 | 完成条件 |
-|---|---|---|---|
-| Gemini 服务可用性与完整回归 | 已指定 gemini-3.5-flash / GEMINI_API_KEY，项目实际配额 | 先查 429 的配额原因；恢复后先冒烟，再按配额运行带间隔的 --full；保留本轮失败基线 | 首轮有效率 ≥98%、核心字段 ≥90%、观测补造为零；全部 60 条计入分母 |
-| 模型运行限速与退避 | 当前错误统计：91 次429、6 次503（覆盖重试） | 在不增加无限重试的前提下，增加有界退避/必要的全局限速和请求追踪；区分连接失败、配额不足和校验失败 | 模拟时钟覆盖退避、并发限速、超时；真实流量确认有效；任何失败仍不分配 |
-| Data Schema2 原件比对 | 原始 ERD/DDL，仓库中仍未提供 | 比对 DATABASE_SCHEMA_CN.md 和 migrations 001/002；记录每个差异 | 有逐列核对记录；变更通过新增 003 迁移，已发布迁移不重写 |
-| 标注复核与 holdout | 第二位团队成员；60 条 JSON 和原始30条标签 | 记录 reviewer、日期、分歧和依据；另建未参与调试的表达集 | 有人工复核记录和独立结果，不根据当前程序输出来改 expected |
-| 业务政策确认 | 团队/业务负责人 | 确认 cancel=撤销分配返READY、lapse=终止、部分完工保留、重派约束全部重新填写、日历天FIFO、软/硬交期 | 留下书面确认；如调整政策，同时更新接口、迁移、测试和文档 |
+| 工作 | 下一步 | 完成条件 |
+|---|---|---|
+| Gemini配额和全量回归 | 核查429原因，恢复后先冒烟，再按项目配额运行带间隔的full评估；保存原失败证据 | 全60条计入分母：首轮结构有效率≥98%、核心字段≥90%、观测补造为0 |
+| 生产限速与有界退避 | 原Parser最多一次重试仍无退避；新增可测限速/退避与追踪，不无限重试 | 模拟时钟、并发、超时测试及真实流量确认；任何失败不得分配 |
+| Data Schema2核对 | 获取原ERD/DDL，对照当前001–003逐列记录差异 | 有核对记录；需要变更时新增004，不重写已发布迁移 |
+| 标签与holdout | 第二位成员复核60条解析及30条行为标签；另建未参与调试的表达集 | 有复核者、日期、分歧及独立结果，不反向按程序输出改expected |
+| 解释忠实性 | 对原30条逐一核对决定和解释，数值、理由分别溯源 | 分类结果及失败分析，不能用行为30/30替代解释评分 |
+| 主目标与业务规则 | 确认课程分配的主目标、混合权重、时间政策、cancel/lapse/重派含义 | 团队书面确认，必要时同步代码/测试/文档 |
 
-完整在线命令示例（10 秒不是服务商承诺的配额值，须按实际项目调整）：
+最新真实在线结果仍为2026-10-02：冒烟成功，完整评估14/60匹配、46条最终HTTP429（尝试中另有503）。这说明在线全量验收未通过，不等于收到模型输出的准确率只有23.33%；不能剔除无输出用例宣布通过。本轮没有重新调用真实模型。
 
 ```bash
 source .venv/bin/activate
 python evaluation/verify_gemini_live.py
-python evaluation/verify_gemini_live.py --full --interval-seconds 10 \
-  --output-dir evaluation/live_results/next-run
+python evaluation/verify_gemini_live.py --full --interval-seconds 10 --output-dir evaluation/live_results/next-run
 ```
 
-等待间隔只在评估用例之间生效；现有 Parser 的一次重试仍没有退避。HTTP 429 不能单凭代码判断是分钟额度、每日额度还是服务容量；不要反复无间隔运行全量。在线输出在忽略目录中，审核后的无密钥摘要再单独提交。
+10秒仅为示例，不保证满足配额；不得无间隔反复运行full。原始在线输出在忽略目录中，审阅无密钥摘要后再提交。
 
-## 第二优先级：下一个主要功能是 Session / 多轮澄清
+## 第二优先级：Week9正式展示与Sprint2准备
 
-生命周期闭环已完成，下一次开发可直接从此项开始；无需等标注或 ERD 才做独立设计和测试，但不要伪造外部确认。
+课程总要求为2026-10-16 15:00前上传Sprint1 slides、19:00展示。使用 [中文讲稿](SPRINT1_REVIEW_CN.md) 制作正式 `Presentation_GroupX_Sprint1.pptx/pdf`，填入组号、成员和讲述安排；进行5分钟彩排并准备2分钟问答。此轮为现场讲述，不能写成已经完成视频或正式上传。
 
-建议依次交付：
+展示时区分离线功能验收、模拟器实验和真实模型结果。速度目标时间指标占优，但成本、部分质量及集中程度有基线更好；这些权衡应主动披露。Sprint2成功标准和建议角色已列在讲稿中，实际负责人由团队填写。
 
-1. **冻结会话契约。** 明确 session_id、每条消息独立 request_id、message sequence、role、当前确认字段和待澄清字段；区分 ACTIVE / AWAITING_CLARIFICATION / CLOSED 等状态及迁移规则。
-2. **新增迁移。** 添加 sessions/messages，业务写入仍走现有分配/生命周期事务；序列和会话版本要支持并发冲突检查。若第一优先级已经使用了 003，顺延迁移编号。
-3. **显式合并约束。** 从“澄清问题 → 回复 → 更新已确认字段”状态机开始。测试“改成两个工坊”“不要 W3”“取消刚才的排除”等覆盖旧约束；不能仅拼接历史文本后把冲突交给下游猜。
-4. **隔离与幂等。** 同一条回复重放不重复分配；跨 session 不串订单；两个客户端同时回复时至多一个版本生效。订单已被其他请求分配/完成时必须沿用当前状态和版本保护。
-5. **接入页面/API/CLI。** 页面明确当前会话、待回答问题与结束/新建入口；旧单消息调用保持兼容。再决定何时启用 Parser context_messages，不直接改变冻结 v1 的非空上下文报错语义。
-6. **验收和提交。** 新增真实多轮 E2E、并发/中断恢复、覆盖旧约束、跨会话和部分完工订单测试；跑完整验收；更新 release manifest、中文使用说明及此交接文件，按功能分英文 commit 推送 ningtao。
+## 第三优先级：工坊管理与进一步评估
 
-完成标准：同一持久库上演示“缺失订单号 → 回答 → 修改约束 → 分配”，同时证明跨会话隔离、重复回复幂等，原有完工/撤销/重派及 150 条基线不退化。
+- 工坊关闭/恢复、产能变更和队列校正：先明确数据来自事件还是外部快照；使用新迁移、版本检查和操作者审计。必须维护 baseline + 活动预留 = current_queue_days，不能直接修改聚合队列而丢掉分项。
+- 评估扩展：适配已完成，不必重写；预先固定更多seeds及分析方法，再跑主/次/hybrid配置。单工坊官方结果与拆单补充实验分开；标准与shock的返工抽样不同，不把差值解释为纯停工效应。
+- 语言扩展：在现有session_v1边界之外，优先收集复合约束、自由表达和中文失败例。先明确变更契约及证据校验，再扩展；不直接把历史拼接给模型后允许写库。
+- 时间和策略：当前日历天FIFO、UI ceil/官方round；hybrid混合不同单位且为启发式。先确认业务规则和权重，再考虑其他优化算法。
 
-## 第三优先级：数据管理与课程评估
+RAG、Agent编排、公网部署、账号权限、自动完工/过期继续留待明确需求，不阻塞当前课程主链路。
 
-- **真实数据同步与管理入口**：CSV 目前是初始化种子；先明确后续是事件还是外部快照。增加工坊关闭/恢复、产能变更、队列校正；必须有版本检查和审计，并维护 baseline + 活动预留 = current_queue_days，不能只直接 UPDATE 聚合队列。
-- **官方 simulator adapter**：新增调用 `Simulator.run(allocator, name)` 的适配，保持 `harness/simulate.py` 原样；官方接口只返回一个 workshop_id，拆单另做补充实验。
-- **对比实验**：随机、最大产能、最低成本和新策略，固定 seed，覆盖 standard/shock，记录 mean/P90 turnaround、late、defect、cost、max share。当前一致性回归不代表新算法优于基线。
-- **算法/解析迭代**：hybrid 仍为启发式；先明确权重/单位/约束再考虑 DP/MILP。复杂否定、预算、精确拆单、更多中文、多个日期和千位分隔符另建错误集，优先避免错误分配。
-- **时间政策**：确认周日停工、运输、返工和插单定义，再改时间模型。当前日历天/ceil 显示和官方 round 仍需在报告中区分。
-
-RAG、Agent 编排、公网部署、账号权限、备份自动化继续留在明确需求之后，不阻塞当前课程主链路。
-
-## 下次接手最短检查清单
+## 下次接手检查
 
 ```bash
 git status --short --branch
-git pull --ff-only origin ningtao
+git log --oneline -8
 source .venv/bin/activate
-python evaluation/verify_mvp.py
-python -m demos.lifecycle_demo
-python -m app.server --db runtime/session-development.sqlite3
+python -m demos.session_demo
+python -m app.server --db runtime/next-stage.sqlite3
 ```
 
-已有 runtime 库先停服务并备份；新功能开发优先使用单独数据库。不要清空 working_order 来“撤销”，不要重置已完工数，不要提交密钥或运行库。Parser/schema 语义变动必须同步 Prompt、校验器、迁移、golden 及接口说明；仅文档变化不需要无意义地重跑全套模型请求。
+先对照工作区与已保存验收记录判断是否需要重跑；仅文档变动不重复调用模型或全量测试。代码有改动时运行相应测试，再按风险执行 `python evaluation/verify_mvp.py`。已有运行库按部署说明先备份，演示优先使用独立库。继续按功能/修改目标分组英文commit并及时推送ningtao，中文文档同步更新。
