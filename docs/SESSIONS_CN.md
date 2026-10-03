@@ -44,6 +44,26 @@
 
 ## 验证与限制
 
+页面入口为“多轮澄清与分配确认”。新建会话使用页面选择的默认目标；恢复会话可粘贴 session_id。刷新后恢复最近会话、消息和上次预览/分配结果。未确认收到响应的操作保存于本浏览器 localStorage；此时需先点击“重试上次操作”，避免产生新的请求 ID。确认时使用预览时的会话版本；跨客户端修改返回 409，再恢复最新会话。
+
+HTTP：`POST /api/sessions` 创建（可传 session_id/objective）；`GET /api/sessions/{id}` 恢复；`POST /api/sessions/{id}/turns` 传 request_id、expected_version、action、message。backend/业务日期由服务配置控制；会话创建后固定。返回 400 参数错误、404 不存在、409 版本/幂等/已关闭冲突、503 数据库错误。普通澄清返回 200，但 `committed=false`。
+
+CLI 示例（重复执行请使用新的会话/请求 ID，或先 inspect 读取原会话状态）：
+
+```bash
+python3 -m app.session_cli --db runtime/session-demo.sqlite3 create --session-id tutorial
+python3 -m app.session_cli --db runtime/session-demo.sqlite3 turn tutorial --expected-version 0 --request-id tutorial-1 --message 'Allocate cheapest; exclude W03.'
+python3 -m app.session_cli --db runtime/session-demo.sqlite3 turn tutorial --expected-version 1 --request-id tutorial-2 --message 'ORD-045'
+python3 -m app.session_cli --db runtime/session-demo.sqlite3 turn tutorial --expected-version 2 --request-id tutorial-3 --message '改成两个工坊'
+python3 -m app.session_cli --db runtime/session-demo.sqlite3 turn tutorial --expected-version 3 --request-id tutorial-confirm --action confirm
+python3 -m app.session_cli --db runtime/session-demo.sqlite3 inspect tutorial
+python3 -m demos.session_demo
+```
+
+CLI 成功保存草稿（含待澄清）返回 0；错误/拒绝/不可行返回 1，脚本仍需读取 JSON 的 committed 判断是否执行分配。`demos.session_demo` 每次新建独立临时持久库，可反复演示，不依赖上面 tutorial 库。
+
 `python -m unittest discover -s tests -p test_sessions.py -v` 覆盖多轮、替换、歧义、隔离、订单改动、部分完工、并发确认、消息审计故障回滚、进程重开、v2→v3 迁移及失败回滚。
+
+2026-10-03 本机 Chrome 实际验收：缺订单请求 → ORD-045 → 改成两个工坊 → 排除 W8 → 刷新，恢复 ACTIVE/version4、W3/W8 排除和 GiantWeave 150 件预览 → 确认，CLOSED/version5；读取订单为 WORKING/version1、W5/150 件。使用独立 /tmp 数据库，未写入用户 runtime。HTTP/CLI 测试另外覆盖版本冲突、重放和关闭保护。
 
 会话是显式状态机与有限命令语法，不宣称支持任意多轮自然语言。没有身份认证；隔离指状态和数据隔离，不是访问权限隔离。LLM 初始解析与 replace 仍受现有在线限流限制。

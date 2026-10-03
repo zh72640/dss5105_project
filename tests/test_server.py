@@ -46,6 +46,34 @@ class LocalAPI(unittest.TestCase):
         self.assertEqual(self.post({'message':'Allocate ORD-045.'},Origin='https://example.com')[0],403)
         self.assertEqual(self.get('/api/history')[1],[])
 
+    def test_session_http_clarification_preview_confirm_and_restore(self):
+        self.assertEqual(self.post({'session_id':'api-session'},path='/api/sessions')[0],200)
+        route='/api/sessions/api-session/turns'
+        first={'request_id':'turn-1','expected_version':0,'message':'Allocate cheapest.'}
+        self.assertEqual(self.post(first,path=route)[1]['session']['state'],'AWAITING_CLARIFICATION')
+        second={'request_id':'turn-2','expected_version':1,'message':'ORD-045'}
+        self.assertEqual(self.post(second,path=route)[1]['result']['decision_status'],'REVIEW')
+        self.assertEqual(self.get('/api/orders/ORD-045')[1]['state'],'READY')
+        self.assertEqual(self.get('/api/sessions/api-session')[1]['version'],2)
+        confirm={'request_id':'turn-3','expected_version':2,'action':'confirm'}
+        self.assertTrue(self.post(confirm,path=route)[1]['committed'])
+        self.assertTrue(self.post(confirm,path=route)[1]['replayed'])
+        self.assertEqual(self.get('/api/sessions/api-session')[1]['state'],'CLOSED')
+        with urlopen(self.base+'/sessions.js',timeout=5) as response:
+            self.assertIn(b'localStorage',response.read())
+
+    def test_session_http_validation_version_and_origin(self):
+        self.assertEqual(self.post({'session_id':'s'},path='/api/sessions')[0],200)
+        route='/api/sessions/s/turns'
+        body={'request_id':'one','expected_version':0,'message':'ORD-045'}
+        self.assertEqual(self.post(body,path=route,Origin='https://example.com')[0],403)
+        self.assertEqual(self.post(body,path=route)[0],200)
+        self.assertEqual(self.post({**body,'request_id':'two'},path=route)[0],409)
+        for invalid in ({},[],{**body,'expected_version':True},{**body,'db':'/tmp/other'}):
+            self.assertEqual(self.post(invalid,path=route)[0],400)
+        self.assertEqual(self.post({},path='/api/sessions',Origin='https://example.com')[0],403)
+        self.assertEqual(self.post({'backend':'llm'},path='/api/sessions')[0],400)
+
     def test_lifecycle_api_partial_cancel_reallocate_reassign_complete(self):
         self.post({'message':'Allocate ORD-045 to Nimble Needle.'})
         def event(action, **kwargs):

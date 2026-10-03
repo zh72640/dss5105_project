@@ -2,6 +2,7 @@
 import argparse
 import json
 import os
+import re
 import sqlite3
 from datetime import date
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -10,6 +11,7 @@ from urllib.parse import unquote, urlparse
 from app.db.database import Database
 from app.pipeline import PIPELINE_VERSION, process_request
 from app.lifecycle import inspect_order, process_event
+from app.sessions import create_session, inspect_session, session_turn
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -36,8 +38,16 @@ def make_server(port=8000, db_path=None, backend="offline", as_of=date(2026, 4, 
             path = urlparse(self.path).path
             if path == "/":
                 return self.send(200, (ROOT / "app/ui/index.html").read_bytes(), "text/html; charset=utf-8")
+            if path == "/sessions.js":
+                return self.send(200, (ROOT / "app/ui/sessions.js").read_bytes(), "text/javascript; charset=utf-8")
             if path == "/api/health":
                 return self.send(200, {"status": "ok", "backend": backend, "as_of_date": as_of.isoformat(), "version": PIPELINE_VERSION})
+            if path.startswith("/api/sessions/"):
+                try:
+                    session = inspect_session(unquote(path[len("/api/sessions/"):]), db_path=db_path)
+                    return self.send(200, session) if session else self.send(404, {"error": "SESSION_NOT_FOUND"})
+                except (sqlite3.Error, OSError, ValueError):
+                    return self.send(503, {"error": "DB_ERROR"})
             if path.startswith("/api/orders/"):
                 try:
                     order = inspect_order(unquote(path[len("/api/orders/"):]), db_path=db_path)
@@ -56,7 +66,8 @@ def make_server(port=8000, db_path=None, backend="offline", as_of=date(2026, 4, 
             return self.send(404, {"error": "NOT_FOUND"})
 
         def do_POST(self):
-            if self.path not in ("/api/requests", "/api/events"):
+            session_route = re.fullmatch(r"/api/sessions/([A-Za-z0-9_-]{1,128})/turns", self.path)
+            if self.path not in ("/api/requests", "/api/events", "/api/sessions") and not session_route:
                 return self.send(404, {"error": "NOT_FOUND"})
             # JSON-only, same-origin local endpoint; no credential-bearing CORS.
             origin = self.headers.get("Origin")
@@ -69,6 +80,18 @@ def make_server(port=8000, db_path=None, backend="offline", as_of=date(2026, 4, 
                 if not 0 < length <= 50000:
                     return self.send(413, {"error": "INVALID_BODY_SIZE"})
                 data = json.loads(self.rfile.read(length))
+                if self.path == "/api/sessions" or session_route:
+                    allowed = {"session_id", "objective"} if not session_route else {"request_id", "expected_version", "action", "message"}
+                    required = set() if not session_route else {"request_id", "expected_version"}
+                    if not isinstance(data, dict) or set(data) - allowed or not required <= set(data):
+                        return self.send(400, {"error": "INVALID_FIELDS"})
+                    payload = (session_turn(session_route[1], **data, db_path=db_path) if session_route else
+                               create_session(**data, backend=backend, as_of=as_of, db_path=db_path))
+                    codes = payload.get("result", {}).get("reason_codes", [])
+                    status = (400 if "INVALID_ARGUMENT" in codes else 404 if "SESSION_NOT_FOUND" in codes else
+                              503 if "DB_ERROR" in codes else 409 if any(c in codes for c in
+                              ("IDEMPOTENCY_CONFLICT", "SESSION_VERSION_CONFLICT", "SESSION_CLOSED", "ORDER_VERSION_CONFLICT")) else 200)
+                    return self.send(status, payload)
                 if self.path == "/api/events":
                     required = {"action", "order_id", "actor", "reason", "expected_version", "event_id"}
                     allowed = required | {"workshop_id", "pieces", "objective", "exclusion", "max_workshops",

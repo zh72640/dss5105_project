@@ -51,6 +51,7 @@ class Sessions(unittest.TestCase):
         self.assertTrue(replay["replayed"])
         self.assertEqual(before, self.order())
         self.assertEqual(len(inspect_session("session-a", database=self.db)["messages"]), 14)
+        self.assertTrue(inspect_session("session-a", database=self.db)["last_response"]["committed"])
         self.assertEqual(self.db.connection.execute("SELECT session_id FROM requests WHERE request_id='confirm-once'").fetchone()[0], "session-a")
 
     def test_session_isolation_and_switch_requires_new_session(self):

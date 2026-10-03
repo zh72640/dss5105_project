@@ -39,6 +39,10 @@ def _snapshot(connection, session_id, history=False):
         result["messages"] = [dict(r) for r in connection.execute(
             "SELECT sequence,request_id,role,action,content,created_at FROM session_messages WHERE session_id=? ORDER BY sequence",
             (session_id,))]
+        latest = connection.execute("""SELECT r.response_json FROM session_messages m
+            JOIN requests r USING(request_id) WHERE m.session_id=? AND m.role='assistant'
+            ORDER BY m.sequence DESC LIMIT 1""", (session_id,)).fetchone()
+        result["last_response"] = json.loads(latest[0]) if latest else None
     return result
 
 

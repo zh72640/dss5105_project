@@ -9,6 +9,17 @@
 <section class="card wide"><h2>候选比较与排除理由</h2><div id="candidates" class="scroll">尚无结果</div><p id="rejected" class="subtle"></p></section>
 <section class="card"><h2>提示与需要处理的问题</h2><div id="warnings" class="warning">请先提交请求。</div><details><summary>查看解析结果</summary><pre id="parsed">{}</pre></details></section>
 <section class="card"><h2>最近请求</h2><div id="history" class="scroll"></div></section>
+<section class="card wide"><h2>多轮澄清与分配确认</h2>
+<p class="subtle">先补齐需求，再核对方案。发送消息只保存草稿，点击“确认分配”才执行。浏览器刷新后可继续当前会话。</p>
+<button id="session-new" type="button">新建会话</button><label for="session-resume-id">会话 ID</label> <input id="session-resume-id" maxlength="128" placeholder="粘贴已有会话 ID"><button id="session-resume" type="button">恢复会话</button>
+<p id="session-state" class="subtle" role="status">尚未创建会话。</p>
+<form id="session-form"><fieldset id="session-fields" disabled><label for="session-message">需求或补充回复</label>
+<textarea id="session-message" maxlength="10000" placeholder="首条：Allocate cheapest; exclude W03.&#10;后续：ORD-045 / 改成两个工坊 / 不要 W3 / 取消刚才的排除"></textarea>
+<button id="session-send" type="submit">发送并预览</button><button id="session-replace" type="button">替换完整请求</button><button id="session-confirm" type="button" disabled>确认分配</button><button id="session-close" type="button">结束会话</button>
+<p class="subtle">每条回复修改一项。替换完整请求会清除未重新写出的旧约束；换订单请新建会话。确认时按最新队列重新计算，最终方案可能变化。</p></fieldset></form>
+<button id="session-retry" type="button" hidden>重试上次操作</button><p id="session-feedback" class="warning" role="status">新建会话后输入分配需求。</p>
+<div id="session-draft" class="scroll"></div><div id="session-preview" class="scroll"></div>
+<details><summary>会话记录</summary><div id="session-messages"></div></details></section>
 <section class="card wide"><h2>生产进度与分配调整</h2>
 <form id="order-lookup"><label for="lifecycle-order">订单号</label> <input id="lifecycle-order" value="ORD-045" required maxlength="128"><button id="load-order">读取订单</button></form>
 <p id="order-state" class="subtle" role="status">先读取订单，核对当前分配和已完工数量。</p><div id="active-allocations" class="scroll"></div>
@@ -63,4 +74,4 @@ try{const response=await fetch('/api/events',{method:'POST',headers:{'Content-Ty
 $('event-status').textContent=`${data.result.decision_status}${data.replayed?' · 已重放':''} · ${data.result.reason_codes.join(', ')} · 操作 ID：${data.request_id}`;$('audit').textContent=JSON.stringify(data,null,2);pendingEvent=null;
 try{await loadOrder()}catch{showOrder(null);$('event-status').textContent+='；请重新读取订单获取最新状态。'}await history();
 }catch(error){$('event-status').textContent=error.message+'；可重试保存，原输入沿用同一操作 ID。'}finally{$('event-fields').disabled=!currentOrder;$('load-order').disabled=false;$('lifecycle-order').disabled=false}});
-</script></body></html>
+</script><script src="/sessions.js"></script></body></html>
