@@ -1,6 +1,6 @@
 # 数据库映射、事务及状态语义
 
-数据库版本 3，迁移文件为 `001_initial.sql`、`002_lifecycle.sql` 和 `003_sessions.sql`。采用 Python 标准库 SQLite。目录中没有 **Data Schema2 原始文件/DDL**；当前结构依据 Week 5/6 计划并增加生命周期和会话扩展，不能宣称与尚未提供的原库完全兼容。
+数据库版本 4，迁移文件为 `001_initial.sql`、`002_lifecycle.sql`、`003_sessions.sql` 和 `004_desk.sql`。采用 Python 标准库 SQLite。目录中没有 **Data Schema2 原始文件/DDL**；当前结构依据 Week 5/6 计划并增加生命周期和会话扩展，不能宣称与尚未提供的原库完全兼容。
 
 ## 表与数据来源
 
@@ -20,6 +20,9 @@
 | lifecycle_events | actor/reason/action/as_of_date/expected_version/applied 与前后完整快照；关联 requests/decision_log |
 | sessions | state/version、固定配置、draft_json、blockers_json、reviewed_order_version、创建/更新时间 |
 | session_messages | session_id/sequence 联合主键，每回合 user/assistant 两条；关联唯一 request_id/role |
+| desk_users | username 主键、随机盐密码哈希、创建时间；由本机命令行创建/重设 |
+| login_sessions | token_hash 主键、username 外键、expires_at Unix 时间；不保存明文 token |
+| request_actors | request_id 主键及外键、actor；与请求/分配同一事务写入 |
 
 `workshops.current_queue_days` 规范化到 `workshop_queue`，仓储通过 join 返回实时队列；避免同一队列在两张表中出现不同值。
 
@@ -82,7 +85,7 @@ SQL/队列错误时整个业务事务 ROLLBACK，再尝试单独保存 ERROR 审
 
 ## 迁移和恢复
 
-首次建库在同一事务内导入 CSV 并运行 001–003；旧 v1 按顺序应用 002/003，旧 v2 应用 003，v3 直接使用。迁移不重复导入、不重置队列，失败回滚；后续变化新增 004，不改已发布迁移。
+首次建库在同一事务内导入 CSV 并运行 001–004；旧 v1 应用 002/003/004，旧 v2 应用 003/004，旧 v3 仅应用 004，v4 直接使用。迁移不重复导入、不重置队列，失败回滚；后续变化应新增 005，不改已发布迁移。
 
 当前已支持显式撤销分配、完工、失效和重派；主数据改单尚未实现。需要回到干净演示环境时，优先使用 `python3 -m demos.week6_demo` 或另一个 `--db` 文件；不要只删除 working_order 行，因为队列和订单状态必须同步恢复。
 
@@ -97,3 +100,9 @@ SQL/队列错误时整个业务事务 ROLLBACK，再尝试单独保存 ERROR 审
 应用发布版本为 v0.3，但原分配 Pipeline 保留 v0.2，使既有 v0.2 key 可继续重放。session_v1 使用独立指纹（会话 ID、预期版本、动作、消息），与其他操作共享 requests 主键。会话确认复用 `_decide/_apply/_record`，未修改分配算法；所有会话记录与生产变更在同一事务内提交。草稿和失败确认不写 working_order/queue/unassigned_order。
 
 `requests.session_id` 是早期预留的 TEXT；003 保持该列不变，通过写入路径保证关联。session_messages 的外键约束连接 sessions 与 requests。会话 SQL 故障回滚所有审计和状态，不像单消息路径另写最佳努力错误记录，调用方保留响应并用原 key 重试。完整边界见 [会话手册](SESSIONS_CN.md)。
+
+## v0.4 身份和审计补充
+
+004 只新增三张表及过期索引，不修改旧表和旧日志。request_actors 不要求 actor 是当前 desk_users 外键，保留历史操作名与 local-demo 标识；HTTP 用户名由服务端认证产生，客户端不能指定会话/直接分配的 actor。生命周期身份仍记录于 lifecycle_events/event。带 actor 的分配/会话幂等指纹包含 actor；省略 actor 时保持原有指纹。
+
+`app.desk` 的首页、工坊和历史接口只读业务数据，首页与历史在读取事务内取得一致快照。导出查全部 requests，不采用旧 `/api/history` 的 30 条上限。审批记录与业务修改在同一事务中提交，审计插入故障时不留下分配。旧 CLI/历史缺失身份保持空值，不猜测审批人。账号备份和迁移步骤见 [部署说明](DEPLOYMENT_CN.md)。

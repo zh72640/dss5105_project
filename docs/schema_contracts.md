@@ -55,3 +55,7 @@ the old `conversation.gate_request()`; use the new pipeline, or explicitly use
 ### MVP v0.3 会话扩展（2026-10-03）
 
 应用发布为 mvp_v0.3；原分配入口仍输出 mvp_v0.2，以保留既有幂等指纹。migration003 新增 sessions/session_messages，独立 session_v1 接口提供消息、完整替换、确认、关闭。Parser v1 仍是单消息契约，会话命令层负责显式合并；合并结果审计需要回溯整段会话。详见 [会话契约](SESSIONS_CN.md) 和 [数据库说明](DATABASE_SCHEMA_CN.md)。
+
+## MVP v0.4 UI 和认证扩展（2026-10-06）
+
+发布版 mvp_v0.4 / Database v4；原 Pipeline v0.2、Parser/Prompt/Session v1 保持。004 新增账号、登录 token 哈希与 request_actors，旧迁移保持原文。HTTP 业务接口默认需要登录；actor 由服务端注入，带 actor 的请求指纹额外绑定身份。拒绝推荐为 message 动作内的显式命令，不扩展 session_messages.action 枚举。新增 dashboard/workshops/audit/export 是读取接口，详细字段和边界见 [UI/API 契约](UI_API_CN.md)。

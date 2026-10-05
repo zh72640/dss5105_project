@@ -1,6 +1,6 @@
 # 多轮澄清与分配确认
 
-更新：2026-10-03；契约 `session_v1`；数据库 migration 003。
+更新：2026-10-06；契约 `session_v1`；会话表来自 migration 003，v0.4 身份扩展来自 004。
 
 ## 使用流程
 
@@ -29,6 +29,7 @@
 | 改目标 | 最快 / 最低成本 / 最低缺陷 / 平衡 | 替换目标，英文 fastest/cheapest/lowest defects/hybrid 也支持 |
 | 取消指定工坊 | 取消指定工坊 / clear preferred workshop | 清空 preferred_workshop |
 | 改交期约束 | 必须准时 / 允许迟交 | 设置或清除硬交期 |
+| 拒绝推荐 | Reject recommendation / 拒绝推荐 | 记录回合，阻止确认，等待修订；action 仍为 message |
 
 每条回复一次修改。含额外文字、复合约束或不支持的表达返回 UNSUPPORTED_REPLY，并阻止确认旧草稿。下一条有效修改可解除该回复错误；初始请求的歧义必须用 replace 完整重填。替换会清除未重新写出的旧约束，UI 应明确提示。
 
@@ -66,4 +67,8 @@ CLI 成功保存草稿（含待澄清）返回 0；错误/拒绝/不可行返回
 
 2026-10-03 本机 Chrome 实际验收：缺订单请求 → ORD-045 → 改成两个工坊 → 排除 W8 → 刷新，恢复 ACTIVE/version4、W3/W8 排除和 GiantWeave 150 件预览 → 确认，CLOSED/version5；读取订单为 WORKING/version1、W5/150 件。使用独立 /tmp 数据库，未写入用户 runtime。HTTP/CLI 测试另外覆盖版本冲突、重放和关闭保护。
 
-会话是显式状态机与有限命令语法，不宣称支持任意多轮自然语言。没有身份认证；隔离指状态和数据隔离，不是访问权限隔离。LLM 初始解析与 replace 仍受现有在线限流限制。
+会话是显式状态机与有限命令语法，不宣称支持任意多轮自然语言。HTTP 已有本地账号认证；所有账号共享工作区，会话隔离仍不是角色或租户隔离。LLM 初始解析与 replace 仍受现有在线限流限制。
+
+## v0.4 英文界面与审批身份
+
+新版页面操作见 [UI 指南](UI_GUIDE_CN.md)。HTTP 接口从登录态注入 actor，客户端传 actor 字段会被拒绝；程序调用 `session_turn` 的 actor 为可选参数。带 actor 时幂等指纹绑定该值，审批人写入 request_actors，与确认分配同事务。预览保留 explanation，所有新会话反馈为英文；旧保存的消息不改写。

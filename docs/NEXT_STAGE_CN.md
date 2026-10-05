@@ -1,17 +1,23 @@
 # 下一阶段交接说明
 
-更新：2026-10-03；GitHub分支 ningtao；当前发布 **MVP v0.3 / Session v1 / Parser、Prompt v1 / Database v3**。原分配Pipeline仍为v0.2，保留既有幂等语义。先阅读 [本轮修改](CHANGELOG_WEEK8_WEEK9_CN.md)、[部署说明](DEPLOYMENT_CN.md) 和 [整体项目说明](PROJECT_OVERVIEW_CN.md)。
+更新：2026-10-06；GitHub分支 ningtao；当前发布 **MVP v0.4 / Session v1 / Parser、Prompt v1 / Database v4**。原分配Pipeline仍为v0.2，保留既有幂等语义。先阅读 [本轮修改](UI_CHANGELOG_CN.md)、[部署说明](DEPLOYMENT_CN.md) 和 [整体项目说明](PROJECT_OVERVIEW_CN.md)。
 
 ## 已经完成，不重复开发
 
 1. 生命周期：部分/全部完工、撤销、失效、原子重派；订单版本、幂等、数量与队列守恒。
 2. 持久化会话：sessions/messages、缺订单号澄清、显式约束修改、预览、确认、关闭、刷新恢复；页面/API/CLI及临时持久库演示。
-3. 并发编辑/确认、跨会话隔离、模型失败阻断、审计故障回滚、v1/v2到v3迁移已验证。Parser v1本身没有开放任意上下文。
+3. 并发编辑/确认、跨会话隔离、模型失败阻断、审计故障回滚、v1/v2/v3到v4迁移已验证。Parser v1本身没有开放任意上下文。
 4. 官方模拟器适配：生产planner单工坊模式，对三基线及四目标运行standard/shock，共14组；原harness和基线未修改。
-5. 168条测试通过、0跳过；60/60离线解析、30/30行为标签；会话/生命周期demo和Chrome实际会话流程通过。
+5. 181条Python测试及5条前端控制器测试通过、0跳过；60/60离线解析、30/30行为标签；会话/生命周期demo和Chrome实际会话流程通过。
 6. 中文部署、整体说明、修改说明、Week8/9验收与Sprint1讲稿已整理。正式slides、团队信息和课程上传仍未完成。
 
 证据入口：`evaluation/results/verification_summary.json`、`simulator_comparison_CN.md`、`session_demo.json`。当前冻结清单为 `docs/release_manifest.json`；历史 `file_change_manifest.json` 和Week5/6文档不代表最新版本。
+
+## UI 交付与仍需补验
+
+本轮英文界面、登录、审批身份、工坊查询、历史分页与全量导出已经完成，不需要重写。新增资料：[操作指南](UI_GUIDE_CN.md)、[需求对照与验收](UI_ACCEPTANCE_CN.md)、[HTTP 契约](UI_API_CN.md)。数据库 004、原始需求副本和 v0.3 冻结清单已保存。正常启动前用 `python -m app.auth 用户名` 建本地账号，旧库先备份。
+
+浏览器工具恢复后，优先补手机宽度、拒绝修订后的最终接受、历史导出及生产页完整点击链；Safari 已完成的检查见验收记录。HTTP/控制器通过不等于全部设备实机通过。不要重新调用真实 Gemini 来验证纯 UI 变动。
 
 ## 第一优先级：在线可靠性与外部验收
 
@@ -47,7 +53,7 @@ python evaluation/verify_gemini_live.py --full --interval-seconds 10 --output-di
 - 语言扩展：在现有session_v1边界之外，优先收集复合约束、自由表达和中文失败例。先明确变更契约及证据校验，再扩展；不直接把历史拼接给模型后允许写库。
 - 时间和策略：当前日历天FIFO、UI ceil/官方round；hybrid混合不同单位且为启发式。先确认业务规则和权重，再考虑其他优化算法。
 
-RAG、Agent编排、公网部署、账号权限、自动完工/过期继续留待明确需求，不阻塞当前课程主链路。
+RAG、Agent编排、公网部署、角色与租户权限、自动完工/过期继续留待明确需求，不阻塞当前课程主链路。
 
 ## 下次接手检查
 

@@ -1,6 +1,6 @@
 # SweaterCo Dispatch Desk 项目整体说明
 
-更新：2026-10-03，MVP v0.3。项目对应 DSS5105 Track 2：Quick-Response Subcontracting Desk，为小批量服装订单选择合适外包工坊。
+更新：2026-10-06，MVP v0.4。项目对应 DSS5105 Track 2：Quick-Response Subcontracting Desk，为小批量服装订单选择合适外包工坊。
 
 ## 1. 问题、用户与价值
 
@@ -40,8 +40,11 @@ LLM 只做输入提取，不决定资格、不计算金额/天数、不直接写
 | 分配 | app/allocator/planner.py | 单工坊/整数拆单、最大工坊数、排除与指定工坊、软/硬交期 |
 | 持久化主链路 | app/pipeline.py | requests、解析历史、决策、工作分配、队列一起提交 |
 | 生产事件 | app/lifecycle.py | complete/cancel/lapse/reassign、部分完工守恒、操作者和原因 |
-| 本机界面 | app/server.py、app/ui | 单消息分配、会话预览、生产操作、历史及审计 |
+| 本机界面 | app/server.py、app/ui | 英文登录、概览、推荐与澄清、决策理由、历史导出、工坊查询、生产操作 |
+| 账号与读取模型 | app/auth.py、app/desk.py | 本地登录、服务端审批身份、全量审计与统计；账号共享工作区 |
 | 评估 | evaluation/verify_mvp.py | 回归、持久化演示、官方基线与新策略对比 |
+
+新界面详见 [UI 修改说明](UI_CHANGELOG_CN.md)、[操作指南](UI_GUIDE_CN.md) 和 [验收边界](UI_ACCEPTANCE_CN.md)。HTTP 业务接口默认需要登录，原中文页面保留在 `/legacy`。
 
 接口明细与命令示例见 [系统手册](SYSTEM_GUIDE_CN.md)、[会话手册](SESSIONS_CN.md) 和 [生命周期手册](LIFECYCLE_CN.md)。
 
@@ -69,13 +72,13 @@ LLM 只做输入提取，不决定资格、不计算金额/天数、不直接写
 
 速度目标在时间指标上更好，同时成本高于三种基线，缺陷率也不全面占优。纯 min_cost 与 cheapest 在本次结果中相同。完整 P90、集中程度、缺陷目标、冲击和基线胜出情况见 [对比报告](../evaluation/results/simulator_comparison_CN.md)。
 
-168 条自动测试通过、0 跳过；60/60 离线解析、30/30 原始行为回归、生命周期和会话连续演示通过。60 条标注是开发回归集，不是独立盲测；30 条成绩只描述行为匹配，解释忠实性需另评。真实 Gemini 最新全量验收仍因 429 失败，不能用离线成绩替代。
+181 条 Python 自动测试及 5 条前端控制器测试通过、0 跳过；60/60 离线解析、30/30 原始行为回归、生命周期和会话连续演示通过。60 条标注是开发回归集，不是独立盲测；30 条成绩只描述行为匹配，解释忠实性需另评。真实 Gemini 最新全量验收仍因 429 失败，不能用离线成绩替代。
 
 ## 6. 工程保证与适用范围
 
 所有生产变更有事务保护；同 key 重放不重复计入队列，订单和会话版本阻止过期修改。会话预览不写生产状态，确认在锁内重算最新数据；其他订单的队列变化可改变最终方案。SQL 失败回滚会话与生产数据。
 
-已验证 v1/v2 到 v3 的事务迁移；原 Pipeline v0.2 版本保持不变以保留既有幂等语义。迁移、新增表和字段见 [数据库说明](DATABASE_SCHEMA_CN.md)，部署和恢复见 [部署说明](DEPLOYMENT_CN.md)。
+已验证 v1/v2/v3 到 v4 的事务迁移；原 Pipeline v0.2 版本保持不变以保留既有幂等语义。迁移、新增表和字段见 [数据库说明](DATABASE_SCHEMA_CN.md)，部署和恢复见 [部署说明](DEPLOYMENT_CN.md)。
 
 ## 7. 尚未完成与后续路线
 
