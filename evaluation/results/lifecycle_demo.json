@@ -134,7 +134,7 @@
             "error": null
           }
         ],
-        "latency_ms": 0.199,
+        "latency_ms": 0.195,
         "validation_result": "valid"
       },
       "result": {
@@ -255,7 +255,7 @@
             "estimated_days": 3.1538461538461537,
             "estimated_cost": 180.0,
             "objective": "min_delay",
-            "assigned_at": "2026-10-03T02:39:34.291834+00:00",
+            "assigned_at": "2026-10-05T11:54:13.924918+00:00",
             "completed_pieces": 50,
             "capacity_at_assignment": 130,
             "queue_remaining_days": 0.7692307692307693
@@ -469,7 +469,7 @@
             "error": null
           }
         ],
-        "latency_ms": 0.179,
+        "latency_ms": 0.199,
         "validation_result": "valid"
       },
       "result": {
@@ -693,7 +693,7 @@
             "estimated_days": 3.0,
             "estimated_cost": 100.0,
             "objective": "min_delay",
-            "assigned_at": "2026-10-03T02:39:34.296976+00:00",
+            "assigned_at": "2026-10-05T11:54:13.930800+00:00",
             "completed_pieces": 0,
             "capacity_at_assignment": 100,
             "queue_remaining_days": 1.0
@@ -851,7 +851,7 @@
         "as_of_date": "2026-04-01",
         "expected_version": 5,
         "applied": 1,
-        "created_at": "2026-10-03T02:39:34.298141+00:00"
+        "created_at": "2026-10-05T11:54:13.932146+00:00"
       },
       {
         "event_id": "reassign-100",
@@ -861,7 +861,7 @@
         "as_of_date": "2026-04-01",
         "expected_version": 4,
         "applied": 1,
-        "created_at": "2026-10-03T02:39:34.296596+00:00"
+        "created_at": "2026-10-05T11:54:13.930355+00:00"
       },
       {
         "event_id": "cancel-remaining",
@@ -871,7 +871,7 @@
         "as_of_date": "2026-04-01",
         "expected_version": 2,
         "applied": 1,
-        "created_at": "2026-10-03T02:39:34.293876+00:00"
+        "created_at": "2026-10-05T11:54:13.927416+00:00"
       },
       {
         "event_id": "complete-50",
@@ -881,7 +881,7 @@
         "as_of_date": "2026-04-01",
         "expected_version": 1,
         "applied": 1,
-        "created_at": "2026-10-03T02:39:34.292768+00:00"
+        "created_at": "2026-10-05T11:54:13.925970+00:00"
       }
     ]
   },

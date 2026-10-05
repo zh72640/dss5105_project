@@ -1,5 +1,18 @@
 test_hard_deadline_cost_respects_queue_capacity (test_allocator.IntegerPlanner.test_hard_deadline_cost_respects_queue_capacity) ... ok
 test_small_plans_match_exhaustive_optimum (test_allocator.IntegerPlanner.test_small_plans_match_exhaustive_optimum) ... ok
+test_assets_are_served_and_arbitrary_paths_are_not (test_desk.DeskHTTP.test_assets_are_served_and_arbitrary_paths_are_not) ... ok
+test_authenticated_lifecycle_cannot_spoof_actor (test_desk.DeskHTTP.test_authenticated_lifecycle_cannot_spoof_actor) ... ok
+test_filters_pagination_and_export_include_more_than_thirty_records (test_desk.DeskHTTP.test_filters_pagination_and_export_include_more_than_thirty_records) ... ok
+test_intake_clarification_rejection_revision_approval_and_dashboard (test_desk.DeskHTTP.test_intake_clarification_rejection_revision_approval_and_dashboard) ... ok
+test_login_gates_read_write_and_export_and_logout_revokes_cookie (test_desk.DeskHTTP.test_login_gates_read_write_and_export_and_logout_revokes_cookie) ... ok
+test_login_origin_rate_limit_and_untrusted_actor (test_desk.DeskHTTP.test_login_origin_rate_limit_and_untrusted_actor) ... ok
+test_workshop_filters_and_read_models_do_not_mutate_business_state (test_desk.DeskHTTP.test_workshop_filters_and_read_models_do_not_mutate_business_state) ... ok
+test_actor_audit_failure_rolls_back_allocation_and_session (test_desk.DeskPersistence.test_actor_audit_failure_rolls_back_allocation_and_session) ... ok
+test_actor_bound_replay_conflict_does_not_attribute_to_second_user (test_desk.DeskPersistence.test_actor_bound_replay_conflict_does_not_attribute_to_second_user) ... ok
+test_csv_formula_safety_and_legacy_approver_is_not_invented (test_desk.DeskPersistence.test_csv_formula_safety_and_legacy_approver_is_not_invented) ... ok
+test_lapsed_and_reassigned_records_reflect_committed_state (test_desk.DeskPersistence.test_lapsed_and_reassigned_records_reflect_committed_state) ... ok
+test_password_hash_session_expiry_reset_and_validation (test_desk.DeskPersistence.test_password_hash_session_expiry_reset_and_validation) ... ok
+test_v3_upgrade_preserves_session_and_allocation_and_rolls_back_failure (test_desk.DeskPersistence.test_v3_upgrade_preserves_session_and_allocation_and_rolls_back_failure) ... ok
 test_01_normal_single_workshop_and_mapping (test_e2e.EndToEnd.test_01_normal_single_workshop_and_mapping) ... ok
 test_02_multiple_workshops_conserve_pieces (test_e2e.EndToEnd.test_02_multiple_workshops_conserve_pieces) ... ok
 test_03_exclusion_applied_before_allocation (test_e2e.EndToEnd.test_03_exclusion_applied_before_allocation) ... ok
@@ -168,6 +181,6 @@ test_order_resolution (test_tools.ToolTests.test_order_resolution) ... ok
 test_suspended_is_ineligible (test_tools.ToolTests.test_suspended_is_ineligible) ... ok
 
 ----------------------------------------------------------------------
-Ran 168 tests in 5.513s
+Ran 181 tests in 11.864s
 
 OK

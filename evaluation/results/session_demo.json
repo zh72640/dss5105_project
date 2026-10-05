@@ -65,7 +65,7 @@
             "error": null
           }
         ],
-        "latency_ms": 0.164,
+        "latency_ms": 0.172,
         "validation_result": "valid",
         "field_sources": {
           "base_session_version": 0,
@@ -105,7 +105,7 @@
           "PARSER_NEEDS_CLARIFICATION"
         ],
         "warnings": [],
-        "message": "Please provide a complete new message: order_id 请补充订单号，或输入：改成两个工坊、不要 W3、取消刚才的排除、最低成本、最快、最低缺陷。复杂修改请用“替换完整请求”。核对草稿后点击确认分配。",
+        "message": "Please provide a complete new message: order_id Provide an order ID, or use: use two workshops, exclude W3, clear exclusions, cheapest, fastest, lowest defects. For complex changes use Replace full request. Review the recommendation before accepting.",
         "candidate_ranking": []
       },
       "replayed": false,
@@ -118,8 +118,8 @@
         "backend": "offline",
         "as_of_date": "2026-04-01",
         "reviewed_order_version": null,
-        "created_at": "2026-10-03T02:39:34.303832+00:00",
-        "updated_at": "2026-10-03T02:39:34.304857+00:00",
+        "created_at": "2026-10-05T11:54:13.938451+00:00",
+        "updated_at": "2026-10-05T11:54:13.939572+00:00",
         "draft": {
           "order_id": null,
           "customer": null,
@@ -388,7 +388,8 @@
         "recommended_workshop_name": "FreshStart",
         "estimated_delivery_date": "2026-04-05",
         "deadline_met": true,
-        "message": "草稿已更新；请核对方案并确认分配。"
+        "message": "Draft updated. Review the recommendation and accept to allocate.",
+        "explanation": "Allocated 150 pieces to 1 workshop(s) using min_cost."
       },
       "replayed": false,
       "committed": false,
@@ -400,8 +401,8 @@
         "backend": "offline",
         "as_of_date": "2026-04-01",
         "reviewed_order_version": 0,
-        "created_at": "2026-10-03T02:39:34.303832+00:00",
-        "updated_at": "2026-10-03T02:39:34.305873+00:00",
+        "created_at": "2026-10-05T11:54:13.938451+00:00",
+        "updated_at": "2026-10-05T11:54:13.940665+00:00",
         "draft": {
           "order_id": "ORD-045",
           "customer": null,
@@ -876,7 +877,8 @@
         "recommended_workshop_name": "FreshStart",
         "estimated_delivery_date": "2026-04-05",
         "deadline_met": true,
-        "message": "草稿已更新；请核对方案并确认分配。"
+        "message": "Draft updated. Review the recommendation and accept to allocate.",
+        "explanation": "Allocated 150 pieces to 1 workshop(s) using min_cost."
       },
       "replayed": false,
       "committed": false,
@@ -888,8 +890,8 @@
         "backend": "offline",
         "as_of_date": "2026-04-01",
         "reviewed_order_version": 0,
-        "created_at": "2026-10-03T02:39:34.303832+00:00",
-        "updated_at": "2026-10-03T02:39:34.306990+00:00",
+        "created_at": "2026-10-05T11:54:13.938451+00:00",
+        "updated_at": "2026-10-05T11:54:13.941930+00:00",
         "draft": {
           "order_id": "ORD-045",
           "customer": null,
@@ -1261,7 +1263,8 @@
         "recommended_workshop_name": "FreshStart",
         "estimated_delivery_date": "2026-04-05",
         "deadline_met": true,
-        "message": "草稿已更新；请核对方案并确认分配。"
+        "message": "Draft updated. Review the recommendation and accept to allocate.",
+        "explanation": "Allocated 150 pieces to 1 workshop(s) using min_cost."
       },
       "replayed": false,
       "committed": false,
@@ -1273,8 +1276,8 @@
         "backend": "offline",
         "as_of_date": "2026-04-01",
         "reviewed_order_version": 0,
-        "created_at": "2026-10-03T02:39:34.303832+00:00",
-        "updated_at": "2026-10-03T02:39:34.308114+00:00",
+        "created_at": "2026-10-05T11:54:13.938451+00:00",
+        "updated_at": "2026-10-05T11:54:13.943142+00:00",
         "draft": {
           "order_id": "ORD-045",
           "customer": null,
@@ -1874,7 +1877,8 @@
         "recommended_workshop_name": "BudgetWorks",
         "estimated_delivery_date": "2026-04-10",
         "deadline_met": false,
-        "message": "草稿已更新；请核对方案并确认分配。"
+        "message": "Draft updated. Review the recommendation and accept to allocate.",
+        "explanation": "Allocated 150 pieces to 1 workshop(s) using min_cost."
       },
       "replayed": false,
       "committed": false,
@@ -1886,8 +1890,8 @@
         "backend": "offline",
         "as_of_date": "2026-04-01",
         "reviewed_order_version": 0,
-        "created_at": "2026-10-03T02:39:34.303832+00:00",
-        "updated_at": "2026-10-03T02:39:34.309386+00:00",
+        "created_at": "2026-10-05T11:54:13.938451+00:00",
+        "updated_at": "2026-10-05T11:54:13.944503+00:00",
         "draft": {
           "order_id": "ORD-045",
           "customer": null,
@@ -2360,7 +2364,8 @@
         "recommended_workshop_name": "FreshStart",
         "estimated_delivery_date": "2026-04-05",
         "deadline_met": true,
-        "message": "草稿已更新；请核对方案并确认分配。"
+        "message": "Draft updated. Review the recommendation and accept to allocate.",
+        "explanation": "Allocated 150 pieces to 1 workshop(s) using min_cost."
       },
       "replayed": false,
       "committed": false,
@@ -2372,8 +2377,8 @@
         "backend": "offline",
         "as_of_date": "2026-04-01",
         "reviewed_order_version": 0,
-        "created_at": "2026-10-03T02:39:34.303832+00:00",
-        "updated_at": "2026-10-03T02:39:34.310840+00:00",
+        "created_at": "2026-10-05T11:54:13.938451+00:00",
+        "updated_at": "2026-10-05T11:54:13.945779+00:00",
         "draft": {
           "order_id": "ORD-045",
           "customer": null,
@@ -2873,8 +2878,8 @@
       "backend": "offline",
       "as_of_date": "2026-04-01",
       "reviewed_order_version": 0,
-      "created_at": "2026-10-03T02:39:34.303832+00:00",
-      "updated_at": "2026-10-03T02:39:34.312523+00:00",
+      "created_at": "2026-10-05T11:54:13.938451+00:00",
+      "updated_at": "2026-10-05T11:54:13.947437+00:00",
       "draft": {
         "order_id": "ORD-045",
         "customer": null,
@@ -2919,7 +2924,7 @@
         "estimated_days": 3.5,
         "estimated_cost": 150.0,
         "objective": "min_cost",
-        "assigned_at": "2026-10-03T02:39:34.312447+00:00",
+        "assigned_at": "2026-10-05T11:54:13.947350+00:00",
         "completed_pieces": 0,
         "capacity_at_assignment": 100,
         "queue_remaining_days": 1.5

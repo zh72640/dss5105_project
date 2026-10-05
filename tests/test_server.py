@@ -11,7 +11,7 @@ from app.server import make_server
 class LocalAPI(unittest.TestCase):
     def setUp(self):
         self.temp=tempfile.TemporaryDirectory()
-        self.server=make_server(0,Path(self.temp.name)/'api.sqlite3')
+        self.server=make_server(0,Path(self.temp.name)/'api.sqlite3',require_auth=False)
         self.thread=threading.Thread(target=self.server.serve_forever,daemon=True)
         self.thread.start(); self.base=f'http://127.0.0.1:{self.server.server_port}'
 
@@ -37,7 +37,7 @@ class LocalAPI(unittest.TestCase):
         self.assertTrue(self.post({'message':'Allocate ORD-045.','request_id':'api-1'})[1]['replayed'])
         self.assertEqual(self.get('/api/history')[1][0]['request_id'],'api-1')
         self.assertEqual(self.post({'message':'Allocate ORD-073.','request_id':'api-1'})[0],409)
-        with urlopen(self.base+'/',timeout=5) as response:
+        with urlopen(self.base+'/legacy',timeout=5) as response:
             self.assertIn(b'/api/requests',response.read())
 
     def test_bad_inputs_and_cross_origin(self):
@@ -113,7 +113,7 @@ class LocalAPI(unittest.TestCase):
         self.assertEqual(self.get('/api/orders/ORD-045')[1]['state'],'WORKING')
 
     def test_lifecycle_page_exposes_review_and_explicit_operations(self):
-        with urlopen(self.base+'/',timeout=5) as response:
+        with urlopen(self.base+'/legacy',timeout=5) as response:
             page=response.read()
         for marker in (b'/api/events',b'/api/orders/',b'expected_version',b'event-actor',b'event-reason'):
             self.assertIn(marker,page)

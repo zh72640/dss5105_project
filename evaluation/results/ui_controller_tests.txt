@@ -1,0 +1,13 @@
+✔ accept is disabled for missing, blocked, rejected and already closed drafts (1.903584ms)
+✔ uncertain confirmation persists the same key/version and blocks another confirmation (1.541667ms)
+✔ session creation resumes with the original intake after a failed first turn (0.571125ms)
+✔ a rejected HTTP version is not automatically retried as a new confirmation (0.972292ms)
+✔ two rapid confirmation clicks create only one in-flight write (0.488208ms)
+ℹ tests 5
+ℹ suites 0
+ℹ pass 5
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 96.534583

@@ -5,7 +5,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-DB_VERSION = 3
+DB_VERSION = 4
 
 
 def utc_now():
@@ -33,12 +33,14 @@ class Database:
             has_table = self.connection.execute("SELECT 1 FROM sqlite_master WHERE name='schema_migrations'").fetchone()
             if has_table:
                 version = self.connection.execute("SELECT MAX(version) FROM schema_migrations").fetchone()[0]
-                if version not in (1, 2, DB_VERSION):
+                if version not in (1, 2, 3, DB_VERSION):
                     raise sqlite3.DatabaseError("unsupported_database_version")
                 if version == 1:
                     self._upgrade_lifecycle()
                 if version < 3:
                     self._upgrade_sessions()
+                if version < 4:
+                    self._upgrade_desk()
                 return
             sql = (Path(__file__).parent / "migrations/001_initial.sql").read_text()
             for statement in sql.split(";"):
@@ -62,6 +64,14 @@ class Database:
             self.connection.execute("INSERT INTO schema_migrations VALUES (?,?)", (1, utc_now()))
             self._upgrade_lifecycle()
             self._upgrade_sessions()
+            self._upgrade_desk()
+
+    def _upgrade_desk(self):
+        sql = (Path(__file__).parent / "migrations/004_desk.sql").read_text()
+        for statement in sql.split(";"):
+            if statement.strip():
+                self.connection.execute(statement)
+        self.connection.execute("INSERT INTO schema_migrations VALUES (?,?)", (4, utc_now()))
 
     def _upgrade_sessions(self):
         sql = (Path(__file__).parent / "migrations/003_sessions.sql").read_text()
