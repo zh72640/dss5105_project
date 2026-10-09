@@ -1,4 +1,4 @@
-# MVP v0.4 UI HTTP 契约
+# MVP v0.5 UI HTTP 契约
 
 本机服务地址默认 `http://127.0.0.1:8000`，所有写接口只接受 `application/json`，拒绝不匹配的 Origin。除静态资源、health、auth/me 和 login 外，默认需登录。账户共享全部工作区数据，没有逐用户订单授权。
 
@@ -17,7 +17,8 @@
 
 | 方法与地址 | 主要字段与行为 |
 |---|---|
-| GET `/api/dashboard` | stats、inbox、orders、workshops、business_date、audit_date_utc |
+| GET `/api/ai/status` | backend、configured、model；需登录；不返回密钥或环境转储 |
+| GET `/api/dashboard` | stats、inbox、orders、workshops、business_date、audit_date_utc、recent_allocations（最近五次批准摘要） |
 | GET `/api/workshops?q=&status=&category=` | items、business_date；q 名称/ID 子串，status/category 精确匹配 |
 | GET `/api/audit?q=&status=&page=1&page_size=25` | items、total、page、page_size；q 订单/请求 ID 字面子串；page_size 1–100 |
 | GET `/api/audit/{request_id}` | 单个完整决策条目；不存在返回 404 |
@@ -49,6 +50,14 @@ stats.pending 为可处理开放会话及没有开放会话代表的待分配订
 ```
 
 action 为 message、replace、confirm、close。confirm/close 的 message 必须为空；只有 confirm 且 result.success 才 committed=true。拒绝采用 message=`Reject recommendation`，产生 RECOMMENDATION_REJECTED 阻断，后续有效修订解除。同一会话不能换订单。
+
+v0.5 新增结构化表单路径：`action=message`，传 `changes` 对象，message 省略或为空。changes 必须非空且只能含 order_id、customer、product、category、pieces、order_date、due_date、objective、exclusion、num_workshop_allowed、preferred_workshop、deadline_required。精确字段类型在 `app/agent/draft_edits.py` 定义；未知字段/无效日期/错误类型返回 400。缺少的键保留旧值；exclusion 整体替换；订单描述字段可显式 null 以使用登记值；订单已绑定不能切换。此路径不调用任何模型，也不会编辑订单主数据。
+
+```json
+{"request_id":"form-edit-1","expected_version":1,"action":"message","changes":{"objective":"min_cost","exclusion":["W3"],"num_workshop_allowed":2}}
+```
+
+changes 写入本回合审计与幂等指纹；保持相同 key、version、changes 可安全重试。自然语言 DeepSeek 后续回合仅解析当前消息，本机合并非空字段、追加排除；明确清除操作使用表单或快捷命令。新增 result.assistant_reply 为实际结果的自然语言摘要，result.clarifications 为 `{code,field,question,help}` 列表。摘要与会话消息同事务保存。audit 的 summary 字段和 CSV/JSON 导出也提供自然语言摘要。
 
 客户端不得提交 actor，服务端从登录态注入。带 actor 的幂等指纹绑定身份，actor 审计、会话和业务改变在同一事务保存。409 包括版本冲突、关闭会话或幂等冲突；503 保存失败可沿用原 ID 重试；200 中仍可能是 CLARIFY/REFUSE 等业务结果，调用方必须检查 result/committed。
 

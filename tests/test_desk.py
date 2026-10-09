@@ -67,7 +67,7 @@ class DeskHTTP(unittest.TestCase):
 
     def test_login_gates_read_write_and_export_and_logout_revokes_cookie(self):
         self.assertIsNone(self.call('/api/auth/me')[1]['username'])
-        for path in ('/api/dashboard', '/api/workshops', '/api/audit', '/api/audit/export', '/api/orders/ORD-045', '/api/history', '/api/sessions/unknown'):
+        for path in ('/api/ai/status', '/api/dashboard', '/api/workshops', '/api/audit', '/api/audit/export', '/api/orders/ORD-045', '/api/history', '/api/sessions/unknown'):
             self.assertEqual(self.call(path)[0], 401, path)
         self.assertEqual(self.call('/api/sessions', {})[0], 401)
         self.assertEqual(self.call('/api/auth/login', {'username': 'operator', 'password': 'wrong'})[0], 401)
@@ -90,6 +90,22 @@ class DeskHTTP(unittest.TestCase):
         for _ in range(9):
             self.call('/api/auth/login', {'username': 'operator', 'password': 'wrong'})
         self.assertEqual(self.call('/api/auth/login', {'username': 'operator', 'password': 'wrong'})[0], 429)
+
+    def test_assistant_form_http_summary_status_and_recent_approvals(self):
+        self.login()
+        self.assertEqual(self.call('/api/ai/status')[1], {'backend':'offline','configured':True,'model':'rules_v1'})
+        self.call('/api/sessions', {'session_id':'form'})
+        preview = self.turn('form', 0, changes={'order_id':'ORD-045','objective':'min_cost'})[1]
+        self.assertIn('awaiting your approval', preview['result']['assistant_reply'])
+        self.assertFalse(self.call('/api/dashboard')[1]['recent_allocations'])
+        approved = self.turn('form', 1, action='confirm')[1]
+        self.assertTrue(approved['committed'])
+        recent = self.call('/api/dashboard')[1]['recent_allocations']
+        self.assertEqual(recent[0]['order_id'], 'ORD-045')
+        self.assertIn('Approved and saved', recent[0]['summary'])
+        audit = self.call('/api/audit/form-1')[1]
+        self.assertEqual(audit['summary'], approved['result']['assistant_reply'])
+        self.assertEqual(audit['approved_by'], 'operator')
 
     def test_intake_clarification_rejection_revision_approval_and_dashboard(self):
         self.login()

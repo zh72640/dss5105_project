@@ -1,2 +1,2 @@
 """Track 2 dispatch desk application."""
-APP_VERSION = "mvp_v0.4"
+APP_VERSION = "mvp_v0.5"

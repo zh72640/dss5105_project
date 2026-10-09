@@ -6,6 +6,7 @@ import sqlite3
 import uuid
 from datetime import date
 from app.agent.parser import parse_with_telemetry
+from app.agent.deepseek_client import default_backend, backend_status
 from app.agent.llm_client import (GEMINI_MODEL, GEMINI_PROVIDER,
                                   GEMINI_TEMPERATURE, GEMINI_THINKING_LEVEL)
 from app.allocator.planner import plan
@@ -126,10 +127,10 @@ def process_request(text: str, objective="min_delay", *, db_path=None, database=
         return {"request_id": request_id, "result": terminal("DECLINE", "INVALID_MESSAGE", "Message must be text.")}
     if actor is not None and (not isinstance(actor, str) or not 1 <= len(actor.strip()) <= 120):
         return {"request_id": request_id, "result": terminal("ERROR", "INVALID_ARGUMENT", "Invalid actor.")}
-    backend_name = backend if isinstance(backend, str) else getattr(backend, "name", None) or os.getenv("PARSER_BACKEND", "offline")
+    backend_name = backend if isinstance(backend, str) else getattr(backend, "name", None) or default_backend()
     config = [text, objective, as_of.isoformat(), backend_name,
               [GEMINI_PROVIDER, GEMINI_MODEL, GEMINI_TEMPERATURE, GEMINI_THINKING_LEVEL]
-              if backend_name == "llm" else "rules_v1", PIPELINE_VERSION]
+              if backend_name == "llm" else backend_status("deepseek").get("model") if backend_name == "deepseek" else "rules_v1", PIPELINE_VERSION]
     if actor is not None:
         config.append(actor)
     fingerprint = hashlib.sha256(json.dumps(config).encode()).hexdigest()

@@ -65,7 +65,7 @@
             "error": null
           }
         ],
-        "latency_ms": 0.172,
+        "latency_ms": 0.174,
         "validation_result": "valid",
         "field_sources": {
           "base_session_version": 0,
@@ -105,8 +105,17 @@
           "PARSER_NEEDS_CLARIFICATION"
         ],
         "warnings": [],
-        "message": "Please provide a complete new message: order_id Provide an order ID, or use: use two workshops, exclude W3, clear exclusions, cheapest, fastest, lowest defects. For complex changes use Replace full request. Review the recommendation before accepting.",
-        "candidate_ranking": []
+        "message": "Which order should I allocate? Choose an existing order below, or reply with its ID, for example ORD-045.",
+        "candidate_ranking": [],
+        "assistant_reply": "Which order should I allocate? Choose an existing order below, or reply with its ID, for example ORD-045.",
+        "clarifications": [
+          {
+            "code": "order_id",
+            "field": "order_id",
+            "question": "Which order should I allocate?",
+            "help": "Choose an existing order below, or reply with its ID, for example ORD-045."
+          }
+        ]
       },
       "replayed": false,
       "committed": false,
@@ -118,8 +127,8 @@
         "backend": "offline",
         "as_of_date": "2026-04-01",
         "reviewed_order_version": null,
-        "created_at": "2026-10-05T11:54:13.938451+00:00",
-        "updated_at": "2026-10-05T11:54:13.939572+00:00",
+        "created_at": "2026-10-07T21:03:44.718266+00:00",
+        "updated_at": "2026-10-07T21:03:44.719326+00:00",
         "draft": {
           "order_id": null,
           "customer": null,
@@ -388,8 +397,10 @@
         "recommended_workshop_name": "FreshStart",
         "estimated_delivery_date": "2026-04-05",
         "deadline_met": true,
-        "message": "Draft updated. Review the recommendation and accept to allocate.",
-        "explanation": "Allocated 150 pieces to 1 workshop(s) using min_cost."
+        "message": "Proposed — awaiting your approval: ORD-045, 150 pieces. I recommend assigning 150 pieces to FreshStart (W8). Estimated completion: 2026-04-05. Estimated total cost: 150.00 cost units. The plan targets lowest total cost. Select Accept allocation to save it.",
+        "explanation": "Allocated 150 pieces to 1 workshop(s) using min_cost.",
+        "assistant_reply": "Proposed — awaiting your approval: ORD-045, 150 pieces. I recommend assigning 150 pieces to FreshStart (W8). Estimated completion: 2026-04-05. Estimated total cost: 150.00 cost units. The plan targets lowest total cost. Select Accept allocation to save it.",
+        "clarifications": []
       },
       "replayed": false,
       "committed": false,
@@ -401,8 +412,8 @@
         "backend": "offline",
         "as_of_date": "2026-04-01",
         "reviewed_order_version": 0,
-        "created_at": "2026-10-05T11:54:13.938451+00:00",
-        "updated_at": "2026-10-05T11:54:13.940665+00:00",
+        "created_at": "2026-10-07T21:03:44.718266+00:00",
+        "updated_at": "2026-10-07T21:03:44.720435+00:00",
         "draft": {
           "order_id": "ORD-045",
           "customer": null,
@@ -877,8 +888,10 @@
         "recommended_workshop_name": "FreshStart",
         "estimated_delivery_date": "2026-04-05",
         "deadline_met": true,
-        "message": "Draft updated. Review the recommendation and accept to allocate.",
-        "explanation": "Allocated 150 pieces to 1 workshop(s) using min_cost."
+        "message": "Proposed — awaiting your approval: ORD-045, 150 pieces. I recommend assigning 150 pieces to FreshStart (W8). Estimated completion: 2026-04-05. Estimated total cost: 150.00 cost units. The plan targets lowest total cost. Select Accept allocation to save it.",
+        "explanation": "Allocated 150 pieces to 1 workshop(s) using min_cost.",
+        "assistant_reply": "Proposed — awaiting your approval: ORD-045, 150 pieces. I recommend assigning 150 pieces to FreshStart (W8). Estimated completion: 2026-04-05. Estimated total cost: 150.00 cost units. The plan targets lowest total cost. Select Accept allocation to save it.",
+        "clarifications": []
       },
       "replayed": false,
       "committed": false,
@@ -890,8 +903,8 @@
         "backend": "offline",
         "as_of_date": "2026-04-01",
         "reviewed_order_version": 0,
-        "created_at": "2026-10-05T11:54:13.938451+00:00",
-        "updated_at": "2026-10-05T11:54:13.941930+00:00",
+        "created_at": "2026-10-07T21:03:44.718266+00:00",
+        "updated_at": "2026-10-07T21:03:44.721656+00:00",
         "draft": {
           "order_id": "ORD-045",
           "customer": null,
@@ -1263,8 +1276,10 @@
         "recommended_workshop_name": "FreshStart",
         "estimated_delivery_date": "2026-04-05",
         "deadline_met": true,
-        "message": "Draft updated. Review the recommendation and accept to allocate.",
-        "explanation": "Allocated 150 pieces to 1 workshop(s) using min_cost."
+        "message": "Proposed — awaiting your approval: ORD-045, 150 pieces. I recommend assigning 150 pieces to FreshStart (W8). Estimated completion: 2026-04-05. Estimated total cost: 150.00 cost units. The plan targets lowest total cost. Select Accept allocation to save it.",
+        "explanation": "Allocated 150 pieces to 1 workshop(s) using min_cost.",
+        "assistant_reply": "Proposed — awaiting your approval: ORD-045, 150 pieces. I recommend assigning 150 pieces to FreshStart (W8). Estimated completion: 2026-04-05. Estimated total cost: 150.00 cost units. The plan targets lowest total cost. Select Accept allocation to save it.",
+        "clarifications": []
       },
       "replayed": false,
       "committed": false,
@@ -1276,8 +1291,8 @@
         "backend": "offline",
         "as_of_date": "2026-04-01",
         "reviewed_order_version": 0,
-        "created_at": "2026-10-05T11:54:13.938451+00:00",
-        "updated_at": "2026-10-05T11:54:13.943142+00:00",
+        "created_at": "2026-10-07T21:03:44.718266+00:00",
+        "updated_at": "2026-10-07T21:03:44.722837+00:00",
         "draft": {
           "order_id": "ORD-045",
           "customer": null,
@@ -1877,8 +1892,10 @@
         "recommended_workshop_name": "BudgetWorks",
         "estimated_delivery_date": "2026-04-10",
         "deadline_met": false,
-        "message": "Draft updated. Review the recommendation and accept to allocate.",
-        "explanation": "Allocated 150 pieces to 1 workshop(s) using min_cost."
+        "message": "Proposed — awaiting your approval: ORD-045, 150 pieces. I recommend assigning 150 pieces to BudgetWorks (W3). Estimated completion: 2026-04-10. Estimated total cost: 120.00 cost units. The plan targets lowest total cost. Attention: estimated completion is later than the order due date. Select Accept allocation to save it.",
+        "explanation": "Allocated 150 pieces to 1 workshop(s) using min_cost.",
+        "assistant_reply": "Proposed — awaiting your approval: ORD-045, 150 pieces. I recommend assigning 150 pieces to BudgetWorks (W3). Estimated completion: 2026-04-10. Estimated total cost: 120.00 cost units. The plan targets lowest total cost. Attention: estimated completion is later than the order due date. Select Accept allocation to save it.",
+        "clarifications": []
       },
       "replayed": false,
       "committed": false,
@@ -1890,8 +1907,8 @@
         "backend": "offline",
         "as_of_date": "2026-04-01",
         "reviewed_order_version": 0,
-        "created_at": "2026-10-05T11:54:13.938451+00:00",
-        "updated_at": "2026-10-05T11:54:13.944503+00:00",
+        "created_at": "2026-10-07T21:03:44.718266+00:00",
+        "updated_at": "2026-10-07T21:03:44.724134+00:00",
         "draft": {
           "order_id": "ORD-045",
           "customer": null,
@@ -2364,8 +2381,10 @@
         "recommended_workshop_name": "FreshStart",
         "estimated_delivery_date": "2026-04-05",
         "deadline_met": true,
-        "message": "Draft updated. Review the recommendation and accept to allocate.",
-        "explanation": "Allocated 150 pieces to 1 workshop(s) using min_cost."
+        "message": "Proposed — awaiting your approval: ORD-045, 150 pieces. I recommend assigning 150 pieces to FreshStart (W8). Estimated completion: 2026-04-05. Estimated total cost: 150.00 cost units. The plan targets lowest total cost. Select Accept allocation to save it.",
+        "explanation": "Allocated 150 pieces to 1 workshop(s) using min_cost.",
+        "assistant_reply": "Proposed — awaiting your approval: ORD-045, 150 pieces. I recommend assigning 150 pieces to FreshStart (W8). Estimated completion: 2026-04-05. Estimated total cost: 150.00 cost units. The plan targets lowest total cost. Select Accept allocation to save it.",
+        "clarifications": []
       },
       "replayed": false,
       "committed": false,
@@ -2377,8 +2396,8 @@
         "backend": "offline",
         "as_of_date": "2026-04-01",
         "reviewed_order_version": 0,
-        "created_at": "2026-10-05T11:54:13.938451+00:00",
-        "updated_at": "2026-10-05T11:54:13.945779+00:00",
+        "created_at": "2026-10-07T21:03:44.718266+00:00",
+        "updated_at": "2026-10-07T21:03:44.725369+00:00",
         "draft": {
           "order_id": "ORD-045",
           "customer": null,
@@ -2866,7 +2885,9 @@
       "recommended_workshop_name": "FreshStart",
       "estimated_delivery_date": "2026-04-05",
       "deadline_met": true,
-      "message": "Allocated 150 pieces to 1 workshop(s) using min_cost."
+      "message": "Approved and saved: ORD-045, 150 pieces. I have assigned 150 pieces to FreshStart (W8). Estimated completion: 2026-04-05. Estimated total cost: 150.00 cost units. The plan targets lowest total cost.",
+      "assistant_reply": "Approved and saved: ORD-045, 150 pieces. I have assigned 150 pieces to FreshStart (W8). Estimated completion: 2026-04-05. Estimated total cost: 150.00 cost units. The plan targets lowest total cost.",
+      "clarifications": []
     },
     "replayed": false,
     "committed": true,
@@ -2878,8 +2899,8 @@
       "backend": "offline",
       "as_of_date": "2026-04-01",
       "reviewed_order_version": 0,
-      "created_at": "2026-10-05T11:54:13.938451+00:00",
-      "updated_at": "2026-10-05T11:54:13.947437+00:00",
+      "created_at": "2026-10-07T21:03:44.718266+00:00",
+      "updated_at": "2026-10-07T21:03:44.726913+00:00",
       "draft": {
         "order_id": "ORD-045",
         "customer": null,
@@ -2924,7 +2945,7 @@
         "estimated_days": 3.5,
         "estimated_cost": 150.0,
         "objective": "min_cost",
-        "assigned_at": "2026-10-05T11:54:13.947350+00:00",
+        "assigned_at": "2026-10-07T21:03:44.726836+00:00",
         "completed_pieces": 0,
         "capacity_at_assignment": 100,
         "queue_remaining_days": 1.5

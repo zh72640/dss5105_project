@@ -1,5 +1,7 @@
 # MVP v0.4 UI 需求对照与验收记录
 
+本文保留 v0.4 历史证据；当前发布请查看 [v0.5 验收记录](V05_ACCEPTANCE_CN.md)。
+
 更新：2026-10-06。原件：`UI_requirement/Track2_UI_Requirements.docx`、`UI_requirement/UX design.pptx`。仓库中的逐字原件副本见 [requirements](requirements/README.md)。用户已确认新页面采用英文。
 
 ## 功能需求映射

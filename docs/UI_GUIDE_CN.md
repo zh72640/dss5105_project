@@ -1,6 +1,8 @@
 # 英文界面操作与课程演示指南
 
-本指南对应 MVP v0.4。先按 [部署说明](DEPLOYMENT_CN.md) 创建账号并启动服务，再打开 <http://127.0.0.1:8000>。界面为英文，默认离线规则解析，业务日期固定为课程数据使用的 `2026-04-01`。
+本指南对应 MVP v0.5。先按 [部署说明](DEPLOYMENT_CN.md) 启动服务，再打开 <http://127.0.0.1:8000>；已有账号无需重建。界面为英文，无 DeepSeek Key 时默认离线规则解析，业务日期固定为课程数据使用的 `2026-04-01`。完整新版演示见 [v0.5 测试流程](V05_TEST_WALKTHROUGH_CN.md)，模型配置见 [DeepSeek 本机接入](DEEPSEEK_SETUP_CN.md)。
+
+顶部 **Small / Medium / Large** 一键切换字号，刷新后保留。Overview 的 **What was assigned?** 用自然语言显示最近五条审批分配：订单、工坊、件数、日期、费用和逾期提示。这些是历史决策，最新生产进度请看 Production。
 
 ## 1. 登录与首页
 
@@ -51,7 +53,9 @@ ORD-045
 | `must arrive on time` / `allow late delivery` | 启用或取消硬交期 |
 | `clear preferred workshop` | 取消指定工坊 |
 
-复杂修改应在同一输入框中写完整请求，再点击 Replace full request。例如：
+不清楚如何补充时，点击 **Edit details**：选择订单、目标、最大工坊数、偏好工坊、排除与交期，再点 **Update recommendation**。缺失项会显示具体问题和操作提示；登记信息冲突时可选 **Use registered order details**。此表单无需 AI。DeepSeek 会话还支持自然语言追加并保留未提及的旧要求。
+
+需要整体重写时，在输入框中写完整请求，再点击 Replace full request。例如：
 
 ```text
 Allocate ORD-045 to Nimble Needle.
@@ -61,7 +65,7 @@ Allocate ORD-045 to Nimble Needle.
 
 ## 3. 查看、拒绝或接受推荐
 
-推荐卡显示工坊、分配件数、预计完成日期、总费用和预期缺陷率。费用沿用课程数据单位，因此标为 Cost units，没有擅自指定 SGD/USD。
+推荐卡首先显示自然语言回复，标明 **Proposed — awaiting your approval** 或 **Approved and saved**，列出工坊、件数、预计日期、费用及关键警告。原始字段、对话和 **Calculation & eligibility details** 默认折叠，需要时展开。费用沿用课程数据单位，因此标为 Cost units，没有擅自指定 SGD/USD。
 
 Candidate workshops 展示单工坊候选的 ETA、费用和缺陷率。允许拆单时，最终推荐可能是多个工坊的组合，不能把单工坊候选表视为所有组合方案。Eligibility checks 列出可考虑的工坊和被排除原因。
 
@@ -111,6 +115,6 @@ python -m app.server --db runtime/ui-demo.sqlite3 --port 8001
 4. 打开理由页，Reject & revise 输入 `Allocate ORD-045 to Nimble Needle.`。
 5. 核对 Nimble Needle，Accept，进入历史查看自己的审批姓名和时间。
 6. 在 Workshop explorer 找到 Nimble Needle 的 ORD-045，再到 Production 记录 50 件新增完工，展示保留的剩余数量。
-7. 导出全部历史。结束时说明这次展示是离线链路，Gemini 在线全量验收仍受配额问题影响。
+7. 导出全部历史。结束时说明这次展示是离线链路；DeepSeek 真实调用尚待本机 Key 验收，Gemini 历史全量验收仍受配额问题影响。
 
 已接受的订单不能重复用于首次分配演示。下次演示用新的数据库文件名，或通过正常 Cancel allocation 释放未完工分配，不删除正式运行库。

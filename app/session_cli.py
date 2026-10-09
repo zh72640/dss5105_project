@@ -13,7 +13,8 @@ def main():
     create = sub.add_parser("create")
     create.add_argument("--session-id", required=True)
     create.add_argument("--objective", default="min_delay", choices=("min_delay", "min_cost", "min_defects", "hybrid"))
-    create.add_argument("--backend", default="offline", choices=("offline", "llm"))
+    from app.agent.deepseek_client import default_backend
+    create.add_argument("--backend", default=default_backend(), choices=("offline", "llm", "deepseek"))
     create.add_argument("--as-of", type=date.fromisoformat, default=date(2026, 4, 1))
     inspect = sub.add_parser("inspect")
     inspect.add_argument("session_id")

@@ -13,6 +13,7 @@ from pathlib import Path
 from urllib.parse import unquote, urlparse, parse_qs
 from app import auth, desk
 from app import APP_VERSION
+from app.agent.deepseek_client import backend_status, default_backend
 from app.db.database import Database
 from app.pipeline import PIPELINE_VERSION, process_request
 from app.lifecycle import inspect_order, process_event
@@ -76,6 +77,8 @@ def make_server(port=8000, db_path=None, backend="offline", as_of=date(2026, 4, 
                 if not username:
                     return self.send(401, {"error": "LOGIN_REQUIRED"})
                 params = parse_qs(urlparse(self.path).query)
+                if path == "/api/ai/status":
+                    return self.send(200, backend_status(backend))
                 query = params.get("q", [""])[0].strip()[:200]
                 if path == "/api/dashboard":
                     return self.send(200, desk.dashboard(db_path, as_of))
@@ -170,7 +173,7 @@ def make_server(port=8000, db_path=None, backend="offline", as_of=date(2026, 4, 
                     return self.send(200, {"success": True}, headers={"Set-Cookie":
                         f"{auth.COOKIE}=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0"})
                 if self.path == "/api/sessions" or session_route:
-                    allowed = {"session_id", "objective"} if not session_route else {"request_id", "expected_version", "action", "message"}
+                    allowed = {"session_id", "objective"} if not session_route else {"request_id", "expected_version", "action", "message", "changes"}
                     required = set() if not session_route else {"request_id", "expected_version"}
                     if not isinstance(data, dict) or set(data) - allowed or not required <= set(data):
                         return self.send(400, {"error": "INVALID_FIELDS"})
@@ -225,7 +228,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--port", type=int, default=8000)
     parser.add_argument("--db", default=str(ROOT / "runtime/dispatch.sqlite3"))
-    parser.add_argument("--backend", choices=["offline", "llm"], default=os.getenv("PARSER_BACKEND", "offline"))
+    parser.add_argument("--backend", choices=["offline", "llm", "deepseek"], default=default_backend())
     parser.add_argument("--as-of", type=date.fromisoformat, default=date(2026, 4, 1))
     parser.add_argument("--no-auth", action="store_true", help="Explicit local demonstration mode without login; approvals use local-demo.")
     args = parser.parse_args()

@@ -24,7 +24,8 @@ def main():
     parser.add_argument("--objective", default="min_delay", choices=["min_delay", "min_lateness", "fastest_turnaround", "min_defects", "min_cost", "hybrid"])
     parser.add_argument("--db", default=str(ROOT / "runtime/dispatch.sqlite3"), help="Use :memory: for an isolated run")
     parser.add_argument("--request-id", help="Reuse this key only when retrying identical input")
-    parser.add_argument("--backend", choices=["offline", "llm"], default=os.getenv("PARSER_BACKEND", "offline"))
+    from app.agent.deepseek_client import default_backend
+    parser.add_argument("--backend", choices=["offline", "llm", "deepseek"], default=default_backend())
     parser.add_argument("--as-of", type=date.fromisoformat, default=date(2026, 4, 1))
     args = parser.parse_args()
     payload = process_request(args.message if args.message is not None else request_text(args.request or "R09"),

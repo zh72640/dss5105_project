@@ -1,8 +1,8 @@
 # 当前系统说明与操作手册
 
-版本：MVP v0.4，Parser/Prompt v1、Session v1，SQLite migrations 001–004。原分配 Pipeline v0.2 保持稳定。安装/升级参见 [部署说明](DEPLOYMENT_CN.md)，架构见 [整体项目说明](PROJECT_OVERVIEW_CN.md)。
+版本：MVP v0.5，Parser/Prompt v1、Session v1，SQLite migrations 001–004。原分配 Pipeline v0.2 保持稳定。安装/升级参见 [部署说明](DEPLOYMENT_CN.md)，架构见 [整体项目说明](PROJECT_OVERVIEW_CN.md)。
 
-系统已支持从一条自然语言消息完成解析、真实订单检索、资格筛选、队列计算、单工坊或整数拆单、数据库事务更新和页面显示。默认是可重复的离线规则模式；LLM 接口代码已实现，服务商已固定为 Google Gemini / gemini-3.5-flash；2026-10-02 真实冒烟成功，完整评估因 46/60 条 HTTP 429 未通过；详见 [在线验收](GEMINI_LIVE_ACCEPTANCE_CN.md)。**离线成功不代表真实模型验收已经完成。**
+系统已支持从自然语言消息完成解析、真实订单检索、资格筛选、队列计算、单工坊或整数拆单、数据库事务更新和页面显示。新增 DeepSeek 环境变量接入、自然语言分配摘要、具体澄清、表单与字号设置，见 [本轮说明](CHANGELOG_V05_CN.md)。未显式配置后端时，有 `DEEPSEEK_API_KEY` 使用 DeepSeek，否则 offline。DeepSeek 真实调用尚未验收；Gemini 2026-10-02 完整评估因 46/60 条 HTTP 429 未通过，见 [Gemini 在线验收](GEMINI_LIVE_ACCEPTANCE_CN.md)。**离线及模拟传输成功不代表真实模型验收完成。**
 
 ## 1. 环境与首次运行
 
@@ -63,7 +63,11 @@ python3 -m app.cli --request R09 --as-of 2026-04-02 --db :memory:
 
 支持目标 `min_delay / min_cost / min_defects / hybrid`；旧 `min_lateness / fastest_turnaround` 会映射为 min_delay。消息中明确目标优先于 CLI 默认目标。输出统一 JSON；系统 ERROR 时 CLI 退出码为 1，业务 CLARIFY/REFUSE/DECLINE/ESCALATE 是正常返回，退出码为 0。
 
-## 4. 使用指定的 Google Gemini 模型
+## 4. 在线模型配置
+
+推荐按本次需求使用 `python -m app.server --backend deepseek`，Key 只在自己的启动终端配置。非回显输入、macOS 钥匙串、可选模型和新会话验收见 [DeepSeek 本机配置](DEEPSEEK_SETUP_CN.md)。DeepSeek 使用标准库 HTTPS，无额外 SDK。
+
+### 保留的 Google Gemini 接口
 
 本次配置已经固定：
 
@@ -101,7 +105,7 @@ python -m app.server --backend llm
 
 如果你已经在该终端 export 了 GEMINI_API_KEY，跳过交互输入即可。`.env.example` 只是说明，应用**不自动读取 .env**。在另一个终端设置的变量不会自动传入已经运行的服务或 Codex 进程；请在已 export 的同一终端启动/重启应用。不要把密钥粘贴到聊天或提交进 Git。
 
-默认 `python -m app.server` 仍是 offline；显式 `--backend llm` 或 `export PARSER_BACKEND=llm` 启用 Gemini。切换后，当前请求会发送给 Google 并可能消耗 API 配额；全量订单库不进入 Prompt。模型只做提取，分配、费用、队列和 ETA 仍由本地代码决定。
+显式 `--backend llm` 或 `export PARSER_BACKEND=llm` 启用 Gemini。切换后，新建 Gemini 会话的输入会发送给 Google 并可能消耗 API 配额；旧会话保留原 backend，全量订单库不进入 Prompt。模型只做提取，分配、费用、队列和 ETA 仍由本地代码决定。
 
 Gemini 适配将冻结 schema 中 nullable enum 转为语义等价的 JSON Schema anyOf；Parser 字段、Prompt v1 和数据库结构没有改名或重定义。所有用户 few-shot 和输入转为 SDK 的 user/model content，system rules 与重试诊断放入 system_instruction。
 
@@ -125,7 +129,7 @@ python evaluation/verify_gemini_live.py --full
 python3 evaluation/verify_mvp.py
 ```
 
-请在安装 requirements.txt 的虚拟环境内运行。这一命令运行 181 条测试、60 条解析回归、30 条原始语言行为回归、Week 5/6 demo、生命周期及会话持久库 demo、官方基线一致性和 14 组新策略对比；报告写到 `evaluation/results/`，失败或跳过测试返回非零。
+请在安装 requirements.txt 的虚拟环境内运行。这一命令运行 203 条测试、60 条解析回归、30 条原始语言行为回归、Week 5/6 demo、生命周期及会话持久库 demo、官方基线一致性和 14 组新策略对比；报告写到 `evaluation/results/`，失败或跳过测试返回非零。另用 `node --test tests/test_ui_state.cjs` 验证 7 条前端控制器测试。当前证据见 [v0.5 验收](V05_ACCEPTANCE_CN.md)。
 
 也可分别运行：
 

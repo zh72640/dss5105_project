@@ -1,6 +1,28 @@
 test_hard_deadline_cost_respects_queue_capacity (test_allocator.IntegerPlanner.test_hard_deadline_cost_respects_queue_capacity) ... ok
 test_small_plans_match_exhaustive_optimum (test_allocator.IntegerPlanner.test_small_plans_match_exhaustive_optimum) ... ok
+test_conflicting_order_field_names_actual_registered_value (test_assistant_desk.AssistantDesk.test_conflicting_order_field_names_actual_registered_value) ... ok
+test_deepseek_addition_keeps_existing_constraints (test_assistant_desk.AssistantDesk.test_deepseek_addition_keeps_existing_constraints) ... ok
+test_form_resolves_objective_without_dropping_exclusions (test_assistant_desk.AssistantDesk.test_form_resolves_objective_without_dropping_exclusions) ... ok
+test_ineligible_preference_explains_how_to_choose_an_alternative (test_assistant_desk.AssistantDesk.test_ineligible_preference_explains_how_to_choose_an_alternative) ... ok
+test_invalid_edits_do_not_mutate_or_bypass_order_switch (test_assistant_desk.AssistantDesk.test_invalid_edits_do_not_mutate_or_bypass_order_switch) ... ok
+test_missing_order_has_question_and_form_can_resolve_it (test_assistant_desk.AssistantDesk.test_missing_order_has_question_and_form_can_resolve_it) ... ok
+test_service_error_is_not_reported_as_missing_order_details (test_assistant_desk.AssistantDesk.test_service_error_is_not_reported_as_missing_order_details) ... ok
+test_split_reply_includes_every_workshop_and_late_warning (test_assistant_desk.AssistantDesk.test_split_reply_includes_every_workshop_and_late_warning) ... ok
+test_structured_edits_replay_without_second_write (test_assistant_desk.AssistantDesk.test_structured_edits_replay_without_second_write) ... ok
+test_summary_exactly_matches_proposal_and_committed_result (test_assistant_desk.AssistantDesk.test_summary_exactly_matches_proposal_and_committed_result) ... ok
+test_unsupported_requirement_stays_blocked_after_unrelated_edit (test_assistant_desk.AssistantDesk.test_unsupported_requirement_stays_blocked_after_unrelated_edit) ... ok
+test_bad_configuration_is_not_echoed (test_deepseek.DeepSeekTransport.test_bad_configuration_is_not_echoed) ... ok
+test_configurable_model_and_timeout (test_deepseek.DeepSeekTransport.test_configurable_model_and_timeout) ... ok
+test_empty_truncated_and_malformed_responses_are_never_accepted (test_deepseek.DeepSeekTransport.test_empty_truncated_and_malformed_responses_are_never_accepted) ... ok
+test_explicit_backend_wins_over_automatic_detection (test_deepseek.DeepSeekTransport.test_explicit_backend_wins_over_automatic_detection) ... ok
+test_http_errors_are_sanitized_and_retry_policy_is_bounded (test_deepseek.DeepSeekTransport.test_http_errors_are_sanitized_and_retry_policy_is_bounded) ... ok
+test_json_contract_environment_and_no_key_in_telemetry (test_deepseek.DeepSeekTransport.test_json_contract_environment_and_no_key_in_telemetry) ... ok
+test_missing_key_is_specific_and_makes_no_call (test_deepseek.DeepSeekTransport.test_missing_key_is_specific_and_makes_no_call) ... ok
+test_model_output_cannot_invent_an_order (test_deepseek.DeepSeekTransport.test_model_output_cannot_invent_an_order) ... ok
+test_redirects_do_not_forward_credentials (test_deepseek.DeepSeekTransport.test_redirects_do_not_forward_credentials) ... ok
+test_timeout_uses_stable_error (test_deepseek.DeepSeekTransport.test_timeout_uses_stable_error) ... ok
 test_assets_are_served_and_arbitrary_paths_are_not (test_desk.DeskHTTP.test_assets_are_served_and_arbitrary_paths_are_not) ... ok
+test_assistant_form_http_summary_status_and_recent_approvals (test_desk.DeskHTTP.test_assistant_form_http_summary_status_and_recent_approvals) ... ok
 test_authenticated_lifecycle_cannot_spoof_actor (test_desk.DeskHTTP.test_authenticated_lifecycle_cannot_spoof_actor) ... ok
 test_filters_pagination_and_export_include_more_than_thirty_records (test_desk.DeskHTTP.test_filters_pagination_and_export_include_more_than_thirty_records) ... ok
 test_intake_clarification_rejection_revision_approval_and_dashboard (test_desk.DeskHTTP.test_intake_clarification_rejection_revision_approval_and_dashboard) ... ok
@@ -181,6 +203,6 @@ test_order_resolution (test_tools.ToolTests.test_order_resolution) ... ok
 test_suspended_is_ineligible (test_tools.ToolTests.test_suspended_is_ineligible) ... ok
 
 ----------------------------------------------------------------------
-Ran 181 tests in 11.864s
+Ran 203 tests in 12.604s
 
 OK

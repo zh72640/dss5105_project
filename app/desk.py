@@ -6,6 +6,7 @@ from dataclasses import asdict
 from datetime import datetime, timezone
 
 from app.db.database import Database
+from app.assistant_reply import allocation_reply
 from app.repositories.workshop_repository import get_all
 
 
@@ -43,7 +44,17 @@ def dashboard(db_path, as_of):
         today = datetime.now(timezone.utc).date().isoformat()
         allocated = c.execute("""SELECT COUNT(DISTINCT order_id) FROM decision_log
             WHERE decision_status='ALLOCATE' AND substr(created_at,1,10)=?""", (today,)).fetchone()[0]
-        result = {"stats": {"pending": sum(r["status"] == "PENDING" for r in inbox),
+        recent = []
+        for row in c.execute("""SELECT d.order_id,d.decision_json,d.created_at,r.session_id
+            FROM decision_log d JOIN requests r USING(request_id)
+            WHERE d.decision_status IN ('ALLOCATE','REASSIGNED')
+            ORDER BY d.created_at DESC,d.request_id DESC LIMIT 5"""):
+            decision = json.loads(row["decision_json"])
+            if decision.get("success"):
+                recent.append({"order_id": row["order_id"], "timestamp": row["created_at"],
+                               "session_id": row["session_id"],
+                               "summary": allocation_reply(decision, row["order_id"], committed=True)})
+        result = {"recent_allocations": recent, "stats": {"pending": sum(r["status"] == "PENDING" for r in inbox),
                             "clarification": sum(r["status"] == "CLARIFY" for r in inbox),
                             "allocated_today": allocated,
                             "lapsed": sum(r["state"] == "LAPSED" for r in orders),
@@ -70,6 +81,7 @@ def _audit_record(row):
             "result": result, "actor": actor, "approved": approved,
             "approved_by": actor if approved else None,
             "approval_timestamp": row["request_date_time"] if approved else None,
+            "summary": allocation_reply(result, (response.get("parsed") or event).get("order_id") or row["order_id"], committed=approved),
             "trace": response.get("trace", {})}
 
 
@@ -107,7 +119,7 @@ def audit(db_path, *, query="", status="", page=1, page_size=25, export=False, r
 def audit_csv(records):
     stream = io.StringIO(newline="")
     fields = ["request_id", "session_id", "order_id", "status", "original_message", "message_time",
-              "turn_message", "parsed", "result", "actor", "approved", "approved_by", "approval_timestamp", "timestamp", "trace"]
+              "turn_message", "parsed", "result", "actor", "approved", "approved_by", "approval_timestamp", "timestamp", "trace", "summary"]
     writer = csv.DictWriter(stream, fieldnames=fields)
     writer.writeheader()
     for record in records:

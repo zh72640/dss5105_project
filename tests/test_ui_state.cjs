@@ -10,11 +10,11 @@ function setup(fetch) {
   const nodes = new Map(), storage = new Map();
   const node = id => {
     if (!nodes.has(id)) nodes.set(id, {id, value:'', disabled:false, hidden:false, textContent:'',
-      classList:{toggle(){}}, addEventListener(){}, replaceChildren(){}, focus(){}, close(){}, showModal(){}});
+      classList:{toggle(){}}, addEventListener(){}, replaceChildren(){}, focus(){}, close(){}, showModal(){}, scrollIntoView(){}});
     return nodes.get(id);
   };
   const context = vm.createContext({
-    document:{getElementById:node,querySelectorAll(){return [];}},
+    document:{documentElement:{dataset:{}},getElementById:node,querySelectorAll(){return [];}},
     localStorage:{setItem:(k,v)=>storage.set(k,v),getItem:k=>storage.get(k)},
     window:{addEventListener(){},scrollTo(){}},location:{hash:''},fetch,
     crypto:{randomUUID:()=> 'test-request-key'}, console, URLSearchParams,
@@ -22,7 +22,7 @@ function setup(fetch) {
   // Omit only the page boot; use the real controller functions and persistence.
   vm.runInContext(source.slice(0, source.lastIndexOf('\nboot().catch')), context);
   vm.runInContext(`
-    globalThis.controller = {state, controls, canAccept, turn, deliver, startRequest};
+    globalThis.controller = {state, controls, canAccept, turn, deliver, startRequest, editDraft, setTextSize, initTextSize};
     state.user = {username:'alice'};
     refreshDesk = async () => {};
     loadSession = async id => { state.session = {...state.session, session_id:id}; };
@@ -86,4 +86,22 @@ test('two rapid confirmation clicks create only one in-flight write',async()=>{
   const first=api.turn('confirm');
   await api.turn('confirm');assert.equal(count,1);
   resolve(response(503,{error:'DB_ERROR'}));await first;
+});
+
+test('text size persists across initialization and invalid storage uses medium',()=>{
+  const {api,storage}=setup();
+  assert.equal(api.setTextSize('large'),'large');
+  api.initTextSize();assert.equal(storage.get('sweaterco.text-size'),'large');
+  storage.set('sweaterco.text-size','invalid');api.initTextSize();
+  assert.equal(storage.get('sweaterco.text-size'),'medium');
+});
+
+test('form edits preserve exact changes and idempotency key for a retry',async()=>{
+  const calls=[];
+  const {api}=setup(async(url,options)=>{calls.push(JSON.parse(options.body));return response(503,{error:'DB_ERROR'});});
+  api.state.session=session();
+  await api.editDraft({objective:'min_cost',exclusion:['W3']});
+  assert.deepEqual(calls[0].changes,{objective:'min_cost',exclusion:['W3']});
+  assert.equal(calls[0].expected_version,7);
+  await api.deliver();assert.deepEqual(calls[0],calls[1]);
 });
