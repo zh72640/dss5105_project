@@ -1,2 +1,3 @@
-# Optional for offline mode; required for Google Gemini mode and SDK integration tests.
+# Legacy pip compatibility only. Use uv sync --locked for reproducible installs.
+# pyproject.toml and uv.lock are the authoritative dependency configuration.
 google-genai==2.23.0

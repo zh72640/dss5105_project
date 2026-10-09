@@ -1,5 +1,7 @@
 # MVP v0.5 部署与升级说明
 
+> **Current setup:** use the [English uv and data import guide](UV_SETUP.md). It supersedes the first-run and account-reset commands below: run `uv sync --locked`, then `uv run --locked python -m app.setup` for a new database, and `uv run --locked python -m app.server --backend offline`. Existing databases skip setup. Password resets now require `app.auth USERNAME --reset-password`; repeated creation never overwrites a password. The remaining sections retain historical deployment/backup details.
+
 更新：2026-10-08。仓库：<https://github.com/zh72640/dss5105_project>，分支 `ningtao`。这是本机课程 MVP，服务绑定 `127.0.0.1`。已有账号和审批记录可继续使用，所有账号共享同一工作区；没有公网托管、角色/租户权限或 HTTPS 终止配置。DeepSeek Key 的非回显配置及钥匙串方法见 [DeepSeek 本机接入](DEEPSEEK_SETUP_CN.md)。
 
 ## 1. 环境和版本
