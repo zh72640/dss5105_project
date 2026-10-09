@@ -11,7 +11,8 @@ class SessionCLI(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             path = str(Path(directory) / "cli.sqlite3")
             def call(*args):
-                r = subprocess.run([sys.executable, "-m", "app.session_cli", "--db", path, *args], capture_output=True, text=True)
+                r = subprocess.run([sys.executable, "-X", "utf8", "-m", "app.session_cli", "--db", path, *args],
+                                   capture_output=True, text=True, encoding="utf-8")
                 return r.returncode, json.loads(r.stdout)
             self.assertEqual(call("create", "--session-id", "cli")[0], 0)
             code, result = call("turn", "cli", "--expected-version", "0", "--request-id", "draft", "--message", "Allocate ORD-045.")

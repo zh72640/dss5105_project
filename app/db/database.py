@@ -1,8 +1,8 @@
-import csv
 import sqlite3
 from contextlib import contextmanager
 from datetime import datetime, timezone
 from pathlib import Path
+from app.db.import_data import load_seed
 
 ROOT = Path(__file__).resolve().parents[2]
 DB_VERSION = 4
@@ -13,7 +13,7 @@ def utc_now():
 
 
 class Database:
-    def __init__(self, path=":memory:"):
+    def __init__(self, path=":memory:", *, seed_data=None, initial_account=None):
         self.path = str(path)
         if self.path != ":memory:":
             Path(self.path).parent.mkdir(parents=True, exist_ok=True)
@@ -22,16 +22,18 @@ class Database:
         self.connection.execute("PRAGMA foreign_keys=ON")
         self.connection.execute("PRAGMA busy_timeout=10000")
         try:
-            self.initialize()
+            self.initialize(seed_data=seed_data, initial_account=initial_account)
         except Exception:
             self.close()
             raise
 
-    def initialize(self):
+    def initialize(self, *, seed_data=None, initial_account=None):
         # DDL and CSV import are one migration transaction, safe for concurrent opens.
         with self.transaction():
             has_table = self.connection.execute("SELECT 1 FROM sqlite_master WHERE name='schema_migrations'").fetchone()
             if has_table:
+                if seed_data is not None or initial_account is not None:
+                    raise ValueError("Database is already initialized; existing data was not changed.")
                 version = self.connection.execute("SELECT MAX(version) FROM schema_migrations").fetchone()[0]
                 if version not in (1, 2, 3, DB_VERSION):
                     raise sqlite3.DatabaseError("unsupported_database_version")
@@ -42,29 +44,31 @@ class Database:
                 if version < 4:
                     self._upgrade_desk()
                 return
+            seed_data = seed_data or load_seed()
             sql = (Path(__file__).parent / "migrations/001_initial.sql").read_text()
             for statement in sql.split(";"):
                 if statement.strip():
                     self.connection.execute(statement)
-            with (ROOT / "data/orders.csv").open() as handle:
-                for row in csv.DictReader(handle):
-                    state = "COMPLETED" if row["status"] == "COMPLETE" else "READY"
-                    self.connection.execute("INSERT INTO orders VALUES (?,?,?,?,?,?,?,?,?)", (
-                        row["order_id"], row["customer"], row["product"], row["category"], int(row["pieces"]),
-                        row["order_date"], row["due_date"], row["status"], state))
-                    if state == "COMPLETED":
-                        self.connection.execute("INSERT INTO completed_order VALUES (?,?)", (row["order_id"], row["completed_date"] or None))
-            with (ROOT / "data/workshops.csv").open() as handle:
-                for r in csv.DictReader(handle):
-                    self.connection.execute("INSERT INTO workshops VALUES (?,?,?,?,?,?,?,?,?,?)", (
-                        r["workshop_id"], r["name"], int(r["capacity_pieces_per_day"]), int(r["pickup_lead_days"]),
-                        float(r["defect_rate"]), float(r["cost_per_piece"]), r["makes"], r["status"],
-                        int(r["max_batch_pieces"]) if r["max_batch_pieces"] else None, r["notes"]))
-                    self.connection.execute("INSERT INTO workshop_queue VALUES (?,?,?)", (r["workshop_id"], float(r["current_queue_days"]), "2026-04-01"))
+            for row in seed_data.orders:
+                state = "COMPLETED" if row["status"] == "COMPLETE" else "READY"
+                self.connection.execute("INSERT INTO orders VALUES (?,?,?,?,?,?,?,?,?)", (
+                    row["order_id"], row["customer"], row["product"], row["category"], row["pieces"],
+                    row["order_date"], row["due_date"], row["status"], state))
+                if state == "COMPLETED":
+                    self.connection.execute("INSERT INTO completed_order VALUES (?,?)", (row["order_id"], row["completed_date"] or None))
+            for r in seed_data.workshops:
+                self.connection.execute("INSERT INTO workshops VALUES (?,?,?,?,?,?,?,?,?,?)", (
+                    r["workshop_id"], r["name"], r["capacity_pieces_per_day"], r["pickup_lead_days"],
+                    r["defect_rate"], r["cost_per_piece"], r["makes"], r["status"],
+                    r["max_batch_pieces"], r["notes"]))
+                self.connection.execute("INSERT INTO workshop_queue VALUES (?,?,?)", (r["workshop_id"], r["current_queue_days"], seed_data.as_of.isoformat()))
             self.connection.execute("INSERT INTO schema_migrations VALUES (?,?)", (1, utc_now()))
             self._upgrade_lifecycle()
             self._upgrade_sessions()
             self._upgrade_desk()
+            if initial_account is not None:
+                username, encoded_password = initial_account
+                self.connection.execute("INSERT INTO desk_users VALUES (?,?,?)", (username, encoded_password, utc_now()))
 
     def _upgrade_desk(self):
         sql = (Path(__file__).parent / "migrations/004_desk.sql").read_text()

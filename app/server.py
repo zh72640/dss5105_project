@@ -22,12 +22,16 @@ from app.sessions import create_session, inspect_session, session_turn
 ROOT = Path(__file__).resolve().parents[1]
 
 
-def make_server(port=8000, db_path=None, backend="offline", as_of=date(2026, 4, 1), *, require_auth=True):
+def make_server(port=8000, db_path=None, backend="offline", as_of=None, *, require_auth=True):
     db_path = str(db_path or ROOT / "runtime/dispatch.sqlite3")
     if db_path == ":memory:":
         raise ValueError("The HTTP server requires a file database shared by its request threads.")
-    with Database(db_path):
-        pass
+    with Database(db_path) as db:
+        latest = db.connection.execute("SELECT MAX(as_of_date) FROM workshop_queue").fetchone()[0]
+        if as_of is None:
+            as_of = date.fromisoformat(latest) if latest else date(2026, 4, 1)
+        elif latest and as_of < date.fromisoformat(latest):
+            raise ValueError("Business date cannot precede the latest workshop queue snapshot.")
     login_attempts = []
     login_lock = threading.Lock()
 
@@ -221,7 +225,9 @@ def make_server(port=8000, db_path=None, backend="offline", as_of=date(2026, 4, 
             # No raw message or API credentials in server logs.
             pass
 
-    return ThreadingHTTPServer(("127.0.0.1", port), Handler)
+    server = ThreadingHTTPServer(("127.0.0.1", port), Handler)
+    server.business_date = as_of
+    return server
 
 
 def main():
@@ -229,11 +235,27 @@ def main():
     parser.add_argument("--port", type=int, default=8000)
     parser.add_argument("--db", default=str(ROOT / "runtime/dispatch.sqlite3"))
     parser.add_argument("--backend", choices=["offline", "llm", "deepseek"], default=default_backend())
-    parser.add_argument("--as-of", type=date.fromisoformat, default=date(2026, 4, 1))
+    parser.add_argument("--as-of", type=date.fromisoformat, help="Business date; defaults to the latest queue snapshot in this database")
     parser.add_argument("--no-auth", action="store_true", help="Explicit local demonstration mode without login; approvals use local-demo.")
     args = parser.parse_args()
-    server = make_server(args.port, args.db, args.backend, args.as_of, require_auth=not args.no_auth)
-    print(f"SweaterCo {args.backend} | http://127.0.0.1:{server.server_port} | business date {args.as_of}", flush=True)
+    if args.backend == "llm" and not os.getenv("GEMINI_API_KEY", "").strip():
+        parser.error(
+            "GEMINI_API_KEY is not set. "
+            "Local: uv run --locked --env-file .env python -m app.server --backend llm. "
+            "Deploy: inject GEMINI_API_KEY into the process environment (the app does not auto-load .env)."
+        )
+    if args.backend == "deepseek" and not os.getenv("DEEPSEEK_API_KEY", "").strip():
+        parser.error(
+            "DEEPSEEK_API_KEY is not set. "
+            "Local: uv run --locked --env-file .env python -m app.server --backend deepseek. "
+            "Deploy: inject DEEPSEEK_API_KEY into the process environment (the app does not auto-load .env)."
+        )
+    try:
+        auth.require_initialized(args.db)
+        server = make_server(args.port, args.db, args.backend, args.as_of, require_auth=not args.no_auth)
+    except (ValueError, OSError, sqlite3.Error) as error:
+        parser.error(str(error))
+    print(f"SweaterCo {args.backend} | http://127.0.0.1:{server.server_port} | business date {server.business_date}", flush=True)
     try:
         server.serve_forever()
     except KeyboardInterrupt:

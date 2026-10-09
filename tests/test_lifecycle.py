@@ -4,6 +4,7 @@ import sqlite3
 import tempfile
 import unittest
 from concurrent.futures import ThreadPoolExecutor
+from contextlib import closing
 from datetime import date
 from pathlib import Path
 from uuid import uuid4
@@ -314,12 +315,12 @@ class MigrationTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "v1.sqlite3"
             self.legacy(path)
-            with sqlite3.connect(path) as connection:
+            with closing(sqlite3.connect(path)) as connection, connection:
                 connection.execute("""CREATE TRIGGER reject_upgrade BEFORE INSERT ON schema_migrations
                     WHEN NEW.version=2 BEGIN SELECT RAISE(ABORT,'migration failure'); END""")
             with self.assertRaises(sqlite3.DatabaseError):
                 Database(path)
-            with sqlite3.connect(path) as connection:
+            with closing(sqlite3.connect(path)) as connection, connection:
                 self.assertEqual(connection.execute("SELECT MAX(version) FROM schema_migrations").fetchone()[0], 1)
                 self.assertNotIn("version", [r[1] for r in connection.execute("PRAGMA table_info(orders)")])
                 self.assertEqual(connection.execute("SELECT COUNT(*) FROM working_order").fetchone()[0], 1)

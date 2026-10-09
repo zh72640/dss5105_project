@@ -3,6 +3,7 @@ import sqlite3
 import tempfile
 import unittest
 from concurrent.futures import ThreadPoolExecutor
+from contextlib import closing
 from pathlib import Path
 from unittest.mock import patch
 
@@ -202,7 +203,7 @@ class Sessions(unittest.TestCase):
                 if fail:
                     with self.assertRaises(sqlite3.DatabaseError):
                         Database(path)
-                    with sqlite3.connect(path) as connection:
+                    with closing(sqlite3.connect(path)) as connection:
                         self.assertEqual(connection.execute("SELECT MAX(version) FROM schema_migrations").fetchone()[0], 2)
                         self.assertIsNone(connection.execute("SELECT name FROM sqlite_master WHERE name='sessions'").fetchone())
                 else:
