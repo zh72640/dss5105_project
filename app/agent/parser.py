@@ -9,6 +9,7 @@ from .llm_client import (BackendError, LLMBackend, GEMINI_MODEL, GEMINI_PROVIDER
                          GEMINI_TEMPERATURE, GEMINI_THINKING_LEVEL)
 from .prompts import PROMPT_VERSION
 from .rule_parser import extract
+from .deepseek_client import DeepSeekBackend, default_backend
 from .validator import ValidationError, validate_output
 
 
@@ -33,7 +34,7 @@ def parse_with_telemetry(message: str, context_messages=None, *, backend=None,
     start = time.perf_counter()
     owned_backend = None
     telemetry = {"prompt_version": PROMPT_VERSION, "schema_version": SCHEMA_VERSION,
-                 "backend": str(backend or os.getenv("PARSER_BACKEND", "offline")),
+                 "backend": str(backend or default_backend()),
                  "model": None, "temperature": None, "retry_count": 0, "attempts": []}
     def finish(parsed, error=None):
         if owned_backend is not None:
@@ -47,14 +48,18 @@ def parse_with_telemetry(message: str, context_messages=None, *, backend=None,
         return finish(ParseResult(parse_status="invalid", ambiguities=["invalid_message"]))
     try:
         if backend is None:
-            backend = os.getenv("PARSER_BACKEND", "offline")
+            backend = default_backend()
         if isinstance(backend, str):
-            if backend not in ("offline", "llm"):
+            if backend not in ("offline", "llm", "deepseek"):
                 raise BackendError("unknown_parser_backend", False)
             if backend == "llm":
                 telemetry.update(provider=GEMINI_PROVIDER, model=GEMINI_MODEL,
                                  temperature=GEMINI_TEMPERATURE, thinking_level=GEMINI_THINKING_LEVEL)
                 backend = LLMBackend()
+                owned_backend = backend
+            elif backend == "deepseek":
+                telemetry.update(provider="deepseek")
+                backend = DeepSeekBackend()
                 owned_backend = backend
             else:
                 backend = RuleBackend()

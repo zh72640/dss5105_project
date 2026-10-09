@@ -6,6 +6,7 @@ import sqlite3
 import uuid
 from datetime import date
 from app.agent.parser import parse_with_telemetry
+from app.agent.deepseek_client import default_backend, backend_status
 from app.agent.llm_client import (GEMINI_MODEL, GEMINI_PROVIDER,
                                   GEMINI_TEMPERATURE, GEMINI_THINKING_LEVEL)
 from app.allocator.planner import plan
@@ -115,7 +116,7 @@ def _apply(connection, request_id, result, trace, as_of):
 
 
 def process_request(text: str, objective="min_delay", *, db_path=None, database=None,
-                    request_id=None, backend=None, as_of=date(2026, 4, 1)):
+                    request_id=None, backend=None, as_of=date(2026, 4, 1), actor=None):
     if not isinstance(objective, str) or not isinstance(as_of, date):
         return {"request_id": request_id, "result": terminal("ERROR", "INVALID_ARGUMENT", "Check objective/as_of.")}
     objective = ALIASES.get(objective, objective)
@@ -124,10 +125,14 @@ def process_request(text: str, objective="min_delay", *, db_path=None, database=
         return {"request_id": request_id, "result": terminal("ERROR", "INVALID_ARGUMENT", "Check objective/request_id.")}
     if not isinstance(text, str):
         return {"request_id": request_id, "result": terminal("DECLINE", "INVALID_MESSAGE", "Message must be text.")}
-    backend_name = backend if isinstance(backend, str) else getattr(backend, "name", None) or os.getenv("PARSER_BACKEND", "offline")
+    if actor is not None and (not isinstance(actor, str) or not 1 <= len(actor.strip()) <= 120):
+        return {"request_id": request_id, "result": terminal("ERROR", "INVALID_ARGUMENT", "Invalid actor.")}
+    backend_name = backend if isinstance(backend, str) else getattr(backend, "name", None) or default_backend()
     config = [text, objective, as_of.isoformat(), backend_name,
               [GEMINI_PROVIDER, GEMINI_MODEL, GEMINI_TEMPERATURE, GEMINI_THINKING_LEVEL]
-              if backend_name == "llm" else "rules_v1", PIPELINE_VERSION]
+              if backend_name == "llm" else backend_status("deepseek").get("model") if backend_name == "deepseek" else "rules_v1", PIPELINE_VERSION]
+    if actor is not None:
+        config.append(actor)
     fingerprint = hashlib.sha256(json.dumps(config).encode()).hexdigest()
     owned = database is None
     db = database
@@ -152,6 +157,8 @@ def process_request(text: str, objective="min_delay", *, db_path=None, database=
             result["request_id"] = request_id
             response["result"] = result
             _record(connection, request_id, fingerprint, text, outcome, response)
+            if actor is not None:
+                connection.execute("INSERT INTO request_actors VALUES (?,?)", (request_id, actor))
             _apply(connection, request_id, result, response["trace"], as_of)
             response["trace"]["db_changes"].extend([{"table": "requests", "inserted_rows": 1},
                 {"table": "request_parsing_history", "inserted_rows": int(outcome.parsed is not None)},

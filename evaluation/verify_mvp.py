@@ -22,6 +22,7 @@ from app.db.database import DB_VERSION
 from app.pipeline import PIPELINE_VERSION
 from demos.week5_mock import MESSAGES, handle_message
 from app.agent.llm_client import GEMINI_MODEL, GEMINI_PROVIDER
+from app.agent.deepseek_client import DEEPSEEK_MODEL
 
 
 def main():
@@ -73,7 +74,8 @@ def main():
              'original_dispatch_behavior_matches':dispatch['behavior_matches'],
              'official_simulator_matches_week4':baseline_matches,
              'llm_provider':GEMINI_PROVIDER,'llm_model':GEMINI_MODEL,
-             'real_llm_call':'NOT_RUN: this verification command uses mocked SDK transport; run evaluation/verify_gemini_live.py for live evidence',
+             'supported_online_backends':{'llm':GEMINI_MODEL,'deepseek':DEEPSEEK_MODEL},
+             'real_llm_call':'NOT_RUN: Gemini SDK and DeepSeek HTTP transports are mocked; provider account connectivity and live model quality remain separate acceptance checks',
              'data_schema2_original':'NOT_PRESENT: implemented field mapping from Week 5/6 plans'}
     (out/'verification_summary.json').write_text(json.dumps(summary,indent=2)+'\n')
     print(json.dumps(summary,indent=2))

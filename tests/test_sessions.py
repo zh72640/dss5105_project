@@ -7,7 +7,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 from app.agent.parser import ParserOutcome
-from app.db.database import Database
+from app.db.database import Database, DB_VERSION
 from app.lifecycle import inspect_order, process_event
 from app.pipeline import process_request
 from app.sessions import create_session, inspect_session, session_turn
@@ -190,10 +190,12 @@ class Sessions(unittest.TestCase):
                 with Database(path) as db:
                     process_request("Allocate ORD-045.", database=db, backend="offline")
                     before = inspect_order("ORD-045", database=db)
+                    for table in ("login_sessions", "desk_users", "request_actors"):
+                        db.connection.execute("DROP TABLE " + table)
                     db.connection.execute("DROP TABLE session_messages")
                     db.connection.execute("DROP TABLE sessions")
                     db.connection.execute("DROP INDEX requests_session_idx")
-                    db.connection.execute("DELETE FROM schema_migrations WHERE version=3")
+                    db.connection.execute("DELETE FROM schema_migrations WHERE version>=3")
                     if fail:
                         db.connection.execute("""CREATE TRIGGER reject_sessions BEFORE INSERT ON schema_migrations
                             WHEN NEW.version=3 BEGIN SELECT RAISE(ABORT,'fail'); END""")
@@ -206,4 +208,4 @@ class Sessions(unittest.TestCase):
                 else:
                     with Database(path) as db:
                         self.assertEqual(before, inspect_order("ORD-045", database=db))
-                        self.assertEqual(db.connection.execute("SELECT MAX(version) FROM schema_migrations").fetchone()[0], 3)
+                        self.assertEqual(db.connection.execute("SELECT MAX(version) FROM schema_migrations").fetchone()[0], DB_VERSION)

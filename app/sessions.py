@@ -11,13 +11,16 @@ import uuid
 from datetime import date
 
 from app.agent.parser import ParserOutcome, parse_with_telemetry
+from app.agent.draft_edits import EDIT_FIELDS, apply_changes, merge_followup, valid_changes
+from app.assistant_reply import allocation_reply, guidance
 from app.db.database import Database, utc_now
 from app.pipeline import _apply, _cached, _decide, _record, terminal
 from app.schemas.parser_schema import OBJECTIVES, ParseResult
 
 SESSION_VERSION = "session_v1"
-REPLY_HELP = ("请补充订单号，或输入：改成两个工坊、不要 W3、取消刚才的排除、"
-              "最低成本、最快、最低缺陷。复杂修改请用“替换完整请求”。核对草稿后点击确认分配。")
+REPLY_HELP = ("Provide an order ID, or use: use two workshops, exclude W3, clear exclusions, "
+              "cheapest, fastest, lowest defects. For complex changes use Replace full request. "
+              "Review the recommendation before accepting.")
 
 
 def _identifier(value):
@@ -59,7 +62,7 @@ def create_session(*, session_id=None, objective="min_delay", backend="offline",
                    as_of=date(2026, 4, 1), db_path=None, database=None):
     session_id = session_id if session_id is not None else str(uuid.uuid4())
     if (not _identifier(session_id) or not isinstance(objective, str) or objective not in OBJECTIVES
-            or not isinstance(backend, str) or backend not in ("offline", "llm") or type(as_of) is not date):
+            or not isinstance(backend, str) or backend not in ("offline", "llm", "deepseek") or type(as_of) is not date):
         return _error("INVALID_ARGUMENT")
     db = database
     try:
@@ -91,6 +94,8 @@ def _patch(message, draft):
     if match:
         out["order_id"] = match[1].upper()
     else:
+        if text.lower() in ("reject recommendation", "拒绝推荐"):
+            return None, "RECOMMENDATION_REJECTED"
         match = re.fullmatch(r"(?:(?:改成|最多|不超过)\s*([1-8一二两三四五六七八])\s*(?:个|家)?工坊|(?:use|at most|change to) (one|two|three|four|five|six|seven|eight|[1-8]) workshops?)", text, re.I)
         if match:
             word = (match[1] or match[2]).lower()
@@ -118,18 +123,26 @@ def _patch(message, draft):
         return None, "ORDER_SWITCH_REQUIRES_NEW_SESSION"
     out["missing_fields"] = [] if out["order_id"] else ["order_id"]
     out["parse_status"] = "needs_clarification" if out["missing_fields"] or out["ambiguities"] else "ok"
-    return out, None
+    return apply_changes(draft, {k: out[k] for k in EDIT_FIELDS if out[k] != draft[k]})
 
 
 def session_turn(session_id, *, expected_version, request_id, action="message", message="",
-                 db_path=None, database=None):
+                 db_path=None, database=None, actor=None, changes=None):
     if (not _identifier(session_id) or not _identifier(request_id) or type(expected_version) is not int
             or expected_version < 0 or not isinstance(action, str) or action not in ("message", "replace", "confirm", "close")
             or not isinstance(message, str) or len(message) > 10000
-            or (action in ("message", "replace") and not message.strip())
-            or (action in ("confirm", "close") and message != "")):
+            or (action in ("message", "replace") and changes is None and not message.strip())
+            or (changes is not None and (action != "message" or message != "" or not valid_changes(changes)))
+            or (action in ("confirm", "close") and message != "")
+            or (actor is not None and (not isinstance(actor, str) or not 1 <= len(actor.strip()) <= 120))):
         return _error("INVALID_ARGUMENT")
-    fingerprint = hashlib.sha256(json.dumps([SESSION_VERSION, session_id, expected_version, request_id, action, message]).encode()).hexdigest()
+    identity = [SESSION_VERSION, session_id, expected_version, request_id, action, message]
+    if actor is not None:
+        identity.append(actor)
+    if changes is not None:
+        identity.append(json.dumps(changes, sort_keys=True))
+        message = "Edit details: " + json.dumps(changes, sort_keys=True)
+    fingerprint = hashlib.sha256(json.dumps(identity).encode()).hexdigest()
     db = database
     try:
         db = db or Database(db_path or ":memory:")
@@ -144,14 +157,20 @@ def session_turn(session_id, *, expected_version, request_id, action="message", 
         if snapshot["version"] != expected_version:
             return _error("SESSION_VERSION_CONFLICT")
         as_of = date.fromisoformat(snapshot["as_of_date"])
-        draft, issue = snapshot["draft"], None
+        draft, issue, parser_error = snapshot["draft"], None, None
         telemetry = {"backend": "session_commands", "schema_version": SESSION_VERSION, "source_request_id": request_id}
         if action in ("message", "replace"):
-            if expected_version == 0 or action == "replace":
+            if changes is not None:
+                draft_edit, issue = apply_changes(draft, changes)
+                if draft_edit:
+                    draft = draft_edit
+                telemetry["backend"] = "structured_form"
+            elif expected_version == 0 or action == "replace":
                 outcome = parse_with_telemetry(message, backend=snapshot["backend"], reference_date=as_of)
                 telemetry = outcome.telemetry
                 if outcome.error:
                     issue = "PARSER_ERROR"
+                    parser_error = outcome.error
                 elif outcome.parsed.parse_status == "invalid":
                     issue = "INVALID_REQUEST"
                 elif draft["order_id"] and outcome.parsed.order_id != draft["order_id"]:
@@ -160,6 +179,16 @@ def session_turn(session_id, *, expected_version, request_id, action="message", 
                     draft = outcome.parsed.to_dict()
             else:
                 patched, issue = _patch(message, draft)
+                if issue == "UNSUPPORTED_REPLY" and snapshot["backend"] == "deepseek":
+                    outcome = parse_with_telemetry(message, backend="deepseek", reference_date=as_of)
+                    telemetry = outcome.telemetry
+                    parser_error = outcome.error
+                    if outcome.error:
+                        issue = "PARSER_ERROR"
+                    elif outcome.parsed.parse_status == "invalid":
+                        issue = "INVALID_REQUEST"
+                    else:
+                        patched, issue = merge_followup(draft, outcome.parsed)
                 if patched:
                     draft = patched
         # Parsing/network I/O is outside the write lock. Version/key are checked
@@ -180,7 +209,7 @@ def session_turn(session_id, *, expected_version, request_id, action="message", 
             preview = None
             parsed = ParseResult(**draft)
             if action == "close":
-                result = {**terminal("CLOSED", "SESSION_CLOSED", "会话已结束。"), "success": True}
+                result = {**terminal("CLOSED", "SESSION_CLOSED", "Session closed without allocation."), "success": True}
                 state = "CLOSED"
             elif issue:
                 blockers = [issue]
@@ -192,7 +221,7 @@ def session_turn(session_id, *, expected_version, request_id, action="message", 
                 preview = _decide(connection, parsed, current["objective"], as_of, trace)
                 order_version = trace.get("order", {}).get("version")
                 if action == "confirm" and order_version != reviewed:
-                    result = terminal("REFUSE", "ORDER_VERSION_CONFLICT", "订单已变化，请发送有效修改或替换请求以重新核对。")
+                    result = terminal("REFUSE", "ORDER_VERSION_CONFLICT", "The order changed. Revise or replace the request to review it again.")
                     blockers = ["ORDER_VERSION_CONFLICT"]
                     state = "AWAITING_CLARIFICATION"
                 elif action == "confirm":
@@ -204,13 +233,21 @@ def session_turn(session_id, *, expected_version, request_id, action="message", 
                         state = "AWAITING_CLARIFICATION"
                 elif preview["success"]:
                     reviewed = order_version
-                    result = {**preview, "decision_status": "REVIEW", "message": "草稿已更新；请核对方案并确认分配。"}
+                    result = {**preview, "decision_status": "REVIEW", "explanation": preview["message"],
+                              "message": "Draft updated. Review the recommendation and accept to allocate."}
                     state = "ACTIVE"
                 else:
                     reviewed = order_version
                     blockers = parsed.missing_fields + parsed.ambiguities or preview["reason_codes"]
                     result = {**preview, "message": preview["message"] + " " + REPLY_HELP}
                     state = "AWAITING_CLARIFICATION"
+            questions = guidance(blockers, draft, result, trace, parser_error)
+            if questions and action != "close":
+                result["message"] = " ".join(q["question"] + " " + q["help"] for q in questions)
+            elif result["success"] and result.get("allocation"):
+                result["message"] = allocation_reply(result, draft.get("order_id"), committed=action == "confirm")
+            result["assistant_reply"] = result["message"]
+            result["clarifications"] = questions
             response = {"request_id": request_id, "session_id": session_id, "session_version": SESSION_VERSION,
                         "raw_message": message, "parsed": draft, "parser_telemetry": telemetry,
                         "trace": trace, "result": result, "replayed": False,
@@ -219,6 +256,8 @@ def session_turn(session_id, *, expected_version, request_id, action="message", 
                                            "merged_draft": draft, "issue": issue}
             outcome = ParserOutcome(parsed, telemetry)
             _record(connection, request_id, fingerprint, message, outcome, response)
+            if actor is not None:
+                connection.execute("INSERT INTO request_actors VALUES (?,?)", (request_id, actor))
             connection.execute("UPDATE requests SET session_id=? WHERE request_id=?", (session_id, request_id))
             if response["committed"]:
                 _apply(connection, request_id, result, trace, as_of)
@@ -234,7 +273,7 @@ def session_turn(session_id, *, expected_version, request_id, action="message", 
             return response
     except (sqlite3.Error, OSError, ValueError):
         # Draft, messages, request audit and production writes all roll back.
-        return {**_error("DB_ERROR", "保存失败，事务已回滚；可使用同一请求 ID 重试。"), "request_id": request_id}
+        return {**_error("DB_ERROR", "Save failed and the transaction was rolled back. Retry with the same request ID."), "request_id": request_id}
     finally:
         if database is None and db:
             db.close()

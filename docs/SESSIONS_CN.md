@@ -1,6 +1,6 @@
 # 多轮澄清与分配确认
 
-更新：2026-10-03；契约 `session_v1`；数据库 migration 003。
+更新：2026-10-08；MVP v0.5，契约 `session_v1`；会话表来自 migration 003，v0.4 身份扩展来自 004。本轮为增量字段，无数据库迁移。
 
 ## 使用流程
 
@@ -12,10 +12,10 @@
 
 - `create_session(session_id, objective, backend, as_of)`：同 ID、同配置返回现有会话；不同配置返回冲突。业务日期、解析 backend 和默认目标在创建时固定。
 - `inspect_session(session_id)`：返回草稿、blockers、状态、版本和按 sequence 排序的用户/系统消息。
-- `session_turn(session_id, expected_version, request_id, action, message)`：action 为 message、replace、confirm、close。confirm/close 必须传空消息，避免确认时遗漏新约束。
+- `session_turn(session_id, expected_version, request_id, action, message, changes=None)`：action 为 message、replace、confirm、close。confirm/close 必须传空消息，避免确认时遗漏新约束。`changes` 仅允许 action=message、message 为空，接受白名单字段；不调用模型。表单内容绑定幂等指纹并记录在会话审计中。
 - 每个已保存回合版本加 1，写入两条消息（user/assistant），每条关联本回合 request_id。request_id 与原分配及生命周期接口共享幂等空间。
 - 同 key 同输入返回原响应，即使会话已经关闭；同 key 不同输入报错。版本过期在写入前拒绝，不消耗回合；网络失败后可原 key 重试。
-- 首条 message 和 replace 调用原单消息 Parser v1。后续 message 只使用完整匹配的命令语法，不拼接历史文本。`context_messages` 仍保持 v1 原行为。
+- 首条 message 和 replace 调用原单消息 Parser v1。后续先尝试快捷命令；DeepSeek 会话可继续解析本轮自然语言，再将通过校验的字段与已有草稿在本机合并。其他模式后续仍使用快捷命令或表单。不拼接历史文本，`context_messages` 保持 v1 原行为。
 
 ## 支持的后续回复
 
@@ -29,8 +29,11 @@
 | 改目标 | 最快 / 最低成本 / 最低缺陷 / 平衡 | 替换目标，英文 fastest/cheapest/lowest defects/hybrid 也支持 |
 | 取消指定工坊 | 取消指定工坊 / clear preferred workshop | 清空 preferred_workshop |
 | 改交期约束 | 必须准时 / 允许迟交 | 设置或清除硬交期 |
+| 拒绝推荐 | Reject recommendation / 拒绝推荐 | 记录回合，阻止确认，等待修订；action 仍为 message |
 
-每条回复一次修改。含额外文字、复合约束或不支持的表达返回 UNSUPPORTED_REPLY，并阻止确认旧草稿。下一条有效修改可解除该回复错误；初始请求的歧义必须用 replace 完整重填。替换会清除未重新写出的旧约束，UI 应明确提示。
+上述快捷命令每条一次修改。离线/Gemini 的其他表达返回 UNSUPPORTED_REPLY，并阻止确认旧草稿。下一条有效修改可解除该回复错误。表单可同时修改多个字段，只解除相关歧义；不支持的业务约束仍需用 replace 重写。替换会清除未重新写出的旧约束，页面有提示。
+
+DeepSeek 自然语言追加保留未提及字段，新增排除取并集，不允许更换已绑定订单。清除偏好、排除或硬交期请用明确快捷命令或表单。结果新增 `assistant_reply` 与 `clarifications`（code/field/question/help），分别提供实际方案摘要和具体补充指引；服务错误会说明配置或网络原因。完整字段示例见 [HTTP 契约](UI_API_CN.md)。
 
 ## 状态和一致性
 
@@ -46,7 +49,7 @@
 
 页面入口为“多轮澄清与分配确认”。新建会话使用页面选择的默认目标；恢复会话可粘贴 session_id。刷新后恢复最近会话、消息和上次预览/分配结果。未确认收到响应的操作保存于本浏览器 localStorage；此时需先点击“重试上次操作”，避免产生新的请求 ID。确认时使用预览时的会话版本；跨客户端修改返回 409，再恢复最新会话。
 
-HTTP：`POST /api/sessions` 创建（可传 session_id/objective）；`GET /api/sessions/{id}` 恢复；`POST /api/sessions/{id}/turns` 传 request_id、expected_version、action、message。backend/业务日期由服务配置控制；会话创建后固定。返回 400 参数错误、404 不存在、409 版本/幂等/已关闭冲突、503 数据库错误。普通澄清返回 200，但 `committed=false`。
+HTTP：`POST /api/sessions` 创建（可传 session_id/objective）；`GET /api/sessions/{id}` 恢复；`POST /api/sessions/{id}/turns` 传 request_id、expected_version、action、message，可按上述规则传 changes。backend/业务日期由服务配置控制；会话创建后固定。返回 400 参数错误、404 不存在、409 版本/幂等/已关闭冲突、503 数据库错误。普通澄清返回 200，但 `committed=false`。
 
 CLI 示例（重复执行请使用新的会话/请求 ID，或先 inspect 读取原会话状态）：
 
@@ -66,4 +69,8 @@ CLI 成功保存草稿（含待澄清）返回 0；错误/拒绝/不可行返回
 
 2026-10-03 本机 Chrome 实际验收：缺订单请求 → ORD-045 → 改成两个工坊 → 排除 W8 → 刷新，恢复 ACTIVE/version4、W3/W8 排除和 GiantWeave 150 件预览 → 确认，CLOSED/version5；读取订单为 WORKING/version1、W5/150 件。使用独立 /tmp 数据库，未写入用户 runtime。HTTP/CLI 测试另外覆盖版本冲突、重放和关闭保护。
 
-会话是显式状态机与有限命令语法，不宣称支持任意多轮自然语言。没有身份认证；隔离指状态和数据隔离，不是访问权限隔离。LLM 初始解析与 replace 仍受现有在线限流限制。
+会话是显式状态机；DeepSeek 自由表达仍受 Parser v1 证据规则与现有业务字段限制，不宣称支持任意多轮自然语言。HTTP 已有本地账号认证；所有账号共享工作区，会话隔离仍不是角色或租户隔离。在线解析受服务商配额限制，本轮只完成模拟传输验收。
+
+## v0.4 英文界面与审批身份
+
+新版页面操作见 [UI 指南](UI_GUIDE_CN.md)。HTTP 接口从登录态注入 actor，客户端传 actor 字段会被拒绝；程序调用 `session_turn` 的 actor 为可选参数。带 actor 时幂等指纹绑定该值，审批人写入 request_actors，与确认分配同事务。预览保留 explanation，所有新会话反馈为英文；旧保存的消息不改写。

@@ -4,11 +4,16 @@ import json
 import os
 import re
 import sqlite3
+import threading
+import time
 from datetime import date
+from http.cookies import SimpleCookie, CookieError
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from urllib.parse import unquote, urlparse
+from urllib.parse import unquote, urlparse, parse_qs
+from app import auth, desk
 from app import APP_VERSION
+from app.agent.deepseek_client import backend_status, default_backend
 from app.db.database import Database
 from app.pipeline import PIPELINE_VERSION, process_request
 from app.lifecycle import inspect_order, process_event
@@ -17,33 +22,97 @@ from app.sessions import create_session, inspect_session, session_turn
 ROOT = Path(__file__).resolve().parents[1]
 
 
-def make_server(port=8000, db_path=None, backend="offline", as_of=date(2026, 4, 1)):
+def make_server(port=8000, db_path=None, backend="offline", as_of=date(2026, 4, 1), *, require_auth=True):
     db_path = str(db_path or ROOT / "runtime/dispatch.sqlite3")
     if db_path == ":memory:":
         raise ValueError("The HTTP server requires a file database shared by its request threads.")
     with Database(db_path):
         pass
+    login_attempts = []
+    login_lock = threading.Lock()
 
     class Handler(BaseHTTPRequestHandler):
-        def send(self, status, data, content_type="application/json; charset=utf-8"):
+        def send(self, status, data, content_type="application/json; charset=utf-8", headers=None):
             body = data if isinstance(data, bytes) else json.dumps(data, ensure_ascii=False).encode()
             self.send_response(status)
             self.send_header("Content-Type", content_type)
             self.send_header("Content-Length", str(len(body)))
             self.send_header("Cache-Control", "no-store")
             self.send_header("X-Content-Type-Options", "nosniff")
+            self.send_header("X-Frame-Options", "DENY")
+            if urlparse(self.path).path != "/legacy":
+                self.send_header("Content-Security-Policy", "default-src 'self'; script-src 'self'; style-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'")
+            for name, value in (headers or {}).items():
+                self.send_header(name, value)
             self.end_headers()
             self.wfile.write(body)
 
+        def token(self):
+            try:
+                cookies = SimpleCookie(self.headers.get("Cookie", ""))
+                return cookies[auth.COOKIE].value if auth.COOKIE in cookies else ""
+            except CookieError:
+                return ""
+
+        def user(self):
+            return auth.identify(db_path, self.token()) if require_auth else "local-demo"
+
         def do_GET(self):
             path = urlparse(self.path).path
-            if path == "/":
-                return self.send(200, (ROOT / "app/ui/index.html").read_bytes(), "text/html; charset=utf-8")
-            if path == "/sessions.js":
-                return self.send(200, (ROOT / "app/ui/sessions.js").read_bytes(), "text/javascript; charset=utf-8")
+            assets = {"/": ("index.html", "text/html"), "/legacy": ("legacy.html", "text/html"),
+                      "/sessions.js": ("sessions.js", "text/javascript"), "/desk.js": ("desk.js", "text/javascript"),
+                      "/desk.css": ("desk.css", "text/css")}
+            if path in assets:
+                filename, mime = assets[path]
+                return self.send(200, (ROOT / "app/ui" / filename).read_bytes(), mime + "; charset=utf-8")
             if path == "/api/health":
                 return self.send(200, {"status": "ok", "backend": backend, "as_of_date": as_of.isoformat(),
                                        "version": APP_VERSION, "pipeline_version": PIPELINE_VERSION})
+            try:
+                username = self.user()
+                if path == "/api/auth/me":
+                    with Database(db_path) as db:
+                        setup = db.connection.execute("SELECT COUNT(*) FROM desk_users").fetchone()[0] == 0
+                    return self.send(200, {"username": username, "auth_required": require_auth, "setup_required": require_auth and setup})
+                if not username:
+                    return self.send(401, {"error": "LOGIN_REQUIRED"})
+                params = parse_qs(urlparse(self.path).query)
+                if path == "/api/ai/status":
+                    return self.send(200, backend_status(backend))
+                query = params.get("q", [""])[0].strip()[:200]
+                if path == "/api/dashboard":
+                    return self.send(200, desk.dashboard(db_path, as_of))
+                if path == "/api/workshops":
+                    with Database(db_path) as db:
+                        items = desk.workshops(db.connection, as_of)
+                    status = params.get("status", [""])[0]
+                    category = params.get("category", [""])[0]
+                    items = [w for w in items if (not query or query.casefold() in (w["workshop_id"] + " " + w["name"]).casefold())
+                             and (not status or w["status"] == status) and (not category or category in w["makes"])]
+                    return self.send(200, {"items": items, "business_date": as_of.isoformat()})
+                if path in ("/api/audit", "/api/audit/export") or path.startswith("/api/audit/"):
+                    export = path == "/api/audit/export"
+                    detail = unquote(path[len("/api/audit/"):]) if path.startswith("/api/audit/") and not export else None
+                    page, size = int(params.get("page", ["1"])[0]), int(params.get("page_size", ["25"])[0])
+                    if not 1 <= page <= 1000000 or not 1 <= size <= 100:
+                        return self.send(400, {"error": "INVALID_PAGINATION"})
+                    # Export always includes ALL decisions, independent of list filters and pagination.
+                    payload = desk.audit(db_path, query="" if export else query,
+                        status="" if export else params.get("status", [""])[0], page=page, page_size=size, export=export, request_id=detail)
+                    if export:
+                        fmt = params.get("format", ["json"])[0]
+                        if fmt not in ("csv", "json"):
+                            return self.send(400, {"error": "INVALID_EXPORT_FORMAT"})
+                        body = desk.audit_csv(payload["items"]) if fmt == "csv" else json.dumps(payload, ensure_ascii=False, indent=2).encode()
+                        return self.send(200, body, "text/csv; charset=utf-8" if fmt == "csv" else "application/json; charset=utf-8",
+                                         {"Content-Disposition": f'attachment; filename="sweaterco-allocation-history.{fmt}"'})
+                    if detail:
+                        return self.send(200, payload["items"][0]) if payload["items"] else self.send(404, {"error": "AUDIT_NOT_FOUND"})
+                    return self.send(200, payload)
+            except ValueError:
+                return self.send(400, {"error": "INVALID_QUERY"})
+            except (sqlite3.Error, OSError):
+                return self.send(503, {"error": "DB_ERROR"})
             if path.startswith("/api/sessions/"):
                 try:
                     session = inspect_session(unquote(path[len("/api/sessions/"):]), db_path=db_path)
@@ -69,7 +138,7 @@ def make_server(port=8000, db_path=None, backend="offline", as_of=date(2026, 4, 
 
         def do_POST(self):
             session_route = re.fullmatch(r"/api/sessions/([A-Za-z0-9_-]{1,128})/turns", self.path)
-            if self.path not in ("/api/requests", "/api/events", "/api/sessions") and not session_route:
+            if self.path not in ("/api/requests", "/api/events", "/api/sessions", "/api/auth/login", "/api/auth/logout") and not session_route:
                 return self.send(404, {"error": "NOT_FOUND"})
             # JSON-only, same-origin local endpoint; no credential-bearing CORS.
             origin = self.headers.get("Origin")
@@ -82,12 +151,33 @@ def make_server(port=8000, db_path=None, backend="offline", as_of=date(2026, 4, 
                 if not 0 < length <= 50000:
                     return self.send(413, {"error": "INVALID_BODY_SIZE"})
                 data = json.loads(self.rfile.read(length))
+                if self.path == "/api/auth/login":
+                    if not isinstance(data, dict) or set(data) != {"username", "password"}:
+                        return self.send(400, {"error": "INVALID_FIELDS"})
+                    with login_lock:
+                        now = time.monotonic()
+                        login_attempts[:] = [t for t in login_attempts if now - t < 60]
+                        if len(login_attempts) >= 10:
+                            return self.send(429, {"error": "LOGIN_RATE_LIMIT", "message": "Too many attempts. Try again in one minute."})
+                        login_attempts.append(now)
+                    token = auth.login(db_path, data["username"], data["password"])
+                    if not token:
+                        return self.send(401, {"error": "INVALID_CREDENTIALS"})
+                    return self.send(200, {"username": data["username"]}, headers={"Set-Cookie":
+                        f"{auth.COOKIE}={token}; HttpOnly; SameSite=Strict; Path=/; Max-Age={auth.TTL}"})
+                username = self.user()
+                if not username:
+                    return self.send(401, {"error": "LOGIN_REQUIRED"})
+                if self.path == "/api/auth/logout":
+                    auth.logout(db_path, self.token())
+                    return self.send(200, {"success": True}, headers={"Set-Cookie":
+                        f"{auth.COOKIE}=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0"})
                 if self.path == "/api/sessions" or session_route:
-                    allowed = {"session_id", "objective"} if not session_route else {"request_id", "expected_version", "action", "message"}
+                    allowed = {"session_id", "objective"} if not session_route else {"request_id", "expected_version", "action", "message", "changes"}
                     required = set() if not session_route else {"request_id", "expected_version"}
                     if not isinstance(data, dict) or set(data) - allowed or not required <= set(data):
                         return self.send(400, {"error": "INVALID_FIELDS"})
-                    payload = (session_turn(session_route[1], **data, db_path=db_path) if session_route else
+                    payload = (session_turn(session_route[1], **data, actor=username, db_path=db_path) if session_route else
                                create_session(**data, backend=backend, as_of=as_of, db_path=db_path))
                     codes = payload.get("result", {}).get("reason_codes", [])
                     status = (400 if "INVALID_ARGUMENT" in codes else 404 if "SESSION_NOT_FOUND" in codes else
@@ -100,6 +190,8 @@ def make_server(port=8000, db_path=None, backend="offline", as_of=date(2026, 4, 
                                           "preferred_workshop", "deadline_required"}
                     if not isinstance(data, dict) or set(data) - allowed or not required <= set(data):
                         return self.send(400, {"error": "INVALID_FIELDS"})
+                    if require_auth:
+                        data["actor"] = username
                     payload = process_event(**data, db_path=db_path, as_of=as_of)
                     codes = payload["result"]["reason_codes"]
                     status = (400 if "INVALID_ARGUMENT" in codes else 404 if "ORDER_NOT_FOUND" in codes else
@@ -116,12 +208,14 @@ def make_server(port=8000, db_path=None, backend="offline", as_of=date(2026, 4, 
                 if "objective" in data and not isinstance(data["objective"], str):
                     return self.send(400, {"error": "INVALID_OBJECTIVE"})
                 payload = process_request(data["message"], data.get("objective", "min_delay"),
-                    request_id=data.get("request_id"), db_path=db_path, backend=backend, as_of=as_of)
+                    request_id=data.get("request_id"), db_path=db_path, backend=backend, as_of=as_of, actor=username)
                 codes = payload["result"]["reason_codes"]
                 status = 409 if "IDEMPOTENCY_CONFLICT" in codes else 400 if "INVALID_ARGUMENT" in codes else 503 if payload["result"]["decision_status"] == "ERROR" else 200
                 return self.send(status, payload)
             except (ValueError, UnicodeError):
                 return self.send(400, {"error": "INVALID_JSON"})
+            except (sqlite3.Error, OSError):
+                return self.send(503, {"error": "DB_ERROR"})
 
         def log_message(self, fmt, *args):
             # No raw message or API credentials in server logs.
@@ -134,10 +228,11 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--port", type=int, default=8000)
     parser.add_argument("--db", default=str(ROOT / "runtime/dispatch.sqlite3"))
-    parser.add_argument("--backend", choices=["offline", "llm"], default=os.getenv("PARSER_BACKEND", "offline"))
+    parser.add_argument("--backend", choices=["offline", "llm", "deepseek"], default=default_backend())
     parser.add_argument("--as-of", type=date.fromisoformat, default=date(2026, 4, 1))
+    parser.add_argument("--no-auth", action="store_true", help="Explicit local demonstration mode without login; approvals use local-demo.")
     args = parser.parse_args()
-    server = make_server(args.port, args.db, args.backend, args.as_of)
+    server = make_server(args.port, args.db, args.backend, args.as_of, require_auth=not args.no_auth)
     print(f"SweaterCo {args.backend} | http://127.0.0.1:{server.server_port} | business date {args.as_of}", flush=True)
     try:
         server.serve_forever()
