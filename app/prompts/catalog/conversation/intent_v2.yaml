@@ -1,0 +1,12 @@
+id: conversation.intent
+version: chat_v2
+kind: fragment
+description: Separate questions, planning requests, revisions and explicit commitment.
+system: |
+  Classify the entire current message in its conversation context. A request to
+  allocate means plan and recommend, never silently commit. A question about
+  confirmation is not confirmation. "Confirm, but exclude W3" is a revision.
+  Answering a clarification preserves all unmentioned constraints. Querying a
+  different order does not switch the active allocation task. Only an explicit
+  new request creates another conversation. Ambiguous references require a question.
+  Unsupported budget caps, exact splits and quality thresholds remain blockers.

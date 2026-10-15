@@ -6,11 +6,17 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
-from app.agent.llm_client import BackendError, LLMBackend, GEMINI_MODEL, GEMINI_BASE_URL
+from app.core.providers.llm_client import BackendError, LLMBackend, GEMINI_BASE_URL, gemini_model
 
 
 def diagnose():
-    result = {'model': GEMINI_MODEL, 'base_url': GEMINI_BASE_URL, 'api_version': 'v1beta',
+    try:
+        model_name = gemini_model()
+    except BackendError as error:
+        return {'model': None, 'base_url': GEMINI_BASE_URL, 'api_version': 'v1beta',
+                'model_lookup_http': None, 'generate_http': None, 'diagnosis': 'NOT_RUN',
+                'error': str(error)}
+    result = {'model': model_name, 'base_url': GEMINI_BASE_URL, 'api_version': 'v1beta',
               'model_lookup_http': None, 'generate_http': None, 'diagnosis': 'NOT_RUN'}
     try:
         backend = LLMBackend()
@@ -18,7 +24,7 @@ def diagnose():
         return {**result, 'error': str(error)}
     try:
         try:
-            model = backend.client.models.get(model=GEMINI_MODEL)
+            model = backend.client.models.get(model=backend.model)
             result.update(model_lookup_http=200, model_visible=True,
                           generate_content_advertised='generateContent' in (model.supported_actions or []))
         except backend._api_error as error:
@@ -29,7 +35,7 @@ def diagnose():
         # Minimal request: no order data, parser prompt, JSON Schema or thinking setting.
         try:
             backend.client.models.generate_content(
-                model=GEMINI_MODEL, contents='Reply with OK.',
+                model=backend.model, contents='Reply with OK.',
                 config=backend.types.GenerateContentConfig(max_output_tokens=32),
             )
             result.update(generate_http=200, diagnosis='MINIMAL_GENERATION_SUCCEEDED')

@@ -38,32 +38,28 @@ objective, warnings, and a human-facing message.
 ## Week 5/6 migration note (2026-09-14)
 
 The contracts above remain the **historical Week 4** contracts. The active entry
-point is now `app.pipeline.process_request()`, producing a versioned v0.1 envelope
+point for offline seeding is `app.services.dispatch.seed_allocation()` (Chat v2 owns HTTP allocation)
 with `parsed`, `parser_telemetry`, `trace`, and `result`. The new frozen ParseResult
-lives in `app/schemas/parser_schema.py`; see [Parser v1](../README_parser.md).
+lives in `app/schemas/parser_schema.py` (shared draft/recommendation shape; Parser v1 HTTP was retired).
 
-Week 4 `StructuredRequest`/`CandidateMetrics`/`AllocationResult` and legacy tools
-remain available for historical fixtures and baselines. Do not pass ParseResult to
-the old `conversation.gate_request()`; use the new pipeline, or explicitly use
-`fake_parse_request()` for the old fixture contract. `result` now includes integer
-`allocation` parts, success/status, rejected reasons and queue/database traces.
+Week 4 schemas, fixture parser and CSV allocation tools were retired on 2026-10-14. The frozen definitions above remain documentation of the historical contract. Current code uses ParseResult and SQLite-backed services; `result` includes integer allocation parts, success/status, rejection reasons and queue/database traces.
 
-## MVP v0.2 增量（2026-10-02）
+## MVP v0.2 addition (2026-10-02)
 
-以上为历史契约。当前分配入口输出 mvp_v0.2，Parser/Prompt v1 不变。数据库迁移 002 增加累计完工、版本、FIFO 预留和 lifecycle_events；生产操作由 `app.lifecycle.process_event()` 提供独立结构化接口，详见 [生命周期手册](LIFECYCLE_CN.md)。活动分配未完工件数加已确认完工数守恒，不再要求部分完工后的活动 working_order.pieces 总和始终等于原订单总量。
+The contracts above are historical. The allocation entry point retained Parser/Prompt v1 and returned mvp_v0.2. Migration 002 added accumulated completion, order versions, FIFO queue reservations, and lifecycle events. `app.services.lifecycle.process_event()` provides a separate structured production operation; see the [lifecycle guide](LIFECYCLE_CN.md). The remaining active assignment pieces plus confirmed completed pieces are conserved; after partial completion, active assignment rows alone no longer sum to the original order total.
 
-### MVP v0.3 会话扩展（2026-10-03）
+### MVP v0.3 session addition (2026-10-03)
 
-应用发布为 mvp_v0.3；原分配入口仍输出 mvp_v0.2，以保留既有幂等指纹。migration003 新增 sessions/session_messages，独立 session_v1 接口提供消息、完整替换、确认、关闭。Parser v1 仍是单消息契约，会话命令层负责显式合并；合并结果审计需要回溯整段会话。详见 [会话契约](SESSIONS_CN.md) 和 [数据库说明](DATABASE_SCHEMA_CN.md)。
+The release became mvp_v0.3 while the direct allocation envelope stayed mvp_v0.2 for idempotency compatibility. Migration 003 added `sessions` and `session_messages`; the independent session_v1 API supports messages, full replacement, confirmation, and closure. Parser v1 remains a single-message contract. The session layer explicitly merges follow-up fields and audits the whole conversation as evidence. See [sessions](SESSIONS_CN.md) and [database mapping](DATABASE_SCHEMA_CN.md).
 
-## MVP v0.4 UI 和认证扩展（2026-10-06）
+## MVP v0.4 UI and authentication addition (2026-10-06)
 
-发布版 mvp_v0.4 / Database v4；原 Pipeline v0.2、Parser/Prompt/Session v1 保持。004 新增账号、登录 token 哈希与 request_actors，旧迁移保持原文。HTTP 业务接口默认需要登录；actor 由服务端注入，带 actor 的请求指纹额外绑定身份。拒绝推荐为 message 动作内的显式命令，不扩展 session_messages.action 枚举。新增 dashboard/workshops/audit/export 是读取接口，详细字段和边界见 [UI/API 契约](UI_API_CN.md)。
+Migration 004 added accounts, hashed login tokens, and request actors without rewriting prior migrations. HTTP business calls require login by default and receive their actor from server authentication. The actor enters the idempotency fingerprint. Recommendation rejection remains an explicit message command rather than a new legacy session action. Dashboard, workshop, audit, and export endpoints are read-only; see [HTTP API](UI_API_CN.md).
 
-## MVP v0.5 增量（2026-10-09）
+## MVP v0.5 addition (2026-10-09)
 
-无数据库迁移，已有版本号不变。backend 增加 `deepseek`，从服务器环境读取 Key；登录后的 `GET /api/ai/status` 只返回 backend/configured/model。
+The DeepSeek backend reads its key from the server environment. Authenticated `GET /api/ai/status` returns only backend, configured flag, and model. A legacy session turn can accept validated structured `changes` only for an empty `message` action; it merges the draft without invoking a model, and the canonical edit enters the idempotency fingerprint and audit. A bound order cannot be replaced by another order. `assistant_reply` and `clarifications` provide a grounded summary and specific questions. Dashboard and audit gained allocation summaries; old records are not rewritten.
 
-会话回合可传 `changes`，仅限 action=message 且 message 为空；白名单与类型校验后合并草稿，不调用模型。编辑对象按键排序后进入幂等指纹，并以 `Edit details: {...}` 写入用户消息，沿用 action 枚举。已有订单不能切换；未解决的业务约束继续阻止确认。
+## Current dynamic chat addition (2026-10-15)
 
-会话结果增添 `assistant_reply`（事实摘要）及 `clarifications`（code/field/question/help）。dashboard 增添 `recent_allocations`，audit 与 CSV 增添 `summary`。旧保存消息保持原文；客户端应允许历史结果没有这些增量字段。HTTP 示例见 [接口说明](UI_API_CN.md)。
+Migrations 008 and 009 add owner-scoped chat sessions/recommendations and the durable Agent run/tool/event ledger. LLM chat uses native model tool calls, runtime application Skills, deterministic state guards, and persisted LangGraph checkpoints. These are separate from the frozen Week 4 and legacy session_v1 contracts. The explicit chat `confirm` action commits only a named, current recommendation; message text and model output cannot act as confirmation. See [dynamic architecture](AGENT_SKILL_ARCHITECTURE.md).

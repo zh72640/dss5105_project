@@ -1,0 +1,8 @@
+id: parsing.retry
+version: parser_v1
+kind: fragment
+description: Existing bounded parser retry feedback.
+variables:
+- feedback
+system: 'Previous attempt failed validation: ${feedback}. Retry once from the original message without filling unsupported
+  facts.'

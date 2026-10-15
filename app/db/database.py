@@ -3,9 +3,10 @@ from contextlib import contextmanager
 from datetime import datetime, timezone
 from pathlib import Path
 from app.db.import_data import load_seed
+from app.core import admin_account
 
 ROOT = Path(__file__).resolve().parents[2]
-DB_VERSION = 4
+DB_VERSION = 9
 
 
 def utc_now():
@@ -28,6 +29,8 @@ class Database:
             raise
 
     def initialize(self, *, seed_data=None, initial_account=None):
+        if initial_account is not None:
+            admin_account.ensure_regular_username(initial_account[0])
         # DDL and CSV import are one migration transaction, safe for concurrent opens.
         with self.transaction():
             has_table = self.connection.execute("SELECT 1 FROM sqlite_master WHERE name='schema_migrations'").fetchone()
@@ -35,7 +38,7 @@ class Database:
                 if seed_data is not None or initial_account is not None:
                     raise ValueError("Database is already initialized; existing data was not changed.")
                 version = self.connection.execute("SELECT MAX(version) FROM schema_migrations").fetchone()[0]
-                if version not in (1, 2, 3, DB_VERSION):
+                if version not in (1, 2, 3, 4, 5, 6, 7, 8, DB_VERSION):
                     raise sqlite3.DatabaseError("unsupported_database_version")
                 if version == 1:
                     self._upgrade_lifecycle()
@@ -43,6 +46,16 @@ class Database:
                     self._upgrade_sessions()
                 if version < 4:
                     self._upgrade_desk()
+                if version < 5:
+                    self._upgrade_jobs()
+                if version < 6:
+                    self._upgrade_job_recovery()
+                if version < 7:
+                    self._upgrade_account_roles()
+                if version < 8:
+                    self._upgrade_chat()
+                if version < 9:
+                    self._upgrade_agent()
                 return
             seed_data = seed_data or load_seed()
             sql = (Path(__file__).parent / "migrations/001_initial.sql").read_text()
@@ -66,9 +79,60 @@ class Database:
             self._upgrade_lifecycle()
             self._upgrade_sessions()
             self._upgrade_desk()
+            self._upgrade_jobs()
+            self._upgrade_job_recovery()
+            self._upgrade_account_roles()
+            self._upgrade_chat()
+            self._upgrade_agent()
             if initial_account is not None:
                 username, encoded_password = initial_account
-                self.connection.execute("INSERT INTO desk_users VALUES (?,?,?)", (username, encoded_password, utc_now()))
+                self.connection.execute(
+                    "INSERT INTO desk_users (username,password_hash,created_at,role) VALUES (?,?,?,'user')",
+                    (username, encoded_password, utc_now()))
+
+    def _upgrade_chat(self):
+        sql = (Path(__file__).parent / 'migrations/008_chat_sessions.sql').read_text(encoding='utf-8')
+        for statement in sql.split(';'):
+            if statement.strip():
+                self.connection.execute(statement)
+        self.connection.execute('INSERT INTO schema_migrations VALUES (?,?)', (8, utc_now()))
+
+    def _upgrade_agent(self):
+        sql = (Path(__file__).parent / 'migrations/009_agent_runtime.sql').read_text(encoding='utf-8')
+        for statement in sql.split(';'):
+            if statement.strip():
+                self.connection.execute(statement)
+        self.connection.execute('INSERT INTO schema_migrations VALUES (?,?)', (9, utc_now()))
+
+    def _upgrade_account_roles(self):
+        # Never promote an existing regular account or replace its password.
+        collision = self.connection.execute(
+            "SELECT 1 FROM desk_users WHERE lower(username)=?", (admin_account.ADMIN_USERNAME,)).fetchone()
+        if collision:
+            raise ValueError("Administrator username conflict: an existing account uses admin (case insensitive). "
+                             "Back up this database and resolve the account name before upgrading; no data was changed.")
+        sql = (Path(__file__).parent / "migrations/007_account_roles.sql").read_text()
+        for statement in sql.split(";"):
+            if statement.strip():
+                self.connection.execute(statement)
+        self.connection.execute(
+            "INSERT INTO desk_users (username,password_hash,created_at,role) VALUES (?,?,?,?)",
+            (admin_account.ADMIN_USERNAME, admin_account.ADMIN_PASSWORD_HASH, utc_now(), admin_account.ADMIN_ROLE))
+        self.connection.execute("INSERT INTO schema_migrations VALUES (?,?)", (7, utc_now()))
+
+    def _upgrade_job_recovery(self):
+        sql = (Path(__file__).parent / "migrations/006_job_recovery.sql").read_text()
+        for statement in sql.split(";"):
+            if statement.strip():
+                self.connection.execute(statement)
+        self.connection.execute("INSERT INTO schema_migrations VALUES (?,?)", (6, utc_now()))
+
+    def _upgrade_jobs(self):
+        sql = (Path(__file__).parent / "migrations/005_jobs.sql").read_text()
+        for statement in sql.split(";"):
+            if statement.strip():
+                self.connection.execute(statement)
+        self.connection.execute("INSERT INTO schema_migrations VALUES (?,?)", (5, utc_now()))
 
     def _upgrade_desk(self):
         sql = (Path(__file__).parent / "migrations/004_desk.sql").read_text()

@@ -1,9 +1,9 @@
 import itertools
 import unittest
 from datetime import date
-from app.allocator.planner import plan
+from app.services.planner import plan
 from app.schemas.parser_schema import ParseResult
-from app.tools.models import Workshop
+from app.schemas.business import Workshop
 
 
 class IntegerPlanner(unittest.TestCase):

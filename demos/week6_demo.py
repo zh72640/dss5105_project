@@ -4,7 +4,7 @@ import json
 import tempfile
 from pathlib import Path
 from app.db.database import Database
-from app.pipeline import process_request
+from app.services.dispatch import process_request
 
 DEMO = "Allocate ORD-045 using the cheapest available workshops. Do not use W03 and use at most two workshops."
 
@@ -21,7 +21,9 @@ def run(backend="offline"):
 
 
 def main():
-    parser = argparse.ArgumentParser(); parser.add_argument("--backend", choices=["offline", "llm"], default="offline")
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--backend", choices=["offline"], default="offline",
+                        help="Offline seed only; LLM allocation uses Chat v2")
     args = parser.parse_args(); result = run(args.backend)
     print(json.dumps(result, ensure_ascii=False, indent=2))
     return 0 if result["first_request"]["result"]["success"] and result["replay_is_idempotent"] else 1

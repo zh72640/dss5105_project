@@ -1,7 +1,7 @@
 """Adapt the production planner to the unmodified official single-workshop API."""
-from app.allocator.planner import plan
+from app.services.planner import plan
 from app.schemas.parser_schema import OBJECTIVES, ParseResult
-from app.tools.models import Workshop
+from app.schemas.business import Workshop
 
 
 def make_allocator(objective):

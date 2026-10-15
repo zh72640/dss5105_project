@@ -1,0 +1,11 @@
+format_version: 1
+active:
+  parsing.request: parser_v1
+  parsing.fragment_policy: parser_v1
+  parsing.retry: parser_v1
+  conversation.intent: chat_v2
+  conversation.interpret: chat_v2
+  conversation.reply: chat_v2
+  agent.intent: v1
+  allocation.extract: v1
+  agent.reply: v1

@@ -1,0 +1,11 @@
+ALTER TABLE jobs ADD COLUMN attempts INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE jobs ADD COLUMN max_attempts INTEGER NOT NULL DEFAULT 3;
+ALTER TABLE jobs ADD COLUMN next_attempt_at TEXT;
+ALTER TABLE jobs ADD COLUMN lease_owner TEXT;
+ALTER TABLE jobs ADD COLUMN lease_expires_at TEXT;
+ALTER TABLE jobs ADD COLUMN started_at TEXT;
+ALTER TABLE jobs ADD COLUMN finished_at TEXT;
+ALTER TABLE jobs ADD COLUMN idempotency_key TEXT;
+ALTER TABLE jobs ADD COLUMN fingerprint TEXT;
+CREATE UNIQUE INDEX jobs_idempotency_idx ON jobs(idempotency_key) WHERE idempotency_key IS NOT NULL;
+CREATE INDEX jobs_lease_idx ON jobs(status, lease_expires_at);

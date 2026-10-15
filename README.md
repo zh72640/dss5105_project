@@ -1,8 +1,22 @@
-# SweaterCo Dispatch Desk — MVP v0.5
+# SweaterCo Dispatch Desk — MVP v0.6
 
-DSS5105 Track 2 的本机外包调度系统：自然语言请求、澄清草稿、工坊资格和队列分析、推荐与显式审批、生产进度及完整审计。
+**2026-10-15 Agent architecture:** LLM chat sessions use native model tool calls in a durable LangGraph loop. Runtime-loaded Skills guide tool selection; guarded tools and SQLite transactions control business state. Single-workshop scoring is implemented in `app/services/scoring.py`; `app/tools/allocation.py` remains an import compatibility path. See the [current architecture](docs/current_architecture.md) and [Agent, Skill, and state architecture](docs/AGENT_SKILL_ARCHITECTURE.md). Offline rules mode remains a separate demo.
 
-**2026-10-08 更新：**新增 DeepSeek 环境变量接入、自然语言分配摘要、首页最近审批、具体澄清问题、无需 AI 的修改表单，以及 Small / Medium / Large 字号设置。详情见 [v0.5 修改说明](docs/CHANGELOG_V05_CN.md)、[本机配置 DeepSeek](docs/DEEPSEEK_SETUP_CN.md) 和 [新版测试流程](docs/V05_TEST_WALKTHROUGH_CN.md)。界面继续采用英文，审批和历史导出保留。
+**Multi-model support:** startup-only environment configuration, OpenAI / Claude / Gemini / DeepSeek model catalogues, and request-level LLM / Offline and model selection are available. See [setup and data import](docs/UV_SETUP.md) and the [Agent architecture](docs/AGENT_SKILL_ARCHITECTURE.md).
+
+A local subcontracting dispatch system for DSS5105 Track 2: natural-language requests, clarification drafts, workshop eligibility and queue analysis, recommendations with explicit approval, production tracking, and audit history.
+
+**2026-10-15 Chat:** `/chat` uses persistent owner-scoped sessions. AI mode runs the Skill-guided native tool Agent described above; Offline mode remains a rules demo. Recommendations appear in the existing Recommendations page, and either entry point can confirm a specific plan once. Successful confirmation saves factual feedback to the conversation. SQLite schema v9 adds durable Agent run and tool trace tables while preserving v1 APIs. Live provider quality is not established by offline or mocked tests.
+
+**2026-10-13 account update:** regular users and a built-in administrator are supported. SQLite schema v7 preserves existing user accounts and provisions `admin`. Ordinary registration creates regular users; administrator credentials are supplied privately. An authenticated administrator sees an `admin` badge in the upper-left corner.
+
+**2026-10-13 architecture update:** HTTP runs on FastAPI with `/docs`, `/redoc`, and `/openapi.json`; LangGraph orchestrates conversation turns; SQLite jobs support idempotent enqueueing, lease recovery, bounded retries, and cancellation checks before business writes. Modules are grouped by responsibility, and existing API paths and CLI commands remain available. See the [application architecture](docs/AGENT_ARCHITECTURE_CN.md).
+
+**2026-10-08 update:** DeepSeek environment configuration, allocation summaries, recent approvals, targeted clarification questions, an editing form that works without AI, and Small / Medium / Large text settings. See the [setup guide](docs/UV_SETUP.md) and [known limits](KNOWN_ISSUES.md).
+
+**2026-10-16 API retirement:** Parser v1 (`/api/requests`), legacy `/api/sessions`, and `session_revise` jobs were removed. Conversational allocation is Chat v2 (`/api/chat/*`, `/chat`); Desk new requests redirect there. Account, setup, and lifecycle CLIs remain (`app.cli.auth`, `app.cli.setup`, `app.cli.lifecycle`).
+
+**2026-10-14 source cleanup:** obsolete CSV allocation code and many old import paths were removed. See the [file migration map](docs/app_file_migration_map.md).
 
 ## Quick start with uv
 
@@ -12,46 +26,60 @@ Install [uv](https://docs.astral.sh/uv/getting-started/installation/), download 
 # Install the locked dependencies and selected Python environment
 uv sync --locked
 
-# First run only: choose bundled or personal CSV files and create an account
-uv run --locked python -m app.setup
+# First run only: choose bundled or personal CSV files and create a regular account
+uv run --locked python -m app.cli.setup
 
 # Start without an external model (rules parser)
 uv run --locked python -m app.server --backend offline
 
-# Or Gemini natural-language parsing: copy .env.example → .env, set GEMINI_API_KEY
+# Or Gemini parsing: copy .env.example to .env and set GEMINI_API_KEY
 uv run --locked --env-file .env python -m app.server --backend llm
 ```
 
-Open <http://127.0.0.1:8000> and sign in with the account created during setup. The app does **not** auto-load `.env`; use `uv run --env-file .env` locally, or inject the same variables in deployment. The bundled data contains 120 orders and 8 workshops. Personal CSV files use the same format as `data/orders.csv` and `data/workshops.csv`; the original files are not modified. **Already have a database? Back it up and skip setup.** Setup refuses to overwrite any existing database file. See the [English uv, data import and account guide](docs/UV_SETUP.md) for supported CSV fields, private data, dates and troubleshooting.
+Open <http://127.0.0.1:8000> and sign in with the account created during setup. The app does **not** auto-load `.env`; use `uv run --env-file .env` locally, or inject the same variables in deployment. The bundled data contains 120 orders and 8 workshops. Personal CSV files use the same format as `data/orders.csv` and `data/workshops.csv`; the original files are not modified. **Already have a database? Back it up and skip setup.** Setup refuses to overwrite any existing database file. See the [uv, data import, and account guide](docs/UV_SETUP.md) for supported CSV fields, private data, dates, and troubleshooting.
 
 To use personal files with a separate database:
 
 ```powershell
-uv run --locked python -m app.setup --orders "D:/private/orders.csv" --workshops "D:/private/workshops.csv" --db runtime/personal.sqlite3 --as-of 2026-10-09 --username professor
+uv run --locked python -m app.cli.setup --orders "D:/private/orders.csv" --workshops "D:/private/workshops.csv" --db runtime/personal.sqlite3 --as-of 2026-10-09 --username professor
 uv run --locked python -m app.server --db runtime/personal.sqlite3 --backend offline
 ```
 
-Create an additional account with `uv run --locked python -m app.auth another_user`. Reset an existing password explicitly with `uv run --locked python -m app.auth another_user --reset-password`. Add the same `--db` when using a separate database. Duplicate registration never changes an existing password.
+## Accounts and administrator access
 
-页面流程：New request → 澄清缺失内容 → 核对推荐/理由 → Accept allocation。发送和修改仅保存草稿，接受才分配。Production 支持部分/全部完工、撤销、失效和重派。原中文页面保留于 `/legacy`，同样受业务接口登录保护。
+Setup creates your first **regular user**. Create additional regular users with `uv run --locked python -m app.cli.auth another_user`. Explicitly reset a regular user's password with `uv run --locked python -m app.cli.auth another_user --reset-password`. Use the same `--db` argument when managing a separate database. Duplicate registration never changes an existing password. Account registration currently takes place in the terminal.
 
-## 文档入口
+Each new database and upgraded older database receives the built-in **`admin`** account. Use the maintainer-supplied password in the usual sign-in form. Administrator sessions show `admin` below the brand in the upper-left corner; the badge is hidden for regular users and after sign-out. The source contains only a salted password hash. The password is omitted from documentation and logs.
 
-- [UI 修改说明](docs/UI_CHANGELOG_CN.md)：新增什么、为何修改、文件与版本变化。
-- [v0.5 验收](docs/V05_ACCEPTANCE_CN.md)：本轮自动测试、浏览器检查和真实模型验证边界。
-- [UI 操作与课程演示](docs/UI_GUIDE_CN.md)：英文按钮、业务口径及五分钟演示顺序。
-- [UI 需求映射与验收](docs/UI_ACCEPTANCE_CN.md)、[需求原件](docs/requirements/README.md)。
-- [部署、升级、账号、备份与恢复](docs/DEPLOYMENT_CN.md)。
-- [项目整体说明](docs/PROJECT_OVERVIEW_CN.md)、[下一阶段交接](docs/NEXT_STAGE_CN.md)。
-- [会话契约](docs/SESSIONS_CN.md)、[生命周期](docs/LIFECYCLE_CN.md)、[数据库](docs/DATABASE_SCHEMA_CN.md)、[系统/API/CLI](docs/SYSTEM_GUIDE_CN.md)。
-- [模拟器对比](evaluation/results/simulator_comparison_CN.md)、[Gemini 在线验收](docs/GEMINI_LIVE_ACCEPTANCE_CN.md)、[已知限制](KNOWN_ISSUES.md)。
-- [历史 v0.3 修改](docs/CHANGELOG_WEEK8_WEEK9_CN.md)、[Sprint 1 讲稿](docs/SPRINT1_REVIEW_CN.md)。
+The name `admin`, including case variants, is reserved. Ordinary registration and account-reset commands cannot create, promote, or reset an administrator. Older accounts retain the `user` role and their existing passwords. If an older database already contains an account named `admin` or a case variant, migration stops with a conflict message and rolls back; back up the database and resolve that account name before upgrading. Repeated startup does not reset passwords or duplicate accounts.
 
-## 演示与验证
+Regular users and administrators share the current business workspace. Future administrator tools can use the backend role guard. The explicit `--no-auth` demonstration mode uses a regular `local-demo` identity. People who control their local source code and database can change their own installation's permissions. Separate local databases remain independent.
+
+## Using the desk
+
+Open the conversation assistant at `/chat` (Desk “New request” redirects there). Resolve clarifications, review the recommendation card, then confirm explicitly. Production supports partial/full completion, reversal, lapse, and reassignment from the desk. LLM turns enter `app/agent/runtime.py` → main graph / allocation subgraph / Tool loop in `app/agent/dynamic.py`. Business services live in `app/services/` and FastAPI routes in `app/api/`. After signing in, open the [API documentation](http://127.0.0.1:8000/docs) in the same browser.
+
+## Prompt and reply organization
+
+The Agent discovers `app/skills/*/SKILL.md` at runtime. The allocation subgraph loads its recommendation Skill after fixed preparation; compatible tasks can request Skills from the catalog. Loaded instructions and their hashes are saved for recovery. A completed turn clears loaded Tool permissions; a pending question keeps its Skill snapshot. Versioned YAML prompts for both current and compatibility paths live under `app/prompts/catalog/`.
+
+Business replies in LLM chat are grounded in Tool results and saved facts. The server checks direct commitment and production-success claims against authoritative results. Compatibility responses live in `app/agent/responses/` and `app/agent/conversation/reply.py`; the canonical prompt catalog is described in its [guide](app/prompts/README.md).
+
+## Documentation
+
+- [Dynamic Agent, Skills, tools, and business state](docs/AGENT_SKILL_ARCHITECTURE.md): current execution, recovery, tool contracts, scoring semantics, and verification.
+- [Dynamic Agent acceptance](docs/AGENT_ACCEPTANCE.md): scenario matrix, reproducible tool trace, and live-provider boundary.
+- [Current architecture](docs/current_architecture.md): running paths, boundaries, and data flow.
+- [File migration map](docs/app_file_migration_map.md): canonical paths, import compatibility, and older business flows.
+- [Target architecture](docs/architecture.md): intended responsibilities and dependency rules.
+- [Setup and data import](docs/UV_SETUP.md): environment, accounts, and first run.
+- [Known limits](KNOWN_ISSUES.md): provider acceptance, data, optimization, and deployment boundaries.
+
+## Demonstrations and verification
 
 ```bash
-uv run --locked python -X utf8 -m demos.session_demo
 uv run --locked python -X utf8 -m demos.lifecycle_demo
+uv run --locked python -X utf8 -m demos.week6_demo
 
 # Tests use temporary databases and mocked model transports.
 uv run --locked python -X utf8 -m unittest discover -s tests -v
@@ -59,16 +87,21 @@ uv run --locked python -X utf8 -m unittest discover -s tests -v
 uv run --locked python -X utf8 evaluation/verify_mvp.py
 uv run --locked python -X utf8 evaluation/verify_ui.py
 
-# 前端控制器验证需 Node 18+；应用运行无需 Node/npm
+# Frontend controller tests require Node 18+; running the app does not require Node/npm.
 node --test tests/test_ui_state.cjs
+uv run --no-sync python -X utf8 -m evaluation.verify_dynamic_agent
 ```
 
-已保存：**203 条 Python 测试及 7 条前端控制器测试通过**；60/60 离线解析、30/30 原始行为匹配；会话/生命周期及 14 组模拟器回归通过。机器结果见 [verification_summary.json](evaluation/results/verification_summary.json)。[ui_latency.json](evaluation/results/ui_latency.json) 是 v0.4 的历史离线测量，不代表 DeepSeek 在线性能。
+The prompt organization update passed **266 Python tests and 9 frontend tests**. Frozen fixtures verify exact parity for 4 provider-message bundles and 35 user replies; registry checks cover adding a new function, version selection, pinned retries, variable validation, and compatibility imports at the time of that update. See the [prompt verification report](evaluation/results/prompt_catalog_verification.json). Model transports are mocked; these results do not establish live provider quality.
 
-Safari 已检查新版首页、大字体、新建请求、具体澄清、表单补订单、实际审批与首页摘要；生产页、历史导出和移动端边界见 [本轮验收](docs/V05_ACCEPTANCE_CN.md)。自动测试不代表真实 DeepSeek/Gemini 连通性与效果通过。
+The account-role update passed **247 Python tests and 9 frontend tests**, with browser checks for administrator sign-in, the upper-left badge, refresh, sign-out, and regular-user sign-in. See the [account verification report](evaluation/results/account_roles_verification.json).
 
-## 当前边界
+The framework refactor passed 232 Python tests and 7 frontend tests, 60/60 offline parsing cases, 30/30 original business behavior cases, 14 simulator configurations, and continuous HTTP demonstrations. These historical results are recorded in the [framework verification report](evaluation/results/framework_refactor_verification.json). The account update adds tests in `tests/test_account_roles.py` and extends the frontend controller checks. Historical v0.5 results remain in [verification_summary.json](evaluation/results/verification_summary.json); [ui_latency.json](evaluation/results/ui_latency.json) contains historical measurements and does not represent current endpoints or online model latency.
 
-The web server defaults to the latest queue snapshot date in the selected database. Bundled setup suggests `2026-04-01`; personal imports allow a different date. Legacy dispatch/session CLIs still require an explicit matching `--as-of` for personal data. 统计审批“今天”使用真实 UTC 日期。发布 v0.5、DB v4、Session/Parser/Prompt v1；Pipeline 保持 v0.2。服务只绑定 `127.0.0.1`，登录用户共享一个工作区，尚无角色与租户隔离。
+Historical Safari checks covered the homepage, large text, request creation, clarification, editing, approval, and summary display. See [known limits](KNOWN_ISSUES.md) for production, audit export, and mobile boundaries. Automated checks do not establish live Gemini or DeepSeek connectivity and quality.
 
-DeepSeek 从 `DEEPSEEK_API_KEY` 读取本机密钥，默认模型 `deepseek-flash`，以 `python -m app.server --backend deepseek` 启动。未显式指定后端且存在 Key 时也会自动选择 DeepSeek；`.env` 不会自动加载。已有会话保留原后端，需要创建新请求。Gemini 仍可用 `--backend llm`。本轮没有真实模型调用；2026-10-02 Gemini 全量评估的 429 失败结论仍保留。全局限速/退避、工坊产能编辑、自动过期和独立数据评估仍待完成。
+## Current boundaries
+
+The server defaults to the latest queue snapshot date in the selected database. Bundled setup suggests `2026-04-01`; personal imports allow another date. Legacy dispatch/session CLIs still require an explicit matching `--as-of` for personal data. Daily approval statistics use the actual UTC date. Application v0.6 uses DB v9, Chat v2 and Session/Parser/Prompt v1, and Pipeline v0.2. The server binds to `127.0.0.1` and runs as one process at low concurrency. Accounts have `user` and `admin` roles and share one business workspace without tenant isolation; chat v2 sessions are owner-scoped.
+
+DeepSeek reads `DEEPSEEK_API_KEY` and defaults to `deepseek-flash`; start with `python -m app.server --backend deepseek`. Without an explicit backend or `PARSER_BACKEND`, a configured DeepSeek key selects DeepSeek; otherwise the parser uses offline rules. Existing conversations retain their original backend. Gemini uses `--backend llm`. No real model calls were made for the architecture, account, or prompt organization updates; the 2026-10-02 Gemini evaluation's HTTP 429 result remains historical. Global model throttling/backoff, workshop capacity editing, automatic expiry, and independent dataset evaluation remain future work.

@@ -1,0 +1,91 @@
+{
+  "checked_at": "2026-10-13T10:25:21.027837+00:00",
+  "release": "mvp_v0.6",
+  "database_version": 6,
+  "python": "3.14.6",
+  "python_tests": {
+    "run": 232,
+    "passed": true
+  },
+  "frontend_tests": {
+    "run": 7,
+    "passed": true
+  },
+  "parser_golden": {
+    "run": 60,
+    "passed": 60
+  },
+  "original_dispatch_behavior_matches": 30,
+  "single_request_success": true,
+  "single_request_replay_safe": true,
+  "lifecycle_verified": true,
+  "queue_consistent": true,
+  "foreign_keys_ok": true,
+  "session_verified": true,
+  "preview_does_not_allocate": true,
+  "session_replay_safe": true,
+  "simulator_policy_runs": 14,
+  "simulator_runs_complete": true,
+  "official_baseline_unchanged": true,
+  "http_acceptance": {
+    "checked_at": "2026-10-13T10:25:21.026337+00:00",
+    "python": "3.14.6",
+    "scope": "Local HTTP, authenticated, offline rules, 120 seeded orders and 8 workshops. Not browser paint time, concurrent load or Gemini latency.",
+    "metrics": {
+      "login": {
+        "samples": 1,
+        "p50_ms": 242.5,
+        "p95_ms": 242.5,
+        "max_ms": 242.5
+      },
+      "dashboard": {
+        "samples": 21,
+        "p50_ms": 15.05,
+        "p95_ms": 35.54,
+        "max_ms": 51.53
+      },
+      "create_session": {
+        "samples": 20,
+        "p50_ms": 14.03,
+        "p95_ms": 34.95,
+        "max_ms": 47.15
+      },
+      "preview": {
+        "samples": 20,
+        "p50_ms": 57.63,
+        "p95_ms": 72.97,
+        "max_ms": 81.95
+      },
+      "confirm": {
+        "samples": 10,
+        "p50_ms": 59.96,
+        "p95_ms": 70.57,
+        "max_ms": 70.57
+      },
+      "workshops": {
+        "samples": 20,
+        "p50_ms": 15.47,
+        "p95_ms": 26.95,
+        "max_ms": 35.96
+      },
+      "audit": {
+        "samples": 20,
+        "p50_ms": 22.14,
+        "p95_ms": 34.15,
+        "max_ms": 40.49
+      },
+      "export_json": {
+        "samples": 1,
+        "p50_ms": 40.47,
+        "p95_ms": 40.47,
+        "max_ms": 40.47
+      }
+    },
+    "all_observed_responses_under_3_seconds": true,
+    "preview_count": 20,
+    "confirmed_count": 10,
+    "exported_decisions": 30,
+    "production_database_touched": false
+  },
+  "real_llm_calls": "NOT_RUN: model transports are mocked; offline acceptance only"
+}

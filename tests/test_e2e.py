@@ -6,9 +6,7 @@ from concurrent.futures import ThreadPoolExecutor
 from datetime import date
 from pathlib import Path
 from app.db.database import Database
-from app.pipeline import process_request
-from app.agent.llm_client import BackendError
-from test_parser import SequenceBackend
+from app.services.dispatch import process_request
 
 
 class EndToEnd(unittest.TestCase):
@@ -107,16 +105,11 @@ class EndToEnd(unittest.TestCase):
                                     SELECT RAISE(ABORT,'injected write failure'); END""")
         before=list(self.db.connection.execute('SELECT * FROM workshop_queue'))
         r=self.run_request('Allocate ORD-093 fastest; at most two workshops.')
-        self.assertEqual(r['result']['reason_codes'],['DB_ERROR']); self.assertTrue(r['error_logged'])
+        self.assertEqual(r['result']['reason_codes'],['DB_ERROR'])
         self.assertEqual(self.count('working_order'),0); self.assertEqual(self.state('ORD-093'),'READY')
         self.assertEqual(before,list(self.db.connection.execute('SELECT * FROM workshop_queue')))
-        self.assertEqual(self.db.connection.execute('SELECT decision_status FROM decision_log').fetchone()[0],'ERROR')
-
-    def test_15_llm_error_never_persists_bad_parsed_columns(self):
-        r=self.run_request(backend=SequenceBackend('{bad'))
-        self.assertEqual(r['result']['reason_codes'],['PARSER_ERROR'])
-        self.assertEqual(self.count('request_parsing_history'),0); self.assertEqual(self.count('working_order'),0)
-        self.assertEqual(r['parser_telemetry']['retry_count'],1)
+        self.assertEqual(self.count('decision_log'),0)
+        self.assertEqual(self.count('requests'),0)
 
     def test_16_preferred_suspended_cap_and_category(self):
         for text,code in [('Allocate ORD-045 to OldMill.','STATUS_SUSPENDED'),

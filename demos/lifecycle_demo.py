@@ -3,8 +3,8 @@ import json
 import tempfile
 from pathlib import Path
 from app.db.database import Database
-from app.lifecycle import inspect_order, process_event
-from app.pipeline import process_request
+from app.services.lifecycle import inspect_order, process_event
+from app.services.dispatch import process_request
 
 
 def run():

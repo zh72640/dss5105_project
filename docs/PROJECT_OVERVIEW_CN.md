@@ -1,87 +1,59 @@
-# SweaterCo Dispatch Desk 项目整体说明
+# SweaterCo Dispatch Desk: project overview
 
-更新：2026-10-09，MVP v0.5。项目对应 DSS5105 Track 2：Quick-Response Subcontracting Desk，为小批量服装订单选择合适外包工坊。
+This page retains its historical filename so existing links keep working. It describes the current local MVP and should be read with the [Agent architecture](AGENT_SKILL_ARCHITECTURE.md) and [known limits](../KNOWN_ISSUES.md).
 
-## 1. 问题、用户与价值
+## Purpose and users
 
-调度员需要同时核对工坊品类、状态、批量上限、队列、价格和交期。群聊中的请求可能缺订单号、包含排除条件，或指定不合格工坊。系统把这些需求转换成可核对的结构化记录，以确定性代码计算候选方案，再保存分配和生产变更。
+A dispatcher must match small garment orders to qualified subcontracting workshops while considering status, category capability, batch limit, existing queue, cost, defect rate, and due date. A request may omit an order ID or change constraints over several turns. The application records those requirements, calculates an auditable recommendation, and commits an allocation only after explicit confirmation. Production events record partial completion, cancellation, lapse, or reassignment.
 
-目前可以证明的是功能正确性、操作可追溯性和课程模拟器中的指标变化；尚未测量真实调度员节省的时间、真实成本收益或生产现场效果。
+The system has been verified as a local course MVP. It has not measured actual dispatcher time savings, realized financial benefit, or production-site performance.
 
-## 2. 架构与数据流
+## Current flow
 
 ```mermaid
 flowchart TD
-    U[调度员：页面 / CLI / HTTP] --> S[单消息分配]
-    U --> C[会话：缺失字段 / 约束修改 / 预览]
-    S --> P[Parser v1：离线规则 / DeepSeek / Gemini + 校验]
-    C -->|首条或完整替换| P
-    P --> D[结构化请求或会话草稿]
-    C -->|快捷命令 / 表单 / 已校验的 DeepSeek 追加| D
-    D --> R[真实订单 / 工坊 / 队列检索]
-    R --> A[确定性资格筛选与整数分配]
-    A --> V[候选、费用、时间、拒绝理由]
-    V -->|单消息执行或会话显式确认| T[事务 / 幂等 / 版本检查]
-    T --> DB[(SQLite 生产状态与审计)]
-    U --> L[部分完工 / 撤销 / 失效 / 重派]
-    L --> T
-    A --> E[官方模拟器适配与基线比较]
+    U[Authenticated user in desk or chat] --> A[Agent selects and loads a Skill]
+    A --> T[Agent requests a permitted tool]
+    T --> G[Schema, identity, state, and evidence guards]
+    G --> F[(Orders, workshops, queues, task and recommendation facts)]
+    F --> P[Deterministic preflight and integer planner]
+    P --> R[Saved recommendation preview]
+    R --> C[Explicit confirmation with recommendation ID and version]
+    C --> X[Transactional allocation and queue update]
+    U --> E[Explicit production event]
+    E --> L[Versioned lifecycle transaction and audit]
 ```
 
-LLM 只做输入提取，不决定资格、不计算金额/天数、不直接写库。会话是显式状态机；DeepSeek 追加经校验后在本机合并，未提及的要求保留；其他模式使用快捷命令或表单。自然语言回复来自实际方案字段，老板可先看分配摘要，再展开详细计算。
+LLM chat uses native model tool calls in a persistent LangGraph loop. Application `SKILL.md` files provide the business steps and available Toolsets. The model chooses queries, calculations, clarification, or explanation at runtime. Code and database transactions enforce legal state transitions and reject unsupported or stale actions. The older single-request parser and offline rules demonstration remain separate compatibility paths.
 
-## 3. 模块与接口
+## Data and business rules
 
-| 模块 | 入口 | 责任与边界 |
-|---|---|---|
-| 解析与校验 | app/agent/parser.py | 严格 Schema、原文证据、最多一次重试；失败不分配 |
-| 会话 | app/sessions.py | ACTIVE / AWAITING_CLARIFICATION / CLOSED，版本、消息、显式确认 |
-| 检索 | app/repositories | 精确订单 ID、主数据冲突、实时队列；不猜客户对应订单 |
-| 分配 | app/allocator/planner.py | 单工坊/整数拆单、最大工坊数、排除与指定工坊、软/硬交期 |
-| 持久化主链路 | app/pipeline.py | requests、解析历史、决策、工作分配、队列一起提交 |
-| 生产事件 | app/lifecycle.py | complete/cancel/lapse/reassign、部分完工守恒、操作者和原因 |
-| 本机界面 | app/server.py、app/ui | 英文登录、概览、推荐与澄清、决策理由、历史导出、工坊查询、生产操作 |
-| 账号与读取模型 | app/auth.py、app/desk.py | 本地登录、服务端审批身份、全量审计与统计；账号共享工作区 |
-| 评估 | evaluation/verify_mvp.py | 回归、持久化演示、官方基线与新策略对比 |
+The bundled seed has 120 orders and eight workshops. Source CSV files are imported on first initialization; subsequent work uses SQLite and does not reload edits to those CSV files. The default course business date is 2026-04-01; audit timestamps use actual UTC time.
 
-新界面详见 [v0.5 修改说明](CHANGELOG_V05_CN.md)、[操作指南](UI_GUIDE_CN.md) 和 [验收边界](V05_ACCEPTANCE_CN.md)。HTTP 业务接口默认需要登录，原中文页面保留在 `/legacy`。
+A workshop must be active, support the category, fit its batch limit, and satisfy user exclusions and preferences. The maximum workshop count is a cap, not a required split. The planner conserves the remaining order quantity. A specific preferred workshop must take the whole eligible batch. Lateness is normally a warning; an explicit hard deadline makes it a constraint. Queue reservations decay in calendar days and are changed only by controlled production transactions.
 
-接口明细与命令示例见 [系统手册](SYSTEM_GUIDE_CN.md)、[会话手册](SESSIONS_CN.md) 和 [生命周期手册](LIFECYCLE_CN.md)。
+The existing task states are `COLLECTING`, `BLOCKED`, `READY`, `RECOMMENDED`, `CONFIRMED`, and `CANCELLED`. The database is authoritative for these states and for orders, recommendations, queue, and working allocations. A preview never writes a production allocation. A changed requirement supersedes its earlier recommendation; confirmation checks owner, ID, versions, and fresh business facts before writing.
 
-## 4. 数据与核心规则
+## Scoring and evaluation
 
-原始 CSV 包含 120 个订单和 8 个工坊；86 个源 COMPLETE 订单导入为 COMPLETED，其他订单作为 READY。原始 CSV 是首次初始化种子；后续运行以 SQLite 为准，改 CSV 不会同步已有库。
+The supported planning objectives are `min_delay`, `min_cost`, `min_defects`, and the planner's weighted `hybrid`. The weighted hybrid uses `0.6 * estimated_days + 0.4 * defect_rate * 100`. The restored `app/tools/allocation.py` provides four original single-workshop timing and score functions. Its `get_hybrid_score` is deadline-gated defect rate and has different semantics from the planner objective. The Agent's `score_workshop` tool calls all four original functions without copying their formulas.
 
-工坊需满足 ACTIVE、品类能力、批量上限和用户排除规则。指定工坊必须接收整单。默认最多一个工坊；允许 N 个表示上限。费用、队列和估计时间均来自代码。订单已分配、完成或失效时禁止再次分配；部分完工后只分配剩余件数。
+Earlier fixed-seed single-workshop simulator comparisons reported mean completion days of 21.52 for random, 49.02 for biggest-first, 105.13 for cheapest, 8.05 for planner `min_delay`, and 8.79 for planner `hybrid`. These course-simulator figures do not establish real-world advantage or a globally optimal hybrid policy.
 
-业务日期默认 2026-04-01，日志时间使用真实 UTC。队列按 FIFO 和日历天衰减；预测队列归零不等于确认完工。交期默认软提示，明确要求准时才成为硬约束。cancel 撤销剩余分配并回到 READY；lapse 终止订单。
+The current automated suite checks API compatibility, state and transaction invariants, native tool binding, Skill loading, original score calls, pause and restart recovery, illegal-action refusal, and UI controller behavior. Mocked or offline tests do not prove live provider reliability. The original labels and parser examples are development regressions rather than an independent blind set.
 
-## 5. 目标配置与评估证据
+## Main modules
 
-可配置 min_delay、min_cost、min_defects、hybrid。min_delay 最小化预计整体完成时间，是周转时间目标；没有声称求得全局最少迟交。hybrid 使用 `0.6 × days + 0.4 × defect_rate × 100`，权重沿用现有启发式，尚未按业务效用校准。
+| Area | Current implementation |
+| --- | --- |
+| HTTP and authentication | `app/main.py`, `app/api`, `app/core` |
+| Dynamic Agent and Skill loading | `app/agent/dynamic.py`, `app/agent/skills.py`, `app/skills/*/SKILL.md` |
+| Tool contracts and guards | `app/agent/toolset.py` |
+| Chat and confirmation | `app/services/agent_chat.py`, `app/services/chat.py` |
+| Preflight, planning, and commitment | `app/services/allocation_preflight.py`, `app/services/allocation.py`, `app/tools/allocator/planner.py` |
+| Original single-workshop formulas | `app/tools/allocation.py` |
+| Production lifecycle | `app/services/lifecycle.py` |
+| Database and migrations | `app/db` |
+| UI | `app/ui`, served at `/` and `/chat` |
 
-本版在不改官方 harness 的前提下，适配相同生产 planner 的单工坊模式。固定 seed 5105，全部 120 订单，每个目标及三种基线均跑 standard/shock，共 14 组。
-
-| 标准场景 | 平均天数 | 迟交率 | 缺陷率 | 总成本 |
-|---|---:|---:|---:|---:|
-| random | 21.52 | 34.17% | 4.17% | 111780 |
-| greedy_biggest | 49.02 | 84.17% | 4.17% | 108430 |
-| cheapest | 105.13 | 93.33% | 7.50% | 85960 |
-| planner_min_delay | 8.05 | 1.67% | 5.00% | 115640 |
-| planner_hybrid | 8.79 | 2.50% | 3.33% | 113480 |
-
-速度目标在时间指标上更好，同时成本高于三种基线，缺陷率也不全面占优。纯 min_cost 与 cheapest 在本次结果中相同。完整 P90、集中程度、缺陷目标、冲击和基线胜出情况见 [对比报告](../evaluation/results/simulator_comparison_CN.md)。
-
-203 条 Python 自动测试及 7 条前端控制器测试通过、0 跳过；60/60 离线解析、30/30 原始行为回归、生命周期和会话连续演示通过。60 条标注是开发回归集，不是独立盲测；30 条成绩只描述行为匹配，解释忠实性需另评。DeepSeek 本轮仅完成模拟传输验证；真实 Gemini 最新全量验收仍因 429 失败，不能用离线成绩替代。
-
-## 6. 工程保证与适用范围
-
-所有生产变更有事务保护；同 key 重放不重复计入队列，订单和会话版本阻止过期修改。会话预览不写生产状态，确认在锁内重算最新数据；其他订单的队列变化可改变最终方案。SQL 失败回滚会话与生产数据。
-
-已验证 v1/v2/v3 到 v4 的事务迁移；原 Pipeline v0.2 版本保持不变以保留既有幂等语义。迁移、新增表和字段见 [数据库说明](DATABASE_SCHEMA_CN.md)，部署和恢复见 [部署说明](DEPLOYMENT_CN.md)。
-
-## 7. 尚未完成与后续路线
-
-当前定位是可运行、可审计、可演示的本机课程 MVP。尚未完成：真实 LLM 全量验收、独立 holdout、第二人标签复核、解释忠实性评分、工坊状态/产能管理、自动过期和公网权限体系。原始 Data Schema2 仍缺失；团队主目标、时间政策和生命周期业务含义仍需书面确认。
-
-Week 9 Sprint 1 可用本版展示架构、早期结果与局限；后续优先在线可靠性、独立评估和数据管理。具体清单见 [下一阶段交接](NEXT_STAGE_CN.md)。
+For setup, see [Setup and data import](UV_SETUP.md). For execution traces, tool contracts, transaction boundaries, and recovery behavior, see the [Agent architecture](AGENT_SKILL_ARCHITECTURE.md).

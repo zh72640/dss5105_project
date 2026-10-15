@@ -1,41 +1,39 @@
-# Gemini 首次在线验收记录
+# First live Gemini acceptance record
 
-日期：2026-10-02。沿用已指定的 Google Gemini / gemini-3.5-flash / 官方 SDK 和 GEMINI_API_KEY；密钥未写入代码、文档或提交。
+Date: 2026-10-02. This historical run used the then-configured Google Gemini Developer API, official SDK, and `GEMINI_API_KEY`. No credential was placed in code, documentation, or commits. The run predates the dynamic Agent refactor and evaluates the earlier parser path, not native tool calling.
 
-## 结论
+## Result
 
-真实端到端冒烟成功，订单分配和同 key 重放通过；完整 60 条评估结果为 **ACCEPTANCE_FAILED**。原“缺少密钥、未调用真实模型”的记录已由此次证据更新，但不能将其写成在线质量验收通过。
+A real end-to-end smoke request allocated an order and safely replayed the same request ID. The complete 60-case evaluation was **ACCEPTANCE_FAILED**.
 
-| 指标 | 结果 |
-|---|---|
-| 完整匹配 | 14 / 60 |
-| 首次通过解析校验 | 9 / 60，15% |
-| 最终通过解析校验 / 核心字段匹配 | 14 / 60，23.33% |
-| 最终错误 | 46 条 gemini_http_429 |
-| 所有尝试中的服务错误 | 91 次 HTTP 429，6 次 HTTP 503 |
-| 收到模型输出的用例 | 14 条，均通过字段核对 |
-| 有效结果中的缺失字段补造 | 0 / 549 个评估缺失槽；大量用例未收到结果，不构成零补造能力证明 |
+| Measure | Observed result |
+| --- | --- |
+| Exact matches | 14 / 60 |
+| Valid on first parse | 9 / 60 (15%) |
+| Valid after retry and core-field matches | 14 / 60 (23.33%) |
+| Final service failures | 46 cases with `gemini_http_429` |
+| Service errors across all attempts | 91 HTTP 429 and 6 HTTP 503 |
+| Cases with a model output | 14; each matched the checked fields |
+| Invented values in observed valid outputs | 0 among 549 missing-field slots; many other cases had no output, so this is not a general zero-invention claim |
 
-完整指标：[parser_llm_metrics.json](../evaluation/results/parser_llm_metrics.json)；状态：[gemini_live_status.json](../evaluation/results/gemini_live_status.json)。raw/validated 明细保留在本地已忽略的 `evaluation/live_results/`，不提交凭据或原始服务错误体。此次记录来自生命周期修改前的 v0.1 在线运行，Parser/Prompt/模型参数与 v0.2 相同。
+See [full metrics](../evaluation/results/parser_llm_metrics.json) and [status](../evaluation/results/gemini_live_status.json). Raw and validated runs were kept locally under ignored `evaluation/live_results/`, without publishing credentials or raw service error bodies. The parser, prompt, and model settings were unchanged between this pre-lifecycle v0.1 run and the subsequent v0.2 release.
 
-当前失败的直接证据是服务限流；仅凭 HTTP 429 不能区分分钟配额、每日配额或服务容量，也不能据此断言解析准确率只有 23.33%。验收仍按全部 60 条计入分母，不剔除服务失败来提高成绩。
+The direct evidence is rate limiting. HTTP 429 alone does not distinguish minute quota, daily quota, or service capacity. The 23.33% aggregate result cannot be interpreted as model accuracy for cases that produced no output. All 60 cases remain in the acceptance denominator.
 
-## 本次补充
+## Evaluation changes made with this record
 
-- 评估报告增加最终错误数、每次尝试的错误数及实际收到模型输出的用例数。
-- 统一 `live_llm_validated` 与计划阈值：首次有效率 ≥98%、核心字段 ≥90%、观测补造为零。
-- 新增 `--interval-seconds`（0–60 秒），供根据项目配额控制评估速度；默认 0 保留原行为。它只控制用例之间的等待，不改变 Parser 最多一次重试的既有规则，不保证消除配额不足。
-- 新增模拟限流和非法间隔的测试，确保服务失败不会从验收分母中消失。
+- Reports gained counts of final errors, errors per attempt, and cases with actual model output.
+- `live_llm_validated` uses the planned thresholds: at least 98% first-pass validity, at least 90% core-field accuracy, and zero observed invention.
+- `--interval-seconds` (0–60) sets a delay between cases; default zero keeps prior behavior. It does not change the parser's one-retry limit or guarantee sufficient quota.
+- Simulated rate-limit and invalid-interval tests ensure service failures remain in the denominator.
 
-## 下一步
+## Follow-up for a new live run
 
-1. 在 Google 项目中确认可用配额及 HTTP 429 原因，必要时等待配额恢复。
-2. 先执行 `python evaluation/verify_gemini_live.py`，成功后再依据配额运行完整回归，例如：
+Check project quota and the 429 cause, then run a smoke test before a quota-aware full run. Keep a distinct output directory for the new run and compare complete metrics rather than overwriting this failure baseline.
 
-   ```bash
-   python evaluation/verify_gemini_live.py --full --interval-seconds 10
-   ```
+```bash
+python evaluation/verify_gemini_live.py
+python evaluation/verify_gemini_live.py --full --interval-seconds 10
+```
 
-3. 将新运行放到独立输出目录保留本次失败基线；按完整指标判断是否通过，记录配置和时间。
-4. 若仍大量 429，优先补充运行配置的有界退避/请求限速，保持失败不进入分配器；不要改 expected 标签来掩盖服务失败。
-5. 由第二位团队成员复核标签，再另建未参与调试的 holdout 集。此次只是既有开发集回归。
+Ten seconds is illustrative, not a quota guarantee. If 429s persist, add bounded backoff and request limiting while ensuring no failed parse reaches allocation. A second team member should review labels and create an independent holdout set rather than changing expected labels to match the program.

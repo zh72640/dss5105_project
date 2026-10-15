@@ -6,7 +6,7 @@ Install [uv](https://docs.astral.sh/uv/getting-started/installation/) and open a
 
 ```text
 uv sync --locked
-uv run --locked python -m app.setup
+uv run --locked python -m app.cli.setup
 uv run --locked python -m app.server --backend offline
 ```
 
@@ -20,20 +20,28 @@ Setup asks you to choose bundled or personal CSV files, set the queue snapshot d
 
 The default database is `runtime/dispatch.sqlite3`. Existing users should stop the service, back up their database, run `uv sync --locked`, and start the server without running setup again. Setup never replaces an existing file, even an empty one. Use another `--db` path to try a different dataset.
 
-The server and account CLI require an initialized database and no longer silently import sample data. The lower-level Database API and legacy demos/tests retain sample-seeding compatibility. Older databases still receive the existing migrations when opened; the database schema version remains 4.
+The server, environment-based FastAPI factory and account CLI require an initialized database. The lower-level Database API and explicitly configured test factory retain sample-seeding compatibility. Older databases receive transactional migrations through schema version 7 when opened. FastAPI routes retain `/api/...`; use `/docs`, `/redoc` or `/openapi.json` to inspect the contracts. Conversation turns run through LangGraph with SQLite checkpoints. Run one server process and one worker; see the [framework and queue guide](REFACTOR_FASTAPI_LANGGRAPH_CN.md).
+
+## Regular users and the built-in administrator
+
+Setup and `app.core.security` create regular users (`role=user`). The name `admin` is reserved, including case variants. Each new or upgraded database contains the built-in `admin` account (`role=admin`); its password is supplied privately by the maintainers. Sign in through the usual form. Administrator sessions display an `admin` badge in the upper-left corner. Ordinary account commands cannot reset an administrator's password or grant the administrator role.
+
+Migration 007 preserves existing account passwords and creates the built-in administrator transactionally. An older account named `admin` or a case variant causes a conflict: the upgrade rolls back without changing existing accounts or business data. Back up the database and resolve the name before upgrading. Repeated startup does not replace administrator credentials. The administrator alone does not count as a completed ordinary-account setup.
+
+`/api/auth/login` returns `username` and `role`; `/api/auth/me` also returns `auth_required` and `setup_required`. An unauthenticated role is `null`. The explicit `--no-auth` mode uses `local-demo` with the regular role and cannot pass administrator authorization. Local file owners can modify their own installation; role checks govern ordinary application access. Each local database keeps its own accounts and data.
 
 ## Bundled or personal data
 
 The professor-provided files `data/orders.csv` and `data/workshops.csv` remain unchanged and are the format reference. To explicitly select them:
 
 ```text
-uv run --locked python -m app.setup --sample --as-of 2026-04-01 --username dispatcher
+uv run --locked python -m app.cli.setup --sample --as-of 2026-04-01 --username dispatcher
 ```
 
 For your own files, provide both paths. They may be outside the repository; quote paths containing spaces:
 
 ```text
-uv run --locked python -m app.setup --orders "D:/private/orders.csv" --workshops "D:/private/workshops.csv" --db runtime/personal.sqlite3 --as-of 2026-10-09 --username professor
+uv run --locked python -m app.cli.setup --orders "D:/private/orders.csv" --workshops "D:/private/workshops.csv" --db runtime/personal.sqlite3 --as-of 2026-10-09 --username professor
 uv run --locked python -m app.server --db runtime/personal.sqlite3 --backend offline
 ```
 
@@ -64,8 +72,8 @@ Current supported contract:
 ## Create and reset accounts
 
 ```text
-uv run --locked python -m app.auth another_user --db runtime/personal.sqlite3
-uv run --locked python -m app.auth another_user --reset-password --db runtime/personal.sqlite3
+uv run --locked python -m app.cli.auth another_user --db runtime/personal.sqlite3
+uv run --locked python -m app.cli.auth another_user --reset-password --db runtime/personal.sqlite3
 ```
 
 - Creation: `Account created successfully.`
@@ -101,6 +109,8 @@ uv run --locked python -m app.server --db runtime/personal.sqlite3 --backend dee
 ```
 
 Starting with `--backend llm` or `deepseek` without the matching key exits immediately with a short hint. The application does not automatically load `.env`. Restart after changing configuration; existing conversations retain their original backend. Personal files stay local, but online models receive request text for parsing; local storage does not imply fully offline processing.
+
+Conversational allocation uses Chat v2 (`/api/chat/...` and `/chat`). Legacy `/api/sessions` and `/api/jobs` were retired.
 
 ## Verification
 

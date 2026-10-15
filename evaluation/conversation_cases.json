@@ -1,0 +1,1378 @@
+[
+  {
+    "id": "context-01",
+    "messages": [
+      "Allocate fastest.",
+      "ORD-045",
+      "为什么选这个工坊？",
+      "最多1个工坊，不要 W3"
+    ],
+    "expected": {
+      "state": "RECOMMENDED",
+      "order_id": "ORD-045",
+      "objective": "min_delay",
+      "num_workshop_allowed": 1,
+      "exclusion": [
+        "W3"
+      ]
+    },
+    "split": "development"
+  },
+  {
+    "id": "context-02",
+    "messages": [
+      "Allocate fastest.",
+      "ORD-045",
+      "为什么选这个工坊？",
+      "最多2个工坊，不要 W3"
+    ],
+    "expected": {
+      "state": "RECOMMENDED",
+      "order_id": "ORD-045",
+      "objective": "min_delay",
+      "num_workshop_allowed": 2,
+      "exclusion": [
+        "W3"
+      ]
+    },
+    "split": "candidate_holdout"
+  },
+  {
+    "id": "context-03",
+    "messages": [
+      "Allocate fastest.",
+      "ORD-045",
+      "为什么选这个工坊？",
+      "最多3个工坊，不要 W3"
+    ],
+    "expected": {
+      "state": "RECOMMENDED",
+      "order_id": "ORD-045",
+      "objective": "min_delay",
+      "num_workshop_allowed": 3,
+      "exclusion": [
+        "W3"
+      ]
+    },
+    "split": "development"
+  },
+  {
+    "id": "context-04",
+    "messages": [
+      "Allocate fastest.",
+      "ORD-045",
+      "为什么选这个工坊？",
+      "最多4个工坊，不要 W3"
+    ],
+    "expected": {
+      "state": "RECOMMENDED",
+      "order_id": "ORD-045",
+      "objective": "min_delay",
+      "num_workshop_allowed": 4,
+      "exclusion": [
+        "W3"
+      ]
+    },
+    "split": "candidate_holdout"
+  },
+  {
+    "id": "context-05",
+    "messages": [
+      "帮我分配，最快完成",
+      "ORD-045",
+      "为什么选这个工坊？",
+      "最多1个工坊，不要 W3"
+    ],
+    "expected": {
+      "state": "RECOMMENDED",
+      "order_id": "ORD-045",
+      "objective": "min_delay",
+      "num_workshop_allowed": 1,
+      "exclusion": [
+        "W3"
+      ]
+    },
+    "split": "development"
+  },
+  {
+    "id": "context-06",
+    "messages": [
+      "帮我分配，最快完成",
+      "ORD-045",
+      "为什么选这个工坊？",
+      "最多2个工坊，不要 W3"
+    ],
+    "expected": {
+      "state": "RECOMMENDED",
+      "order_id": "ORD-045",
+      "objective": "min_delay",
+      "num_workshop_allowed": 2,
+      "exclusion": [
+        "W3"
+      ]
+    },
+    "split": "candidate_holdout"
+  },
+  {
+    "id": "context-07",
+    "messages": [
+      "帮我分配，最快完成",
+      "ORD-045",
+      "为什么选这个工坊？",
+      "最多3个工坊，不要 W3"
+    ],
+    "expected": {
+      "state": "RECOMMENDED",
+      "order_id": "ORD-045",
+      "objective": "min_delay",
+      "num_workshop_allowed": 3,
+      "exclusion": [
+        "W3"
+      ]
+    },
+    "split": "development"
+  },
+  {
+    "id": "context-08",
+    "messages": [
+      "帮我分配，最快完成",
+      "ORD-045",
+      "为什么选这个工坊？",
+      "最多4个工坊，不要 W3"
+    ],
+    "expected": {
+      "state": "RECOMMENDED",
+      "order_id": "ORD-045",
+      "objective": "min_delay",
+      "num_workshop_allowed": 4,
+      "exclusion": [
+        "W3"
+      ]
+    },
+    "split": "candidate_holdout"
+  },
+  {
+    "id": "context-09",
+    "messages": [
+      "Allocate urgently.",
+      "ORD-045",
+      "为什么选这个工坊？",
+      "最多1个工坊，不要 W3"
+    ],
+    "expected": {
+      "state": "RECOMMENDED",
+      "order_id": "ORD-045",
+      "objective": "min_delay",
+      "num_workshop_allowed": 1,
+      "exclusion": [
+        "W3"
+      ]
+    },
+    "split": "development"
+  },
+  {
+    "id": "context-10",
+    "messages": [
+      "Allocate urgently.",
+      "ORD-045",
+      "为什么选这个工坊？",
+      "最多2个工坊，不要 W3"
+    ],
+    "expected": {
+      "state": "RECOMMENDED",
+      "order_id": "ORD-045",
+      "objective": "min_delay",
+      "num_workshop_allowed": 2,
+      "exclusion": [
+        "W3"
+      ]
+    },
+    "split": "candidate_holdout"
+  },
+  {
+    "id": "context-11",
+    "messages": [
+      "Allocate urgently.",
+      "ORD-045",
+      "为什么选这个工坊？",
+      "最多3个工坊，不要 W3"
+    ],
+    "expected": {
+      "state": "RECOMMENDED",
+      "order_id": "ORD-045",
+      "objective": "min_delay",
+      "num_workshop_allowed": 3,
+      "exclusion": [
+        "W3"
+      ]
+    },
+    "split": "development"
+  },
+  {
+    "id": "context-12",
+    "messages": [
+      "Allocate urgently.",
+      "ORD-045",
+      "为什么选这个工坊？",
+      "最多4个工坊，不要 W3"
+    ],
+    "expected": {
+      "state": "RECOMMENDED",
+      "order_id": "ORD-045",
+      "objective": "min_delay",
+      "num_workshop_allowed": 4,
+      "exclusion": [
+        "W3"
+      ]
+    },
+    "split": "candidate_holdout"
+  },
+  {
+    "id": "context-13",
+    "messages": [
+      "分配，优先速度",
+      "ORD-045",
+      "为什么选这个工坊？",
+      "最多1个工坊，不要 W3"
+    ],
+    "expected": {
+      "state": "RECOMMENDED",
+      "order_id": "ORD-045",
+      "objective": "min_delay",
+      "num_workshop_allowed": 1,
+      "exclusion": [
+        "W3"
+      ]
+    },
+    "split": "development"
+  },
+  {
+    "id": "context-14",
+    "messages": [
+      "分配，优先速度",
+      "ORD-045",
+      "为什么选这个工坊？",
+      "最多2个工坊，不要 W3"
+    ],
+    "expected": {
+      "state": "RECOMMENDED",
+      "order_id": "ORD-045",
+      "objective": "min_delay",
+      "num_workshop_allowed": 2,
+      "exclusion": [
+        "W3"
+      ]
+    },
+    "split": "candidate_holdout"
+  },
+  {
+    "id": "context-15",
+    "messages": [
+      "分配，优先速度",
+      "ORD-045",
+      "为什么选这个工坊？",
+      "最多3个工坊，不要 W3"
+    ],
+    "expected": {
+      "state": "RECOMMENDED",
+      "order_id": "ORD-045",
+      "objective": "min_delay",
+      "num_workshop_allowed": 3,
+      "exclusion": [
+        "W3"
+      ]
+    },
+    "split": "development"
+  },
+  {
+    "id": "context-16",
+    "messages": [
+      "分配，优先速度",
+      "ORD-045",
+      "为什么选这个工坊？",
+      "最多4个工坊，不要 W3"
+    ],
+    "expected": {
+      "state": "RECOMMENDED",
+      "order_id": "ORD-045",
+      "objective": "min_delay",
+      "num_workshop_allowed": 4,
+      "exclusion": [
+        "W3"
+      ]
+    },
+    "split": "candidate_holdout"
+  },
+  {
+    "id": "context-17",
+    "messages": [
+      "Allocate cheapest.",
+      "ORD-045",
+      "为什么选这个工坊？",
+      "最多1个工坊，不要 W3"
+    ],
+    "expected": {
+      "state": "RECOMMENDED",
+      "order_id": "ORD-045",
+      "objective": "min_cost",
+      "num_workshop_allowed": 1,
+      "exclusion": [
+        "W3"
+      ]
+    },
+    "split": "development"
+  },
+  {
+    "id": "context-18",
+    "messages": [
+      "Allocate cheapest.",
+      "ORD-045",
+      "为什么选这个工坊？",
+      "最多2个工坊，不要 W3"
+    ],
+    "expected": {
+      "state": "RECOMMENDED",
+      "order_id": "ORD-045",
+      "objective": "min_cost",
+      "num_workshop_allowed": 2,
+      "exclusion": [
+        "W3"
+      ]
+    },
+    "split": "candidate_holdout"
+  },
+  {
+    "id": "context-19",
+    "messages": [
+      "Allocate cheapest.",
+      "ORD-045",
+      "为什么选这个工坊？",
+      "最多3个工坊，不要 W3"
+    ],
+    "expected": {
+      "state": "RECOMMENDED",
+      "order_id": "ORD-045",
+      "objective": "min_cost",
+      "num_workshop_allowed": 3,
+      "exclusion": [
+        "W3"
+      ]
+    },
+    "split": "development"
+  },
+  {
+    "id": "context-20",
+    "messages": [
+      "Allocate cheapest.",
+      "ORD-045",
+      "为什么选这个工坊？",
+      "最多4个工坊，不要 W3"
+    ],
+    "expected": {
+      "state": "RECOMMENDED",
+      "order_id": "ORD-045",
+      "objective": "min_cost",
+      "num_workshop_allowed": 4,
+      "exclusion": [
+        "W3"
+      ]
+    },
+    "split": "candidate_holdout"
+  },
+  {
+    "id": "context-21",
+    "messages": [
+      "帮我分配，成本越低越好",
+      "ORD-045",
+      "为什么选这个工坊？",
+      "最多1个工坊，不要 W3"
+    ],
+    "expected": {
+      "state": "RECOMMENDED",
+      "order_id": "ORD-045",
+      "objective": "min_cost",
+      "num_workshop_allowed": 1,
+      "exclusion": [
+        "W3"
+      ]
+    },
+    "split": "development"
+  },
+  {
+    "id": "context-22",
+    "messages": [
+      "帮我分配，成本越低越好",
+      "ORD-045",
+      "为什么选这个工坊？",
+      "最多2个工坊，不要 W3"
+    ],
+    "expected": {
+      "state": "RECOMMENDED",
+      "order_id": "ORD-045",
+      "objective": "min_cost",
+      "num_workshop_allowed": 2,
+      "exclusion": [
+        "W3"
+      ]
+    },
+    "split": "candidate_holdout"
+  },
+  {
+    "id": "context-23",
+    "messages": [
+      "帮我分配，成本越低越好",
+      "ORD-045",
+      "为什么选这个工坊？",
+      "最多3个工坊，不要 W3"
+    ],
+    "expected": {
+      "state": "RECOMMENDED",
+      "order_id": "ORD-045",
+      "objective": "min_cost",
+      "num_workshop_allowed": 3,
+      "exclusion": [
+        "W3"
+      ]
+    },
+    "split": "development"
+  },
+  {
+    "id": "context-24",
+    "messages": [
+      "帮我分配，成本越低越好",
+      "ORD-045",
+      "为什么选这个工坊？",
+      "最多4个工坊，不要 W3"
+    ],
+    "expected": {
+      "state": "RECOMMENDED",
+      "order_id": "ORD-045",
+      "objective": "min_cost",
+      "num_workshop_allowed": 4,
+      "exclusion": [
+        "W3"
+      ]
+    },
+    "split": "candidate_holdout"
+  },
+  {
+    "id": "context-25",
+    "messages": [
+      "Allocate at lowest cost.",
+      "ORD-045",
+      "为什么选这个工坊？",
+      "最多1个工坊，不要 W3"
+    ],
+    "expected": {
+      "state": "RECOMMENDED",
+      "order_id": "ORD-045",
+      "objective": "min_cost",
+      "num_workshop_allowed": 1,
+      "exclusion": [
+        "W3"
+      ]
+    },
+    "split": "development"
+  },
+  {
+    "id": "context-26",
+    "messages": [
+      "Allocate at lowest cost.",
+      "ORD-045",
+      "为什么选这个工坊？",
+      "最多2个工坊，不要 W3"
+    ],
+    "expected": {
+      "state": "RECOMMENDED",
+      "order_id": "ORD-045",
+      "objective": "min_cost",
+      "num_workshop_allowed": 2,
+      "exclusion": [
+        "W3"
+      ]
+    },
+    "split": "candidate_holdout"
+  },
+  {
+    "id": "context-27",
+    "messages": [
+      "Allocate at lowest cost.",
+      "ORD-045",
+      "为什么选这个工坊？",
+      "最多3个工坊，不要 W3"
+    ],
+    "expected": {
+      "state": "RECOMMENDED",
+      "order_id": "ORD-045",
+      "objective": "min_cost",
+      "num_workshop_allowed": 3,
+      "exclusion": [
+        "W3"
+      ]
+    },
+    "split": "development"
+  },
+  {
+    "id": "context-28",
+    "messages": [
+      "Allocate at lowest cost.",
+      "ORD-045",
+      "为什么选这个工坊？",
+      "最多4个工坊，不要 W3"
+    ],
+    "expected": {
+      "state": "RECOMMENDED",
+      "order_id": "ORD-045",
+      "objective": "min_cost",
+      "num_workshop_allowed": 4,
+      "exclusion": [
+        "W3"
+      ]
+    },
+    "split": "candidate_holdout"
+  },
+  {
+    "id": "context-29",
+    "messages": [
+      "分配，最低成本",
+      "ORD-045",
+      "为什么选这个工坊？",
+      "最多1个工坊，不要 W3"
+    ],
+    "expected": {
+      "state": "RECOMMENDED",
+      "order_id": "ORD-045",
+      "objective": "min_cost",
+      "num_workshop_allowed": 1,
+      "exclusion": [
+        "W3"
+      ]
+    },
+    "split": "development"
+  },
+  {
+    "id": "context-30",
+    "messages": [
+      "分配，最低成本",
+      "ORD-045",
+      "为什么选这个工坊？",
+      "最多2个工坊，不要 W3"
+    ],
+    "expected": {
+      "state": "RECOMMENDED",
+      "order_id": "ORD-045",
+      "objective": "min_cost",
+      "num_workshop_allowed": 2,
+      "exclusion": [
+        "W3"
+      ]
+    },
+    "split": "candidate_holdout"
+  },
+  {
+    "id": "context-31",
+    "messages": [
+      "分配，最低成本",
+      "ORD-045",
+      "为什么选这个工坊？",
+      "最多3个工坊，不要 W3"
+    ],
+    "expected": {
+      "state": "RECOMMENDED",
+      "order_id": "ORD-045",
+      "objective": "min_cost",
+      "num_workshop_allowed": 3,
+      "exclusion": [
+        "W3"
+      ]
+    },
+    "split": "development"
+  },
+  {
+    "id": "context-32",
+    "messages": [
+      "分配，最低成本",
+      "ORD-045",
+      "为什么选这个工坊？",
+      "最多4个工坊，不要 W3"
+    ],
+    "expected": {
+      "state": "RECOMMENDED",
+      "order_id": "ORD-045",
+      "objective": "min_cost",
+      "num_workshop_allowed": 4,
+      "exclusion": [
+        "W3"
+      ]
+    },
+    "split": "candidate_holdout"
+  },
+  {
+    "id": "context-33",
+    "messages": [
+      "Allocate lowest defects.",
+      "ORD-045",
+      "为什么选这个工坊？",
+      "最多1个工坊，不要 W3"
+    ],
+    "expected": {
+      "state": "RECOMMENDED",
+      "order_id": "ORD-045",
+      "objective": "min_defects",
+      "num_workshop_allowed": 1,
+      "exclusion": [
+        "W3"
+      ]
+    },
+    "split": "development"
+  },
+  {
+    "id": "context-34",
+    "messages": [
+      "Allocate lowest defects.",
+      "ORD-045",
+      "为什么选这个工坊？",
+      "最多2个工坊，不要 W3"
+    ],
+    "expected": {
+      "state": "RECOMMENDED",
+      "order_id": "ORD-045",
+      "objective": "min_defects",
+      "num_workshop_allowed": 2,
+      "exclusion": [
+        "W3"
+      ]
+    },
+    "split": "candidate_holdout"
+  },
+  {
+    "id": "context-35",
+    "messages": [
+      "Allocate lowest defects.",
+      "ORD-045",
+      "为什么选这个工坊？",
+      "最多3个工坊，不要 W3"
+    ],
+    "expected": {
+      "state": "RECOMMENDED",
+      "order_id": "ORD-045",
+      "objective": "min_defects",
+      "num_workshop_allowed": 3,
+      "exclusion": [
+        "W3"
+      ]
+    },
+    "split": "development"
+  },
+  {
+    "id": "context-36",
+    "messages": [
+      "Allocate lowest defects.",
+      "ORD-045",
+      "为什么选这个工坊？",
+      "最多4个工坊，不要 W3"
+    ],
+    "expected": {
+      "state": "RECOMMENDED",
+      "order_id": "ORD-045",
+      "objective": "min_defects",
+      "num_workshop_allowed": 4,
+      "exclusion": [
+        "W3"
+      ]
+    },
+    "split": "candidate_holdout"
+  },
+  {
+    "id": "context-37",
+    "messages": [
+      "帮我分配，质量优先",
+      "ORD-045",
+      "为什么选这个工坊？",
+      "最多1个工坊，不要 W3"
+    ],
+    "expected": {
+      "state": "RECOMMENDED",
+      "order_id": "ORD-045",
+      "objective": "min_defects",
+      "num_workshop_allowed": 1,
+      "exclusion": [
+        "W3"
+      ]
+    },
+    "split": "development"
+  },
+  {
+    "id": "context-38",
+    "messages": [
+      "帮我分配，质量优先",
+      "ORD-045",
+      "为什么选这个工坊？",
+      "最多2个工坊，不要 W3"
+    ],
+    "expected": {
+      "state": "RECOMMENDED",
+      "order_id": "ORD-045",
+      "objective": "min_defects",
+      "num_workshop_allowed": 2,
+      "exclusion": [
+        "W3"
+      ]
+    },
+    "split": "candidate_holdout"
+  },
+  {
+    "id": "context-39",
+    "messages": [
+      "帮我分配，质量优先",
+      "ORD-045",
+      "为什么选这个工坊？",
+      "最多3个工坊，不要 W3"
+    ],
+    "expected": {
+      "state": "RECOMMENDED",
+      "order_id": "ORD-045",
+      "objective": "min_defects",
+      "num_workshop_allowed": 3,
+      "exclusion": [
+        "W3"
+      ]
+    },
+    "split": "development"
+  },
+  {
+    "id": "context-40",
+    "messages": [
+      "帮我分配，质量优先",
+      "ORD-045",
+      "为什么选这个工坊？",
+      "最多4个工坊，不要 W3"
+    ],
+    "expected": {
+      "state": "RECOMMENDED",
+      "order_id": "ORD-045",
+      "objective": "min_defects",
+      "num_workshop_allowed": 4,
+      "exclusion": [
+        "W3"
+      ]
+    },
+    "split": "candidate_holdout"
+  },
+  {
+    "id": "context-41",
+    "messages": [
+      "Allocate best quality.",
+      "ORD-045",
+      "为什么选这个工坊？",
+      "最多1个工坊，不要 W3"
+    ],
+    "expected": {
+      "state": "RECOMMENDED",
+      "order_id": "ORD-045",
+      "objective": "min_defects",
+      "num_workshop_allowed": 1,
+      "exclusion": [
+        "W3"
+      ]
+    },
+    "split": "development"
+  },
+  {
+    "id": "context-42",
+    "messages": [
+      "Allocate best quality.",
+      "ORD-045",
+      "为什么选这个工坊？",
+      "最多2个工坊，不要 W3"
+    ],
+    "expected": {
+      "state": "RECOMMENDED",
+      "order_id": "ORD-045",
+      "objective": "min_defects",
+      "num_workshop_allowed": 2,
+      "exclusion": [
+        "W3"
+      ]
+    },
+    "split": "candidate_holdout"
+  },
+  {
+    "id": "context-43",
+    "messages": [
+      "Allocate best quality.",
+      "ORD-045",
+      "为什么选这个工坊？",
+      "最多3个工坊，不要 W3"
+    ],
+    "expected": {
+      "state": "RECOMMENDED",
+      "order_id": "ORD-045",
+      "objective": "min_defects",
+      "num_workshop_allowed": 3,
+      "exclusion": [
+        "W3"
+      ]
+    },
+    "split": "development"
+  },
+  {
+    "id": "context-44",
+    "messages": [
+      "Allocate best quality.",
+      "ORD-045",
+      "为什么选这个工坊？",
+      "最多4个工坊，不要 W3"
+    ],
+    "expected": {
+      "state": "RECOMMENDED",
+      "order_id": "ORD-045",
+      "objective": "min_defects",
+      "num_workshop_allowed": 4,
+      "exclusion": [
+        "W3"
+      ]
+    },
+    "split": "candidate_holdout"
+  },
+  {
+    "id": "context-45",
+    "messages": [
+      "分配，最低缺陷",
+      "ORD-045",
+      "为什么选这个工坊？",
+      "最多1个工坊，不要 W3"
+    ],
+    "expected": {
+      "state": "RECOMMENDED",
+      "order_id": "ORD-045",
+      "objective": "min_defects",
+      "num_workshop_allowed": 1,
+      "exclusion": [
+        "W3"
+      ]
+    },
+    "split": "development"
+  },
+  {
+    "id": "context-46",
+    "messages": [
+      "分配，最低缺陷",
+      "ORD-045",
+      "为什么选这个工坊？",
+      "最多2个工坊，不要 W3"
+    ],
+    "expected": {
+      "state": "RECOMMENDED",
+      "order_id": "ORD-045",
+      "objective": "min_defects",
+      "num_workshop_allowed": 2,
+      "exclusion": [
+        "W3"
+      ]
+    },
+    "split": "candidate_holdout"
+  },
+  {
+    "id": "context-47",
+    "messages": [
+      "分配，最低缺陷",
+      "ORD-045",
+      "为什么选这个工坊？",
+      "最多3个工坊，不要 W3"
+    ],
+    "expected": {
+      "state": "RECOMMENDED",
+      "order_id": "ORD-045",
+      "objective": "min_defects",
+      "num_workshop_allowed": 3,
+      "exclusion": [
+        "W3"
+      ]
+    },
+    "split": "development"
+  },
+  {
+    "id": "context-48",
+    "messages": [
+      "分配，最低缺陷",
+      "ORD-045",
+      "为什么选这个工坊？",
+      "最多4个工坊，不要 W3"
+    ],
+    "expected": {
+      "state": "RECOMMENDED",
+      "order_id": "ORD-045",
+      "objective": "min_defects",
+      "num_workshop_allowed": 4,
+      "exclusion": [
+        "W3"
+      ]
+    },
+    "split": "candidate_holdout"
+  },
+  {
+    "id": "context-49",
+    "messages": [
+      "Allocate hybrid.",
+      "ORD-045",
+      "为什么选这个工坊？",
+      "最多1个工坊，不要 W3"
+    ],
+    "expected": {
+      "state": "RECOMMENDED",
+      "order_id": "ORD-045",
+      "objective": "hybrid",
+      "num_workshop_allowed": 1,
+      "exclusion": [
+        "W3"
+      ]
+    },
+    "split": "development"
+  },
+  {
+    "id": "context-50",
+    "messages": [
+      "Allocate hybrid.",
+      "ORD-045",
+      "为什么选这个工坊？",
+      "最多2个工坊，不要 W3"
+    ],
+    "expected": {
+      "state": "RECOMMENDED",
+      "order_id": "ORD-045",
+      "objective": "hybrid",
+      "num_workshop_allowed": 2,
+      "exclusion": [
+        "W3"
+      ]
+    },
+    "split": "candidate_holdout"
+  },
+  {
+    "id": "context-51",
+    "messages": [
+      "Allocate hybrid.",
+      "ORD-045",
+      "为什么选这个工坊？",
+      "最多3个工坊，不要 W3"
+    ],
+    "expected": {
+      "state": "RECOMMENDED",
+      "order_id": "ORD-045",
+      "objective": "hybrid",
+      "num_workshop_allowed": 3,
+      "exclusion": [
+        "W3"
+      ]
+    },
+    "split": "development"
+  },
+  {
+    "id": "context-52",
+    "messages": [
+      "Allocate hybrid.",
+      "ORD-045",
+      "为什么选这个工坊？",
+      "最多4个工坊，不要 W3"
+    ],
+    "expected": {
+      "state": "RECOMMENDED",
+      "order_id": "ORD-045",
+      "objective": "hybrid",
+      "num_workshop_allowed": 4,
+      "exclusion": [
+        "W3"
+      ]
+    },
+    "split": "candidate_holdout"
+  },
+  {
+    "id": "context-53",
+    "messages": [
+      "帮我分配，平衡",
+      "ORD-045",
+      "为什么选这个工坊？",
+      "最多1个工坊，不要 W3"
+    ],
+    "expected": {
+      "state": "RECOMMENDED",
+      "order_id": "ORD-045",
+      "objective": "hybrid",
+      "num_workshop_allowed": 1,
+      "exclusion": [
+        "W3"
+      ]
+    },
+    "split": "development"
+  },
+  {
+    "id": "context-54",
+    "messages": [
+      "帮我分配，平衡",
+      "ORD-045",
+      "为什么选这个工坊？",
+      "最多2个工坊，不要 W3"
+    ],
+    "expected": {
+      "state": "RECOMMENDED",
+      "order_id": "ORD-045",
+      "objective": "hybrid",
+      "num_workshop_allowed": 2,
+      "exclusion": [
+        "W3"
+      ]
+    },
+    "split": "candidate_holdout"
+  },
+  {
+    "id": "context-55",
+    "messages": [
+      "帮我分配，平衡",
+      "ORD-045",
+      "为什么选这个工坊？",
+      "最多3个工坊，不要 W3"
+    ],
+    "expected": {
+      "state": "RECOMMENDED",
+      "order_id": "ORD-045",
+      "objective": "hybrid",
+      "num_workshop_allowed": 3,
+      "exclusion": [
+        "W3"
+      ]
+    },
+    "split": "development"
+  },
+  {
+    "id": "context-56",
+    "messages": [
+      "帮我分配，平衡",
+      "ORD-045",
+      "为什么选这个工坊？",
+      "最多4个工坊，不要 W3"
+    ],
+    "expected": {
+      "state": "RECOMMENDED",
+      "order_id": "ORD-045",
+      "objective": "hybrid",
+      "num_workshop_allowed": 4,
+      "exclusion": [
+        "W3"
+      ]
+    },
+    "split": "candidate_holdout"
+  },
+  {
+    "id": "context-57",
+    "messages": [
+      "Allocate balance speed and quality.",
+      "ORD-045",
+      "为什么选这个工坊？",
+      "最多1个工坊，不要 W3"
+    ],
+    "expected": {
+      "state": "RECOMMENDED",
+      "order_id": "ORD-045",
+      "objective": "hybrid",
+      "num_workshop_allowed": 1,
+      "exclusion": [
+        "W3"
+      ]
+    },
+    "split": "development"
+  },
+  {
+    "id": "context-58",
+    "messages": [
+      "Allocate balance speed and quality.",
+      "ORD-045",
+      "为什么选这个工坊？",
+      "最多2个工坊，不要 W3"
+    ],
+    "expected": {
+      "state": "RECOMMENDED",
+      "order_id": "ORD-045",
+      "objective": "hybrid",
+      "num_workshop_allowed": 2,
+      "exclusion": [
+        "W3"
+      ]
+    },
+    "split": "candidate_holdout"
+  },
+  {
+    "id": "context-59",
+    "messages": [
+      "Allocate balance speed and quality.",
+      "ORD-045",
+      "为什么选这个工坊？",
+      "最多3个工坊，不要 W3"
+    ],
+    "expected": {
+      "state": "RECOMMENDED",
+      "order_id": "ORD-045",
+      "objective": "hybrid",
+      "num_workshop_allowed": 3,
+      "exclusion": [
+        "W3"
+      ]
+    },
+    "split": "development"
+  },
+  {
+    "id": "context-60",
+    "messages": [
+      "Allocate balance speed and quality.",
+      "ORD-045",
+      "为什么选这个工坊？",
+      "最多4个工坊，不要 W3"
+    ],
+    "expected": {
+      "state": "RECOMMENDED",
+      "order_id": "ORD-045",
+      "objective": "hybrid",
+      "num_workshop_allowed": 4,
+      "exclusion": [
+        "W3"
+      ]
+    },
+    "split": "candidate_holdout"
+  },
+  {
+    "id": "context-61",
+    "messages": [
+      "分配，时间质量平衡",
+      "ORD-045",
+      "为什么选这个工坊？",
+      "最多1个工坊，不要 W3"
+    ],
+    "expected": {
+      "state": "RECOMMENDED",
+      "order_id": "ORD-045",
+      "objective": "hybrid",
+      "num_workshop_allowed": 1,
+      "exclusion": [
+        "W3"
+      ]
+    },
+    "split": "development"
+  },
+  {
+    "id": "context-62",
+    "messages": [
+      "分配，时间质量平衡",
+      "ORD-045",
+      "为什么选这个工坊？",
+      "最多2个工坊，不要 W3"
+    ],
+    "expected": {
+      "state": "RECOMMENDED",
+      "order_id": "ORD-045",
+      "objective": "hybrid",
+      "num_workshop_allowed": 2,
+      "exclusion": [
+        "W3"
+      ]
+    },
+    "split": "candidate_holdout"
+  },
+  {
+    "id": "context-63",
+    "messages": [
+      "分配，时间质量平衡",
+      "ORD-045",
+      "为什么选这个工坊？",
+      "最多3个工坊，不要 W3"
+    ],
+    "expected": {
+      "state": "RECOMMENDED",
+      "order_id": "ORD-045",
+      "objective": "hybrid",
+      "num_workshop_allowed": 3,
+      "exclusion": [
+        "W3"
+      ]
+    },
+    "split": "development"
+  },
+  {
+    "id": "context-64",
+    "messages": [
+      "分配，时间质量平衡",
+      "ORD-045",
+      "为什么选这个工坊？",
+      "最多4个工坊，不要 W3"
+    ],
+    "expected": {
+      "state": "RECOMMENDED",
+      "order_id": "ORD-045",
+      "objective": "hybrid",
+      "num_workshop_allowed": 4,
+      "exclusion": [
+        "W3"
+      ]
+    },
+    "split": "candidate_holdout"
+  },
+  {
+    "id": "blocker-01",
+    "messages": [
+      "Allocate cheapest."
+    ],
+    "expected": {
+      "state": "BLOCKED"
+    },
+    "split": "development"
+  },
+  {
+    "id": "blocker-02",
+    "messages": [
+      "Allocate ORD-999."
+    ],
+    "expected": {
+      "state": "BLOCKED"
+    },
+    "split": "development"
+  },
+  {
+    "id": "blocker-03",
+    "messages": [
+      "Allocate ORD-045 and ORD-109."
+    ],
+    "expected": {
+      "state": "BLOCKED"
+    },
+    "split": "development"
+  },
+  {
+    "id": "blocker-04",
+    "messages": [
+      "Allocate ORD-045, 999 pieces."
+    ],
+    "expected": {
+      "state": "BLOCKED"
+    },
+    "split": "development"
+  },
+  {
+    "id": "blocker-05",
+    "messages": [
+      "Allocate ORD-045, -2 pieces."
+    ],
+    "expected": {
+      "state": "BLOCKED"
+    },
+    "split": "development"
+  },
+  {
+    "id": "blocker-06",
+    "messages": [
+      "Allocate ORD-045; at most nine workshops."
+    ],
+    "expected": {
+      "state": "BLOCKED"
+    },
+    "split": "development"
+  },
+  {
+    "id": "blocker-07",
+    "messages": [
+      "Allocate ORD-045 due 2026-99-99."
+    ],
+    "expected": {
+      "state": "BLOCKED"
+    },
+    "split": "development"
+  },
+  {
+    "id": "blocker-08",
+    "messages": [
+      "Allocate ORD-045 to W3; exclude W3."
+    ],
+    "expected": {
+      "state": "BLOCKED"
+    },
+    "split": "development"
+  },
+  {
+    "id": "blocker-09",
+    "messages": [
+      "Allocate ORD-045; exclude W99."
+    ],
+    "expected": {
+      "state": "BLOCKED"
+    },
+    "split": "development"
+  },
+  {
+    "id": "blocker-10",
+    "messages": [
+      "分配 ORD-045，优先 W3"
+    ],
+    "expected": {
+      "state": "BLOCKED"
+    },
+    "split": "development"
+  },
+  {
+    "id": "blocker-11",
+    "messages": [
+      "分配 ORD-045，预算100元"
+    ],
+    "expected": {
+      "state": "BLOCKED"
+    },
+    "split": "development"
+  },
+  {
+    "id": "blocker-12",
+    "messages": [
+      "Allocate ORD-045 exactly two workshops."
+    ],
+    "expected": {
+      "state": "BLOCKED"
+    },
+    "split": "development"
+  },
+  {
+    "id": "blocker-13",
+    "messages": [
+      "Allocate ORD-045 cheapest and fastest."
+    ],
+    "expected": {
+      "state": "BLOCKED"
+    },
+    "split": "development"
+  },
+  {
+    "id": "blocker-14",
+    "messages": [
+      "Allocate ORD-045, not the cheapest."
+    ],
+    "expected": {
+      "state": "BLOCKED"
+    },
+    "split": "development"
+  },
+  {
+    "id": "blocker-15",
+    "messages": [
+      "Allocate ORD-045; details to follow."
+    ],
+    "expected": {
+      "state": "BLOCKED"
+    },
+    "split": "development"
+  },
+  {
+    "id": "blocker-16",
+    "messages": [
+      "Allocate ORD-045 to W7."
+    ],
+    "expected": {
+      "state": "BLOCKED"
+    },
+    "split": "development"
+  }
+]

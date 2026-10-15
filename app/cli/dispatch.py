@@ -1,0 +1,38 @@
+import argparse
+import json
+from datetime import date
+from pathlib import Path
+from app.services.dispatch import seed_allocation
+
+ROOT = Path(__file__).resolve().parents[2]
+DATA = ROOT / "data/dispatch_requests.txt"
+
+
+def request_text(request_id):
+    for line in DATA.read_text(encoding="utf-8").splitlines():
+        if line.startswith(request_id + " "):
+            return line
+    raise SystemExit(f"Unknown request: {request_id}")
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        description="Offline rule seed for local demos (HTTP /api/requests was retired; use Chat v2).")
+    source = parser.add_mutually_exclusive_group()
+    source.add_argument("--request", help="Dataset label, e.g. R09 (not the idempotency key)")
+    source.add_argument("--message", help="Complete natural-language message")
+    parser.add_argument("--objective", default="min_delay",
+                        choices=["min_delay", "min_lateness", "fastest_turnaround", "min_defects", "min_cost", "hybrid"])
+    parser.add_argument("--db", default=str(ROOT / "runtime/dispatch.sqlite3"), help="Use :memory: for an isolated run")
+    parser.add_argument("--request-id", help="Reuse this key only when retrying identical input")
+    parser.add_argument("--as-of", type=date.fromisoformat, default=date(2026, 4, 1))
+    args = parser.parse_args()
+    payload = seed_allocation(
+        args.message if args.message is not None else request_text(args.request or "R09"),
+        args.objective, db_path=args.db, request_id=args.request_id, as_of=args.as_of)
+    print(json.dumps(payload, indent=2, ensure_ascii=False))
+    return 1 if payload["result"]["decision_status"] == "ERROR" else 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

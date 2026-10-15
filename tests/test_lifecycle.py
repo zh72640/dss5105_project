@@ -10,8 +10,8 @@ from pathlib import Path
 from uuid import uuid4
 
 from app.db.database import Database, ROOT, DB_VERSION
-from app.lifecycle import inspect_order, process_event, snapshot
-from app.pipeline import process_request
+from app.services.lifecycle import inspect_order, process_event, snapshot
+from app.services.dispatch import process_request
 
 
 class LifecycleTests(unittest.TestCase):

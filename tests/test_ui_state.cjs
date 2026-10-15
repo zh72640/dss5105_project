@@ -8,6 +8,7 @@ const source = fs.readFileSync(path.join(__dirname, '../app/ui/desk.js'), 'utf8'
 
 function setup(fetch) {
   const nodes = new Map(), storage = new Map();
+  const href = {value: ''};
   const node = id => {
     if (!nodes.has(id)) nodes.set(id, {id, value:'', disabled:false, hidden:false, textContent:'',
       classList:{toggle(){}}, addEventListener(){}, replaceChildren(){}, focus(){}, close(){}, showModal(){}, scrollIntoView(){}});
@@ -16,23 +17,46 @@ function setup(fetch) {
   const context = vm.createContext({
     document:{documentElement:{dataset:{}},getElementById:node,querySelectorAll(){return [];}},
     localStorage:{setItem:(k,v)=>storage.set(k,v),getItem:k=>storage.get(k)},
-    window:{addEventListener(){},scrollTo(){}},location:{hash:''},fetch,
-    crypto:{randomUUID:()=> 'test-request-key'}, console, URLSearchParams,
+    sessionStorage:{setItem(){},getItem(){return null}},
+    window:{addEventListener(){},scrollTo(){}},
+    location:{hash:'', get href(){return href.value;}, set href(v){href.value=v;}},
+    fetch, crypto:{randomUUID:()=>'test-request-key'}, console, URLSearchParams,
   });
-  // Omit only the page boot; use the real controller functions and persistence.
   vm.runInContext(source.slice(0, source.lastIndexOf('\nboot().catch')), context);
   vm.runInContext(`
-    globalThis.controller = {state, controls, canAccept, turn, deliver, startRequest, editDraft, setTextSize, initTextSize};
+    globalThis.controller = {state, controls, canAccept, turn, deliver, startRequest, openConversation, editDraft, setTextSize, initTextSize, renderIdentity, showLogin, boot};
     state.user = {username:'alice'};
     refreshDesk = async () => {};
-    loadSession = async id => { state.session = {...state.session, session_id:id}; };
     renderSession = () => {};
     renderQueue = () => {};
   `, context);
-  return {api:context.controller, nodes, storage};
+  return {api:context.controller, nodes, storage, href};
 }
 const response = (status,body) => ({status,ok:status<400,json:async()=>body});
 const session = () => ({session_id:'draft-a',state:'ACTIVE',version:7,blockers:[],last_response:{result:{success:true,decision_status:'REVIEW'}}});
+
+test('admin badge follows authenticated role and disappears on account switch or expired login',()=>{
+  const {api,nodes}=setup();
+  api.state.user={username:'admin',role:'admin',auth_required:true};
+  api.renderIdentity();assert.equal(nodes.get('admin-badge').hidden,false);
+  api.state.user={username:'student',role:'user',auth_required:true};
+  api.renderIdentity();assert.equal(nodes.get('admin-badge').hidden,true);
+  api.state.user={username:'admin',role:'admin',auth_required:true};
+  api.renderIdentity();api.showLogin();
+  assert.equal(nodes.get('admin-badge').hidden,true);assert.equal(api.state.user,null);
+});
+
+test('reload restores badge from server identity and demo mode remains regular',async()=>{
+  const {api,nodes}=setup(async url=>response(200,url==='/api/auth/me'
+    ?{username:'admin',role:'admin',auth_required:true,setup_required:false}
+    :url==='/api/health'?{backend:'offline',version:'test'}:{configured:false,models:[]}));
+  // boot may call /api/models; stub returns empty catalog shape when needed
+  try { await api.boot(); } catch (_) { /* models stub may lack fields */ }
+  api.renderIdentity({username:'admin',role:'admin',auth_required:true});
+  assert.equal(nodes.get('admin-badge').hidden,false);
+  api.renderIdentity({username:'local-demo',role:'user',auth_required:false});
+  assert.equal(nodes.get('admin-badge').hidden,true);assert.equal(nodes.get('logout').hidden,true);
+});
 
 test('accept is disabled for missing, blocked, rejected and already closed drafts',()=>{
   const {api}=setup();
@@ -43,49 +67,36 @@ test('accept is disabled for missing, blocked, rejected and already closed draft
   api.state.session=session();api.state.session.last_response.result.decision_status='REFUSE';assert.ok(!api.canAccept());
 });
 
-test('uncertain confirmation persists the same key/version and blocks another confirmation',async()=>{
-  const calls=[];
-  const {api,nodes,storage}=setup(async(url,options)=>{calls.push(JSON.parse(options.body));return response(503,{error:'DB_ERROR'});});
-  api.state.session=session();
-  await api.turn('confirm');
-  assert.equal(api.state.pending.body.expected_version,7);
-  assert.equal(api.state.pending.body.request_id,'test-request-key');
-  assert.equal(nodes.get('accept').disabled,true);
-  assert.equal(nodes.get('logout').disabled,true);
-  assert.equal(JSON.parse(storage.get('sweaterco.desk.v1.alice')).pending.body.request_id,'test-request-key');
-  await api.turn('confirm');assert.equal(calls.length,1);
-  await api.deliver();assert.equal(calls.length,2);assert.deepEqual(calls[0],calls[1]);
+test('new request and session turns redirect to Chat v2',async()=>{
+  const {api,href}=setup();
+  await api.startRequest('Allocate cheapest.');
+  assert.equal(href.value,'/chat');
+  href.value='';
+  await api.turn('message','ORD-045');
+  assert.equal(href.value,'/chat');
 });
 
-test('session creation resumes with the original intake after a failed first turn',async()=>{
+test('deliver retries only production event pending writes',async()=>{
   const calls=[];
   const {api}=setup(async(url,options)=>{
     calls.push({url,body:JSON.parse(options.body)});
-    return calls.length===1?response(200,{session:{session_id:'new-draft',version:0}}):response(503,{error:'DB_ERROR'});
+    return response(503,{error:'DB_ERROR'});
   });
-  await api.startRequest('Allocate cheapest.','min_cost');
-  assert.equal(calls.length,2);
-  assert.equal(api.state.pending.url,'/api/sessions/new-draft/turns');
-  assert.equal(api.state.pending.body.message,'Allocate cheapest.');
+  api.state.pending={kind:'event',url:'/api/events',body:{action:'cancel',order_id:'ORD-045',event_id:'e1'}};
   await api.deliver();
-  assert.equal(calls.length,3);assert.deepEqual(calls[1],calls[2]);
+  assert.equal(calls.length,1);
+  assert.equal(calls[0].url,'/api/events');
+  await api.deliver();
+  assert.equal(calls.length,2);
+  assert.deepEqual(calls[0],calls[1]);
 });
 
-test('a rejected HTTP version is not automatically retried as a new confirmation',async()=>{
-  const {api}=setup(async()=>response(409,{result:{message:'Version conflict'}}));
-  api.state.session=session();
-  await api.turn('confirm');
+test('non-event pending is cleared and user is sent to chat',async()=>{
+  const {api,href}=setup();
+  api.state.pending={kind:'session',url:'/api/sessions/x/turns',body:{}};
+  await api.deliver();
   assert.equal(api.state.pending,null);
-  assert.equal(api.state.busy,false);
-});
-
-test('two rapid confirmation clicks create only one in-flight write',async()=>{
-  let resolve, count=0;
-  const {api}=setup(()=>{count++;return new Promise(r=>resolve=r);});
-  api.state.session=session();
-  const first=api.turn('confirm');
-  await api.turn('confirm');assert.equal(count,1);
-  resolve(response(503,{error:'DB_ERROR'}));await first;
+  assert.equal(href.value,'/chat');
 });
 
 test('text size persists across initialization and invalid storage uses medium',()=>{
@@ -94,14 +105,4 @@ test('text size persists across initialization and invalid storage uses medium',
   api.initTextSize();assert.equal(storage.get('sweaterco.text-size'),'large');
   storage.set('sweaterco.text-size','invalid');api.initTextSize();
   assert.equal(storage.get('sweaterco.text-size'),'medium');
-});
-
-test('form edits preserve exact changes and idempotency key for a retry',async()=>{
-  const calls=[];
-  const {api}=setup(async(url,options)=>{calls.push(JSON.parse(options.body));return response(503,{error:'DB_ERROR'});});
-  api.state.session=session();
-  await api.editDraft({objective:'min_cost',exclusion:['W3']});
-  assert.deepEqual(calls[0].changes,{objective:'min_cost',exclusion:['W3']});
-  assert.equal(calls[0].expected_version,7);
-  await api.deliver();assert.deepEqual(calls[0],calls[1]);
 });

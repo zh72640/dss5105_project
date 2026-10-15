@@ -1,3 +1,14 @@
 # Legacy pip compatibility only. Use uv sync --locked for reproducible installs.
 # pyproject.toml and uv.lock are the authoritative dependency configuration.
 google-genai==2.23.0
+fastapi==0.143.0
+uvicorn==0.54.0
+langgraph==1.2.15
+langgraph-checkpoint-sqlite==3.1.2
+pyyaml==6.0.3
+
+langchain==1.4.5
+langchain-openai==1.7.1
+langchain-anthropic==1.7.6
+langchain-google-genai==4.4.2
+langchain-deepseek==1.1.1

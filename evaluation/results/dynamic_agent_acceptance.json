@@ -1,0 +1,3330 @@
+{
+  "method": "Scripted AIMessage.tool_calls through the production LangGraph and tools; no live provider call",
+  "business_date": "2026-04-01",
+  "order_query": {
+    "reply": "ORD-045 is ready for allocation.",
+    "offered_tools": [
+      [
+        "load_skill"
+      ],
+      [
+        "load_skill",
+        "ask_user",
+        "get_order"
+      ],
+      [
+        "load_skill",
+        "ask_user",
+        "get_order"
+      ]
+    ],
+    "trace": {
+      "session_id": "d1ba9d647b6241499aa5b6de999b7481",
+      "tool_calls": [
+        {
+          "invocation_key": "accept-query:acceptance-1",
+          "request_id": "accept-query",
+          "skill_name": "order-inquiry",
+          "skill_hash": "885fe924f9a39e02b08b42542da211c0982c3137449488365817f3944d98af77",
+          "tool_name": "load_skill",
+          "state_before": "COLLECTING",
+          "state_after": "COLLECTING",
+          "created_at": "2026-10-15T10:13:22.198428+00:00",
+          "arguments": {
+            "name": "order-inquiry"
+          },
+          "result": {
+            "ok": true,
+            "data": {
+              "name": "order-inquiry",
+              "description": "Answer questions about registered orders and their current production facts.",
+              "tools": [
+                "get_order",
+                "ask_user"
+              ],
+              "content": "# Order inquiry\n\nLoad this Skill for an order question. Use `get_order` with an explicit order ID from the user or the current task. If the ID is missing or ambiguous, use `ask_user` to request the exact ID and pause. Report only returned facts, including the current version and remaining quantity. Do not infer an allocation or claim that a recommendation was committed.",
+              "hash": "885fe924f9a39e02b08b42542da211c0982c3137449488365817f3944d98af77"
+            }
+          }
+        },
+        {
+          "invocation_key": "accept-query:acceptance-2",
+          "request_id": "accept-query",
+          "skill_name": "order-inquiry",
+          "skill_hash": "885fe924f9a39e02b08b42542da211c0982c3137449488365817f3944d98af77",
+          "tool_name": "get_order",
+          "state_before": "COLLECTING",
+          "state_after": "COLLECTING",
+          "created_at": "2026-10-15T10:13:22.224716+00:00",
+          "arguments": {
+            "order_id": "ORD-045"
+          },
+          "result": {
+            "ok": true,
+            "data": {
+              "order_id": "ORD-045",
+              "customer": "Cotton Club",
+              "product": "Vest",
+              "category": "TOPS",
+              "pieces": 150,
+              "order_date": "2026-03-21",
+              "due_date": "2026-04-09",
+              "source_status": "IN_PROGRESS",
+              "state": "READY",
+              "version": 0,
+              "completed_pieces": 0,
+              "remaining_pieces": 150
+            }
+          }
+        }
+      ],
+      "events": [
+        {
+          "request_id": "accept-query",
+          "event_type": "start",
+          "created_at": "2026-10-15T10:13:22.125933+00:00",
+          "detail": {
+            "session_version": 0,
+            "task_id": "5857f5824b4c4a40b6509af74b2b1d94",
+            "task_version": 0
+          }
+        },
+        {
+          "request_id": "accept-query",
+          "event_type": "tool_result",
+          "created_at": "2026-10-15T10:13:22.198568+00:00",
+          "detail": {
+            "tool": "load_skill",
+            "skill": "order-inquiry",
+            "skill_hash": "885fe924f9a39e02b08b42542da211c0982c3137449488365817f3944d98af77",
+            "arguments": {
+              "name": "order-inquiry"
+            },
+            "result": {
+              "ok": true,
+              "data": {
+                "name": "order-inquiry",
+                "description": "Answer questions about registered orders and their current production facts.",
+                "tools": [
+                  "get_order",
+                  "ask_user"
+                ],
+                "content": "# Order inquiry\n\nLoad this Skill for an order question. Use `get_order` with an explicit order ID from the user or the current task. If the ID is missing or ambiguous, use `ask_user` to request the exact ID and pause. Report only returned facts, including the current version and remaining quantity. Do not infer an allocation or claim that a recommendation was committed.",
+                "hash": "885fe924f9a39e02b08b42542da211c0982c3137449488365817f3944d98af77"
+              }
+            },
+            "state_before": "COLLECTING",
+            "state_after": "COLLECTING"
+          }
+        },
+        {
+          "request_id": "accept-query",
+          "event_type": "tool_result",
+          "created_at": "2026-10-15T10:13:22.224902+00:00",
+          "detail": {
+            "tool": "get_order",
+            "skill": "order-inquiry",
+            "skill_hash": "885fe924f9a39e02b08b42542da211c0982c3137449488365817f3944d98af77",
+            "arguments": {
+              "order_id": "ORD-045"
+            },
+            "result": {
+              "ok": true,
+              "data": {
+                "order_id": "ORD-045",
+                "customer": "Cotton Club",
+                "product": "Vest",
+                "category": "TOPS",
+                "pieces": 150,
+                "order_date": "2026-03-21",
+                "due_date": "2026-04-09",
+                "source_status": "IN_PROGRESS",
+                "state": "READY",
+                "version": 0,
+                "completed_pieces": 0,
+                "remaining_pieces": 150
+              }
+            },
+            "state_before": "COLLECTING",
+            "state_after": "COLLECTING"
+          }
+        },
+        {
+          "request_id": "accept-query",
+          "event_type": "finish",
+          "created_at": "2026-10-15T10:13:22.258721+00:00",
+          "detail": {
+            "state": "COLLECTING",
+            "recommendation_id": null,
+            "session_version": 1,
+            "question": null
+          }
+        }
+      ]
+    }
+  },
+  "allocation": {
+    "task_state_after_recommendation": "RECOMMENDED",
+    "old_recommendation_id": "5fa0c2776ea1491792e6210369162079",
+    "old_recommendation_status_after_revision": "superseded",
+    "recommendation_id": "bffb17ac3c4940359fabc5c3821bf194",
+    "production_rows_before_confirmation": 0,
+    "production_rows_after_revision_before_confirmation": 0,
+    "committed": true,
+    "confirmation_replayed": true,
+    "offered_tools": [
+      [
+        "load_skill"
+      ],
+      [
+        "load_skill",
+        "ask_user",
+        "check_requirements",
+        "compute_plan",
+        "get_order",
+        "get_queue",
+        "list_workshops",
+        "save_recommendation",
+        "score_workshop",
+        "update_constraints"
+      ],
+      [
+        "load_skill",
+        "ask_user",
+        "check_requirements",
+        "compute_plan",
+        "get_order",
+        "get_queue",
+        "list_workshops",
+        "save_recommendation",
+        "score_workshop",
+        "update_constraints"
+      ],
+      [
+        "load_skill",
+        "ask_user",
+        "check_requirements",
+        "compute_plan",
+        "get_order",
+        "get_queue",
+        "list_workshops",
+        "save_recommendation",
+        "score_workshop",
+        "update_constraints"
+      ],
+      [
+        "load_skill",
+        "ask_user",
+        "check_requirements",
+        "compute_plan",
+        "get_order",
+        "get_queue",
+        "list_workshops",
+        "save_recommendation",
+        "score_workshop",
+        "update_constraints"
+      ],
+      [
+        "load_skill",
+        "ask_user",
+        "check_requirements",
+        "compute_plan",
+        "get_order",
+        "get_queue",
+        "list_workshops",
+        "save_recommendation",
+        "score_workshop",
+        "update_constraints"
+      ],
+      [
+        "load_skill",
+        "ask_user",
+        "check_requirements",
+        "compute_plan",
+        "get_order",
+        "get_queue",
+        "list_workshops",
+        "save_recommendation",
+        "score_workshop",
+        "update_constraints"
+      ]
+    ],
+    "revision_offered_tools": [
+      [
+        "load_skill"
+      ],
+      [
+        "load_skill",
+        "ask_user",
+        "check_requirements",
+        "compute_plan",
+        "save_recommendation",
+        "update_constraints"
+      ],
+      [
+        "load_skill",
+        "ask_user",
+        "check_requirements",
+        "compute_plan",
+        "save_recommendation",
+        "update_constraints"
+      ],
+      [
+        "load_skill",
+        "ask_user",
+        "check_requirements",
+        "compute_plan",
+        "save_recommendation",
+        "update_constraints"
+      ],
+      [
+        "load_skill",
+        "ask_user",
+        "check_requirements",
+        "compute_plan",
+        "save_recommendation",
+        "update_constraints"
+      ],
+      [
+        "load_skill",
+        "ask_user",
+        "check_requirements",
+        "compute_plan",
+        "save_recommendation",
+        "update_constraints"
+      ]
+    ],
+    "trace": {
+      "session_id": "df0ffb85e7a644cca5435939c6537623",
+      "tool_calls": [
+        {
+          "invocation_key": "accept-allocation:acceptance-3",
+          "request_id": "accept-allocation",
+          "skill_name": "allocation-recommendation",
+          "skill_hash": "98332161d424a4afc26272a81890a3ce40caac17a81478bc6a95db441c496ecd",
+          "tool_name": "load_skill",
+          "state_before": "COLLECTING",
+          "state_after": "COLLECTING",
+          "created_at": "2026-10-15T10:13:22.326840+00:00",
+          "arguments": {
+            "name": "allocation-recommendation"
+          },
+          "result": {
+            "ok": true,
+            "data": {
+              "name": "allocation-recommendation",
+              "description": "Collect allocation constraints, calculate a checked plan, and save a recommendation for confirmation.",
+              "tools": [
+                "get_order",
+                "list_workshops",
+                "get_queue",
+                "score_workshop",
+                "update_constraints",
+                "check_requirements",
+                "compute_plan",
+                "save_recommendation",
+                "ask_user"
+              ],
+              "content": "# Allocation recommendation\n\nIdentify the order and relevant constraints from the user's current words and saved task. Use `update_constraints` for grounded changes; omit it when the saved draft already has the facts. Query order, workshops, or queues as needed. `check_requirements` establishes whether the task may enter READY; if it reports a blocker, ask the user a precise question with `ask_user`. `compute_plan` runs the current integer split planner and verifies capacity, eligibility, quantity conservation, and any hard deadline. `save_recommendation` accepts only a plan computed in this run and rechecks fresh business facts. A saved recommendation is a preview: no production allocation or queue write occurs. Include recommendation ID, version, objective, split quantities, delivery date, and cost from tool results. Invite confirmation using the specific recommendation card/button. Never call a confirmation from an ordinary recommendation request. For workshop comparison, `score_workshop` exposes the restored single-workshop formulas; do not treat its original hybrid score as the planner's weighted hybrid score.",
+              "hash": "98332161d424a4afc26272a81890a3ce40caac17a81478bc6a95db441c496ecd"
+            }
+          }
+        },
+        {
+          "invocation_key": "accept-allocation:acceptance-4",
+          "request_id": "accept-allocation",
+          "skill_name": "allocation-recommendation",
+          "skill_hash": "98332161d424a4afc26272a81890a3ce40caac17a81478bc6a95db441c496ecd",
+          "tool_name": "update_constraints",
+          "state_before": "COLLECTING",
+          "state_after": "COLLECTING",
+          "created_at": "2026-10-15T10:13:22.356687+00:00",
+          "arguments": {
+            "field": "order_id",
+            "value": "ORD-045"
+          },
+          "result": {
+            "ok": true,
+            "data": {
+              "draft": {
+                "order_id": "ORD-045",
+                "customer": null,
+                "product": null,
+                "category": null,
+                "pieces": null,
+                "order_date": null,
+                "due_date": null,
+                "objective": "min_delay",
+                "exclusion": [],
+                "num_workshop_allowed": null,
+                "parse_status": "ok",
+                "missing_fields": [],
+                "ambiguities": [],
+                "preferred_workshop": null,
+                "deadline_required": false
+              },
+              "task_version": 1,
+              "state": "COLLECTING",
+              "previous_recommendation_invalidated": true
+            }
+          }
+        },
+        {
+          "invocation_key": "accept-allocation:acceptance-5",
+          "request_id": "accept-allocation",
+          "skill_name": "allocation-recommendation",
+          "skill_hash": "98332161d424a4afc26272a81890a3ce40caac17a81478bc6a95db441c496ecd",
+          "tool_name": "score_workshop",
+          "state_before": "COLLECTING",
+          "state_after": "COLLECTING",
+          "created_at": "2026-10-15T10:13:22.389800+00:00",
+          "arguments": {
+            "workshop_id": "W1",
+            "order_id": "ORD-045"
+          },
+          "result": {
+            "ok": true,
+            "data": {
+              "workshop_id": "W1",
+              "order_id": "ORD-045",
+              "pieces": 150,
+              "sent_date": "2026-04-01",
+              "queue_days": 4.0,
+              "estimated_completion_days": 5.5,
+              "lateness_score_days": -2.5,
+              "defect_score": 0.12,
+              "original_hybrid_score": 0.12,
+              "eligibility_rejection": null,
+              "score_semantics": "Original single-workshop formulas; original hybrid returns defect rate only if on time, otherwise 10000. The planner uses a different weighted objective."
+            }
+          }
+        },
+        {
+          "invocation_key": "accept-allocation:acceptance-6",
+          "request_id": "accept-allocation",
+          "skill_name": "allocation-recommendation",
+          "skill_hash": "98332161d424a4afc26272a81890a3ce40caac17a81478bc6a95db441c496ecd",
+          "tool_name": "check_requirements",
+          "state_before": "COLLECTING",
+          "state_after": "READY",
+          "created_at": "2026-10-15T10:13:22.411951+00:00",
+          "arguments": {},
+          "result": {
+            "ok": true,
+            "data": {
+              "state": "READY",
+              "report": {
+                "ready_for_planning": true,
+                "ready_for_recommendation": false,
+                "blocking_issues": [],
+                "warnings": [],
+                "resolved_fields": {
+                  "order_id": "ORD-045",
+                  "customer": "Cotton Club",
+                  "product": "Vest",
+                  "category": "TOPS",
+                  "pieces": 150,
+                  "order_date": "2026-03-21",
+                  "due_date": "2026-04-09",
+                  "source_status": "IN_PROGRESS",
+                  "state": "READY",
+                  "version": 0,
+                  "completed_pieces": 0
+                },
+                "effective_constraints": {
+                  "objective": "min_delay",
+                  "exclusion": [],
+                  "num_workshop_allowed": 1,
+                  "preferred_workshop": null,
+                  "deadline_required": false
+                },
+                "sources": {
+                  "order_id": {
+                    "message_sequence": 1,
+                    "quote": "Allocate ORD-045; compare W1 first.",
+                    "operation": "set"
+                  }
+                },
+                "defaults": {
+                  "objective": "min_delay",
+                  "exclusion": [],
+                  "num_workshop_allowed": 1,
+                  "preferred_workshop": null,
+                  "deadline_required": false
+                },
+                "business_date": "2026-04-01"
+              },
+              "facts_hash": "f37f8dd1a4dd51775971b1e07b29c0778a8c9a90f3f3eb1d7d0eba74443c766e"
+            }
+          }
+        },
+        {
+          "invocation_key": "accept-allocation:acceptance-7",
+          "request_id": "accept-allocation",
+          "skill_name": "allocation-recommendation",
+          "skill_hash": "98332161d424a4afc26272a81890a3ce40caac17a81478bc6a95db441c496ecd",
+          "tool_name": "compute_plan",
+          "state_before": "READY",
+          "state_after": "READY",
+          "created_at": "2026-10-15T10:13:22.433422+00:00",
+          "arguments": {},
+          "result": {
+            "ok": true,
+            "data": {
+              "result": {
+                "success": true,
+                "decision_status": "ALLOCATE",
+                "allocation": [
+                  {
+                    "workshop_id": "W6",
+                    "workshop_name": "Nimble Needle",
+                    "pieces": 150,
+                    "queue_days": 1.0,
+                    "processing_days": 1.1538461538461537,
+                    "transport_days": 1,
+                    "estimated_days": 3.1538461538461537,
+                    "estimated_cost": 180.0,
+                    "defect_rate": 0.05
+                  }
+                ],
+                "objective": "min_delay",
+                "rejected": {
+                  "W4": "cannot_make_tops",
+                  "W7": "status_suspended"
+                },
+                "reason_codes": [
+                  "ELIGIBLE",
+                  "BEST_CONFIGURED_SCORE",
+                  "INTEGER_PIECES_CONSERVED"
+                ],
+                "warnings": [],
+                "eligible_workshops": [
+                  "W1",
+                  "W2",
+                  "W3",
+                  "W5",
+                  "W6",
+                  "W8"
+                ],
+                "candidate_ranking": [
+                  {
+                    "workshop_id": "W6",
+                    "workshop_name": "Nimble Needle",
+                    "allocation": [
+                      {
+                        "workshop_id": "W6",
+                        "workshop_name": "Nimble Needle",
+                        "pieces": 150,
+                        "queue_days": 1.0,
+                        "processing_days": 1.1538461538461537,
+                        "transport_days": 1,
+                        "estimated_days": 3.1538461538461537,
+                        "estimated_cost": 180.0,
+                        "defect_rate": 0.05
+                      }
+                    ],
+                    "estimated_days": 3.1538461538461537,
+                    "estimated_cost": 180.0,
+                    "expected_defect_rate": 0.05,
+                    "score": 3.1538461538461537
+                  },
+                  {
+                    "workshop_id": "W8",
+                    "workshop_name": "FreshStart",
+                    "allocation": [
+                      {
+                        "workshop_id": "W8",
+                        "workshop_name": "FreshStart",
+                        "pieces": 150,
+                        "queue_days": 0.0,
+                        "processing_days": 1.5,
+                        "transport_days": 2,
+                        "estimated_days": 3.5,
+                        "estimated_cost": 150.0,
+                        "defect_rate": 0.04
+                      }
+                    ],
+                    "estimated_days": 3.5,
+                    "estimated_cost": 150.0,
+                    "expected_defect_rate": 0.04,
+                    "score": 3.5
+                  },
+                  {
+                    "workshop_id": "W2",
+                    "workshop_name": "SteadyHands",
+                    "allocation": [
+                      {
+                        "workshop_id": "W2",
+                        "workshop_name": "SteadyHands",
+                        "pieces": 150,
+                        "queue_days": 2.5,
+                        "processing_days": 0.8823529411764706,
+                        "transport_days": 2,
+                        "estimated_days": 5.382352941176471,
+                        "estimated_cost": 195.0,
+                        "defect_rate": 0.03
+                      }
+                    ],
+                    "estimated_days": 5.382352941176471,
+                    "estimated_cost": 195.0,
+                    "expected_defect_rate": 0.03,
+                    "score": 5.382352941176471
+                  },
+                  {
+                    "workshop_id": "W1",
+                    "workshop_name": "QuickStitch",
+                    "allocation": [
+                      {
+                        "workshop_id": "W1",
+                        "workshop_name": "QuickStitch",
+                        "pieces": 150,
+                        "queue_days": 4.0,
+                        "processing_days": 0.5,
+                        "transport_days": 1,
+                        "estimated_days": 5.5,
+                        "estimated_cost": 225.0,
+                        "defect_rate": 0.12
+                      }
+                    ],
+                    "estimated_days": 5.5,
+                    "estimated_cost": 225.0,
+                    "expected_defect_rate": 0.12,
+                    "score": 5.5
+                  },
+                  {
+                    "workshop_id": "W5",
+                    "workshop_name": "GiantWeave",
+                    "allocation": [
+                      {
+                        "workshop_id": "W5",
+                        "workshop_name": "GiantWeave",
+                        "pieces": 150,
+                        "queue_days": 3.0,
+                        "processing_days": 0.375,
+                        "transport_days": 4,
+                        "estimated_days": 7.375,
+                        "estimated_cost": 165.0,
+                        "defect_rate": 0.06
+                      }
+                    ],
+                    "estimated_days": 7.375,
+                    "estimated_cost": 165.0,
+                    "expected_defect_rate": 0.06,
+                    "score": 7.375
+                  },
+                  {
+                    "workshop_id": "W3",
+                    "workshop_name": "BudgetWorks",
+                    "allocation": [
+                      {
+                        "workshop_id": "W3",
+                        "workshop_name": "BudgetWorks",
+                        "pieces": 150,
+                        "queue_days": 5.0,
+                        "processing_days": 0.6521739130434783,
+                        "transport_days": 3,
+                        "estimated_days": 8.652173913043478,
+                        "estimated_cost": 120.0,
+                        "defect_rate": 0.09
+                      }
+                    ],
+                    "estimated_days": 8.652173913043478,
+                    "estimated_cost": 120.0,
+                    "expected_defect_rate": 0.09,
+                    "score": 8.652173913043478
+                  }
+                ],
+                "estimated_days": 3.1538461538461537,
+                "estimated_cost": 180.0,
+                "expected_defect_rate": 0.05,
+                "score": 3.1538461538461537,
+                "recommended_workshop_id": "W6",
+                "recommended_workshop_name": "Nimble Needle",
+                "estimated_delivery_date": "2026-04-05",
+                "deadline_met": true,
+                "message": "Allocated 150 pieces to 1 workshop(s) using min_delay."
+              },
+              "report": {
+                "ready_for_planning": true,
+                "ready_for_recommendation": true,
+                "blocking_issues": [],
+                "warnings": [],
+                "resolved_fields": {
+                  "order_id": "ORD-045",
+                  "customer": "Cotton Club",
+                  "product": "Vest",
+                  "category": "TOPS",
+                  "pieces": 150,
+                  "order_date": "2026-03-21",
+                  "due_date": "2026-04-09",
+                  "source_status": "IN_PROGRESS",
+                  "state": "READY",
+                  "version": 0,
+                  "completed_pieces": 0
+                },
+                "effective_constraints": {
+                  "objective": "min_delay",
+                  "exclusion": [],
+                  "num_workshop_allowed": 1,
+                  "preferred_workshop": null,
+                  "deadline_required": false
+                },
+                "sources": {
+                  "order_id": {
+                    "message_sequence": 1,
+                    "quote": "Allocate ORD-045; compare W1 first.",
+                    "operation": "set"
+                  }
+                },
+                "defaults": {
+                  "objective": "min_delay",
+                  "exclusion": [],
+                  "num_workshop_allowed": 1,
+                  "preferred_workshop": null,
+                  "deadline_required": false
+                },
+                "business_date": "2026-04-01"
+              },
+              "facts_hash": "f37f8dd1a4dd51775971b1e07b29c0778a8c9a90f3f3eb1d7d0eba74443c766e",
+              "plan_hash": "13fbe4cff7f80d3bcab2fdee21b78fe127dc7fce1d7b25ddebf212de1bd6be09",
+              "task_version": 1
+            }
+          }
+        },
+        {
+          "invocation_key": "accept-allocation:acceptance-8",
+          "request_id": "accept-allocation",
+          "skill_name": "allocation-recommendation",
+          "skill_hash": "98332161d424a4afc26272a81890a3ce40caac17a81478bc6a95db441c496ecd",
+          "tool_name": "save_recommendation",
+          "state_before": "READY",
+          "state_after": "RECOMMENDED",
+          "created_at": "2026-10-15T10:13:22.480237+00:00",
+          "arguments": {},
+          "result": {
+            "ok": true,
+            "data": {
+              "recommendation_id": "5fa0c2776ea1491792e6210369162079",
+              "task_version": 1,
+              "status": "valid",
+              "result": {
+                "success": true,
+                "decision_status": "ALLOCATE",
+                "allocation": [
+                  {
+                    "workshop_id": "W6",
+                    "workshop_name": "Nimble Needle",
+                    "pieces": 150,
+                    "queue_days": 1.0,
+                    "processing_days": 1.1538461538461537,
+                    "transport_days": 1,
+                    "estimated_days": 3.1538461538461537,
+                    "estimated_cost": 180.0,
+                    "defect_rate": 0.05
+                  }
+                ],
+                "objective": "min_delay",
+                "rejected": {
+                  "W4": "cannot_make_tops",
+                  "W7": "status_suspended"
+                },
+                "reason_codes": [
+                  "ELIGIBLE",
+                  "BEST_CONFIGURED_SCORE",
+                  "INTEGER_PIECES_CONSERVED"
+                ],
+                "warnings": [],
+                "eligible_workshops": [
+                  "W1",
+                  "W2",
+                  "W3",
+                  "W5",
+                  "W6",
+                  "W8"
+                ],
+                "candidate_ranking": [
+                  {
+                    "workshop_id": "W6",
+                    "workshop_name": "Nimble Needle",
+                    "allocation": [
+                      {
+                        "workshop_id": "W6",
+                        "workshop_name": "Nimble Needle",
+                        "pieces": 150,
+                        "queue_days": 1.0,
+                        "processing_days": 1.1538461538461537,
+                        "transport_days": 1,
+                        "estimated_days": 3.1538461538461537,
+                        "estimated_cost": 180.0,
+                        "defect_rate": 0.05
+                      }
+                    ],
+                    "estimated_days": 3.1538461538461537,
+                    "estimated_cost": 180.0,
+                    "expected_defect_rate": 0.05,
+                    "score": 3.1538461538461537
+                  },
+                  {
+                    "workshop_id": "W8",
+                    "workshop_name": "FreshStart",
+                    "allocation": [
+                      {
+                        "workshop_id": "W8",
+                        "workshop_name": "FreshStart",
+                        "pieces": 150,
+                        "queue_days": 0.0,
+                        "processing_days": 1.5,
+                        "transport_days": 2,
+                        "estimated_days": 3.5,
+                        "estimated_cost": 150.0,
+                        "defect_rate": 0.04
+                      }
+                    ],
+                    "estimated_days": 3.5,
+                    "estimated_cost": 150.0,
+                    "expected_defect_rate": 0.04,
+                    "score": 3.5
+                  },
+                  {
+                    "workshop_id": "W2",
+                    "workshop_name": "SteadyHands",
+                    "allocation": [
+                      {
+                        "workshop_id": "W2",
+                        "workshop_name": "SteadyHands",
+                        "pieces": 150,
+                        "queue_days": 2.5,
+                        "processing_days": 0.8823529411764706,
+                        "transport_days": 2,
+                        "estimated_days": 5.382352941176471,
+                        "estimated_cost": 195.0,
+                        "defect_rate": 0.03
+                      }
+                    ],
+                    "estimated_days": 5.382352941176471,
+                    "estimated_cost": 195.0,
+                    "expected_defect_rate": 0.03,
+                    "score": 5.382352941176471
+                  },
+                  {
+                    "workshop_id": "W1",
+                    "workshop_name": "QuickStitch",
+                    "allocation": [
+                      {
+                        "workshop_id": "W1",
+                        "workshop_name": "QuickStitch",
+                        "pieces": 150,
+                        "queue_days": 4.0,
+                        "processing_days": 0.5,
+                        "transport_days": 1,
+                        "estimated_days": 5.5,
+                        "estimated_cost": 225.0,
+                        "defect_rate": 0.12
+                      }
+                    ],
+                    "estimated_days": 5.5,
+                    "estimated_cost": 225.0,
+                    "expected_defect_rate": 0.12,
+                    "score": 5.5
+                  },
+                  {
+                    "workshop_id": "W5",
+                    "workshop_name": "GiantWeave",
+                    "allocation": [
+                      {
+                        "workshop_id": "W5",
+                        "workshop_name": "GiantWeave",
+                        "pieces": 150,
+                        "queue_days": 3.0,
+                        "processing_days": 0.375,
+                        "transport_days": 4,
+                        "estimated_days": 7.375,
+                        "estimated_cost": 165.0,
+                        "defect_rate": 0.06
+                      }
+                    ],
+                    "estimated_days": 7.375,
+                    "estimated_cost": 165.0,
+                    "expected_defect_rate": 0.06,
+                    "score": 7.375
+                  },
+                  {
+                    "workshop_id": "W3",
+                    "workshop_name": "BudgetWorks",
+                    "allocation": [
+                      {
+                        "workshop_id": "W3",
+                        "workshop_name": "BudgetWorks",
+                        "pieces": 150,
+                        "queue_days": 5.0,
+                        "processing_days": 0.6521739130434783,
+                        "transport_days": 3,
+                        "estimated_days": 8.652173913043478,
+                        "estimated_cost": 120.0,
+                        "defect_rate": 0.09
+                      }
+                    ],
+                    "estimated_days": 8.652173913043478,
+                    "estimated_cost": 120.0,
+                    "expected_defect_rate": 0.09,
+                    "score": 8.652173913043478
+                  }
+                ],
+                "estimated_days": 3.1538461538461537,
+                "estimated_cost": 180.0,
+                "expected_defect_rate": 0.05,
+                "score": 3.1538461538461537,
+                "recommended_workshop_id": "W6",
+                "recommended_workshop_name": "Nimble Needle",
+                "estimated_delivery_date": "2026-04-05",
+                "deadline_met": true,
+                "message": "Allocated 150 pieces to 1 workshop(s) using min_delay."
+              }
+            }
+          }
+        },
+        {
+          "invocation_key": "accept-revision:acceptance-9",
+          "request_id": "accept-revision",
+          "skill_name": "constraint-revision",
+          "skill_hash": "8a3727bbf4f2b676c8bb841274877f23561568e620002a3a37167707eeec5057",
+          "tool_name": "load_skill",
+          "state_before": "RECOMMENDED",
+          "state_after": "RECOMMENDED",
+          "created_at": "2026-10-15T10:13:22.569450+00:00",
+          "arguments": {
+            "name": "constraint-revision"
+          },
+          "result": {
+            "ok": true,
+            "data": {
+              "name": "constraint-revision",
+              "description": "Apply a grounded requirement change and invalidate an affected recommendation.",
+              "tools": [
+                "update_constraints",
+                "check_requirements",
+                "compute_plan",
+                "save_recommendation",
+                "ask_user"
+              ],
+              "content": "# Constraint revision\n\nGround each `update_constraints` call in the current user message. A revision supersedes the old recommendation before any further planning. If the message also says confirm, apply the revision and generate a new recommendation; the old recommendation cannot be committed. Use `check_requirements`, `compute_plan`, and `save_recommendation` only when needed. Ask for unresolved conflicts. State which recommendation is now valid and wait for a new explicit confirmation.",
+              "hash": "8a3727bbf4f2b676c8bb841274877f23561568e620002a3a37167707eeec5057"
+            }
+          }
+        },
+        {
+          "invocation_key": "accept-revision:acceptance-10",
+          "request_id": "accept-revision",
+          "skill_name": "constraint-revision",
+          "skill_hash": "8a3727bbf4f2b676c8bb841274877f23561568e620002a3a37167707eeec5057",
+          "tool_name": "update_constraints",
+          "state_before": "RECOMMENDED",
+          "state_after": "COLLECTING",
+          "created_at": "2026-10-15T10:13:22.627476+00:00",
+          "arguments": {
+            "field": "objective",
+            "value": "min_cost"
+          },
+          "result": {
+            "ok": true,
+            "data": {
+              "draft": {
+                "order_id": "ORD-045",
+                "customer": null,
+                "product": null,
+                "category": null,
+                "pieces": null,
+                "order_date": null,
+                "due_date": null,
+                "objective": "min_cost",
+                "exclusion": [],
+                "num_workshop_allowed": null,
+                "parse_status": "ok",
+                "missing_fields": [],
+                "ambiguities": [],
+                "preferred_workshop": null,
+                "deadline_required": false
+              },
+              "task_version": 2,
+              "state": "COLLECTING",
+              "previous_recommendation_invalidated": true
+            }
+          }
+        },
+        {
+          "invocation_key": "accept-revision:acceptance-11",
+          "request_id": "accept-revision",
+          "skill_name": "constraint-revision",
+          "skill_hash": "8a3727bbf4f2b676c8bb841274877f23561568e620002a3a37167707eeec5057",
+          "tool_name": "check_requirements",
+          "state_before": "COLLECTING",
+          "state_after": "READY",
+          "created_at": "2026-10-15T10:13:22.651633+00:00",
+          "arguments": {},
+          "result": {
+            "ok": true,
+            "data": {
+              "state": "READY",
+              "report": {
+                "ready_for_planning": true,
+                "ready_for_recommendation": false,
+                "blocking_issues": [],
+                "warnings": [],
+                "resolved_fields": {
+                  "order_id": "ORD-045",
+                  "customer": "Cotton Club",
+                  "product": "Vest",
+                  "category": "TOPS",
+                  "pieces": 150,
+                  "order_date": "2026-03-21",
+                  "due_date": "2026-04-09",
+                  "source_status": "IN_PROGRESS",
+                  "state": "READY",
+                  "version": 0,
+                  "completed_pieces": 0
+                },
+                "effective_constraints": {
+                  "objective": "min_cost",
+                  "exclusion": [],
+                  "num_workshop_allowed": 1,
+                  "preferred_workshop": null,
+                  "deadline_required": false
+                },
+                "sources": {
+                  "order_id": {
+                    "message_sequence": 1,
+                    "quote": "Allocate ORD-045; compare W1 first.",
+                    "operation": "set"
+                  },
+                  "objective": {
+                    "message_sequence": 3,
+                    "quote": "Change the objective to lowest cost.",
+                    "operation": "set"
+                  }
+                },
+                "defaults": {
+                  "exclusion": [],
+                  "num_workshop_allowed": 1,
+                  "preferred_workshop": null,
+                  "deadline_required": false
+                },
+                "business_date": "2026-04-01"
+              },
+              "facts_hash": "7a655578b3c1b72148755a5551a53a86a57f6c116c5566ff9512cd7b9fe85710"
+            }
+          }
+        },
+        {
+          "invocation_key": "accept-revision:acceptance-12",
+          "request_id": "accept-revision",
+          "skill_name": "constraint-revision",
+          "skill_hash": "8a3727bbf4f2b676c8bb841274877f23561568e620002a3a37167707eeec5057",
+          "tool_name": "compute_plan",
+          "state_before": "READY",
+          "state_after": "READY",
+          "created_at": "2026-10-15T10:13:22.675742+00:00",
+          "arguments": {},
+          "result": {
+            "ok": true,
+            "data": {
+              "result": {
+                "success": true,
+                "decision_status": "ALLOCATE",
+                "allocation": [
+                  {
+                    "workshop_id": "W3",
+                    "workshop_name": "BudgetWorks",
+                    "pieces": 150,
+                    "queue_days": 5.0,
+                    "processing_days": 0.6521739130434783,
+                    "transport_days": 3,
+                    "estimated_days": 8.652173913043478,
+                    "estimated_cost": 120.0,
+                    "defect_rate": 0.09
+                  }
+                ],
+                "objective": "min_cost",
+                "rejected": {
+                  "W4": "cannot_make_tops",
+                  "W7": "status_suspended"
+                },
+                "reason_codes": [
+                  "ELIGIBLE",
+                  "BEST_CONFIGURED_SCORE",
+                  "INTEGER_PIECES_CONSERVED"
+                ],
+                "warnings": [
+                  "ESTIMATED_DEADLINE_MISS"
+                ],
+                "eligible_workshops": [
+                  "W1",
+                  "W2",
+                  "W3",
+                  "W5",
+                  "W6",
+                  "W8"
+                ],
+                "candidate_ranking": [
+                  {
+                    "workshop_id": "W3",
+                    "workshop_name": "BudgetWorks",
+                    "allocation": [
+                      {
+                        "workshop_id": "W3",
+                        "workshop_name": "BudgetWorks",
+                        "pieces": 150,
+                        "queue_days": 5.0,
+                        "processing_days": 0.6521739130434783,
+                        "transport_days": 3,
+                        "estimated_days": 8.652173913043478,
+                        "estimated_cost": 120.0,
+                        "defect_rate": 0.09
+                      }
+                    ],
+                    "estimated_days": 8.652173913043478,
+                    "estimated_cost": 120.0,
+                    "expected_defect_rate": 0.09,
+                    "score": 120.0
+                  },
+                  {
+                    "workshop_id": "W8",
+                    "workshop_name": "FreshStart",
+                    "allocation": [
+                      {
+                        "workshop_id": "W8",
+                        "workshop_name": "FreshStart",
+                        "pieces": 150,
+                        "queue_days": 0.0,
+                        "processing_days": 1.5,
+                        "transport_days": 2,
+                        "estimated_days": 3.5,
+                        "estimated_cost": 150.0,
+                        "defect_rate": 0.04
+                      }
+                    ],
+                    "estimated_days": 3.5,
+                    "estimated_cost": 150.0,
+                    "expected_defect_rate": 0.04,
+                    "score": 150.0
+                  },
+                  {
+                    "workshop_id": "W5",
+                    "workshop_name": "GiantWeave",
+                    "allocation": [
+                      {
+                        "workshop_id": "W5",
+                        "workshop_name": "GiantWeave",
+                        "pieces": 150,
+                        "queue_days": 3.0,
+                        "processing_days": 0.375,
+                        "transport_days": 4,
+                        "estimated_days": 7.375,
+                        "estimated_cost": 165.0,
+                        "defect_rate": 0.06
+                      }
+                    ],
+                    "estimated_days": 7.375,
+                    "estimated_cost": 165.0,
+                    "expected_defect_rate": 0.06,
+                    "score": 165.0
+                  },
+                  {
+                    "workshop_id": "W6",
+                    "workshop_name": "Nimble Needle",
+                    "allocation": [
+                      {
+                        "workshop_id": "W6",
+                        "workshop_name": "Nimble Needle",
+                        "pieces": 150,
+                        "queue_days": 1.0,
+                        "processing_days": 1.1538461538461537,
+                        "transport_days": 1,
+                        "estimated_days": 3.1538461538461537,
+                        "estimated_cost": 180.0,
+                        "defect_rate": 0.05
+                      }
+                    ],
+                    "estimated_days": 3.1538461538461537,
+                    "estimated_cost": 180.0,
+                    "expected_defect_rate": 0.05,
+                    "score": 180.0
+                  },
+                  {
+                    "workshop_id": "W2",
+                    "workshop_name": "SteadyHands",
+                    "allocation": [
+                      {
+                        "workshop_id": "W2",
+                        "workshop_name": "SteadyHands",
+                        "pieces": 150,
+                        "queue_days": 2.5,
+                        "processing_days": 0.8823529411764706,
+                        "transport_days": 2,
+                        "estimated_days": 5.382352941176471,
+                        "estimated_cost": 195.0,
+                        "defect_rate": 0.03
+                      }
+                    ],
+                    "estimated_days": 5.382352941176471,
+                    "estimated_cost": 195.0,
+                    "expected_defect_rate": 0.03,
+                    "score": 195.0
+                  },
+                  {
+                    "workshop_id": "W1",
+                    "workshop_name": "QuickStitch",
+                    "allocation": [
+                      {
+                        "workshop_id": "W1",
+                        "workshop_name": "QuickStitch",
+                        "pieces": 150,
+                        "queue_days": 4.0,
+                        "processing_days": 0.5,
+                        "transport_days": 1,
+                        "estimated_days": 5.5,
+                        "estimated_cost": 225.0,
+                        "defect_rate": 0.12
+                      }
+                    ],
+                    "estimated_days": 5.5,
+                    "estimated_cost": 225.0,
+                    "expected_defect_rate": 0.12,
+                    "score": 225.0
+                  }
+                ],
+                "estimated_days": 8.652173913043478,
+                "estimated_cost": 120.0,
+                "expected_defect_rate": 0.09,
+                "score": 120.0,
+                "recommended_workshop_id": "W3",
+                "recommended_workshop_name": "BudgetWorks",
+                "estimated_delivery_date": "2026-04-10",
+                "deadline_met": false,
+                "message": "Allocated 150 pieces to 1 workshop(s) using min_cost."
+              },
+              "report": {
+                "ready_for_planning": true,
+                "ready_for_recommendation": true,
+                "blocking_issues": [],
+                "warnings": [
+                  "ESTIMATED_DEADLINE_MISS"
+                ],
+                "resolved_fields": {
+                  "order_id": "ORD-045",
+                  "customer": "Cotton Club",
+                  "product": "Vest",
+                  "category": "TOPS",
+                  "pieces": 150,
+                  "order_date": "2026-03-21",
+                  "due_date": "2026-04-09",
+                  "source_status": "IN_PROGRESS",
+                  "state": "READY",
+                  "version": 0,
+                  "completed_pieces": 0
+                },
+                "effective_constraints": {
+                  "objective": "min_cost",
+                  "exclusion": [],
+                  "num_workshop_allowed": 1,
+                  "preferred_workshop": null,
+                  "deadline_required": false
+                },
+                "sources": {
+                  "order_id": {
+                    "message_sequence": 1,
+                    "quote": "Allocate ORD-045; compare W1 first.",
+                    "operation": "set"
+                  },
+                  "objective": {
+                    "message_sequence": 3,
+                    "quote": "Change the objective to lowest cost.",
+                    "operation": "set"
+                  }
+                },
+                "defaults": {
+                  "exclusion": [],
+                  "num_workshop_allowed": 1,
+                  "preferred_workshop": null,
+                  "deadline_required": false
+                },
+                "business_date": "2026-04-01"
+              },
+              "facts_hash": "7a655578b3c1b72148755a5551a53a86a57f6c116c5566ff9512cd7b9fe85710",
+              "plan_hash": "953c1dedda748196152155def8774eace482c441adab2683ff46f364851b9398",
+              "task_version": 2
+            }
+          }
+        },
+        {
+          "invocation_key": "accept-revision:acceptance-13",
+          "request_id": "accept-revision",
+          "skill_name": "constraint-revision",
+          "skill_hash": "8a3727bbf4f2b676c8bb841274877f23561568e620002a3a37167707eeec5057",
+          "tool_name": "save_recommendation",
+          "state_before": "READY",
+          "state_after": "RECOMMENDED",
+          "created_at": "2026-10-15T10:13:22.698817+00:00",
+          "arguments": {},
+          "result": {
+            "ok": true,
+            "data": {
+              "recommendation_id": "bffb17ac3c4940359fabc5c3821bf194",
+              "task_version": 2,
+              "status": "valid",
+              "result": {
+                "success": true,
+                "decision_status": "ALLOCATE",
+                "allocation": [
+                  {
+                    "workshop_id": "W3",
+                    "workshop_name": "BudgetWorks",
+                    "pieces": 150,
+                    "queue_days": 5.0,
+                    "processing_days": 0.6521739130434783,
+                    "transport_days": 3,
+                    "estimated_days": 8.652173913043478,
+                    "estimated_cost": 120.0,
+                    "defect_rate": 0.09
+                  }
+                ],
+                "objective": "min_cost",
+                "rejected": {
+                  "W4": "cannot_make_tops",
+                  "W7": "status_suspended"
+                },
+                "reason_codes": [
+                  "ELIGIBLE",
+                  "BEST_CONFIGURED_SCORE",
+                  "INTEGER_PIECES_CONSERVED"
+                ],
+                "warnings": [
+                  "ESTIMATED_DEADLINE_MISS"
+                ],
+                "eligible_workshops": [
+                  "W1",
+                  "W2",
+                  "W3",
+                  "W5",
+                  "W6",
+                  "W8"
+                ],
+                "candidate_ranking": [
+                  {
+                    "workshop_id": "W3",
+                    "workshop_name": "BudgetWorks",
+                    "allocation": [
+                      {
+                        "workshop_id": "W3",
+                        "workshop_name": "BudgetWorks",
+                        "pieces": 150,
+                        "queue_days": 5.0,
+                        "processing_days": 0.6521739130434783,
+                        "transport_days": 3,
+                        "estimated_days": 8.652173913043478,
+                        "estimated_cost": 120.0,
+                        "defect_rate": 0.09
+                      }
+                    ],
+                    "estimated_days": 8.652173913043478,
+                    "estimated_cost": 120.0,
+                    "expected_defect_rate": 0.09,
+                    "score": 120.0
+                  },
+                  {
+                    "workshop_id": "W8",
+                    "workshop_name": "FreshStart",
+                    "allocation": [
+                      {
+                        "workshop_id": "W8",
+                        "workshop_name": "FreshStart",
+                        "pieces": 150,
+                        "queue_days": 0.0,
+                        "processing_days": 1.5,
+                        "transport_days": 2,
+                        "estimated_days": 3.5,
+                        "estimated_cost": 150.0,
+                        "defect_rate": 0.04
+                      }
+                    ],
+                    "estimated_days": 3.5,
+                    "estimated_cost": 150.0,
+                    "expected_defect_rate": 0.04,
+                    "score": 150.0
+                  },
+                  {
+                    "workshop_id": "W5",
+                    "workshop_name": "GiantWeave",
+                    "allocation": [
+                      {
+                        "workshop_id": "W5",
+                        "workshop_name": "GiantWeave",
+                        "pieces": 150,
+                        "queue_days": 3.0,
+                        "processing_days": 0.375,
+                        "transport_days": 4,
+                        "estimated_days": 7.375,
+                        "estimated_cost": 165.0,
+                        "defect_rate": 0.06
+                      }
+                    ],
+                    "estimated_days": 7.375,
+                    "estimated_cost": 165.0,
+                    "expected_defect_rate": 0.06,
+                    "score": 165.0
+                  },
+                  {
+                    "workshop_id": "W6",
+                    "workshop_name": "Nimble Needle",
+                    "allocation": [
+                      {
+                        "workshop_id": "W6",
+                        "workshop_name": "Nimble Needle",
+                        "pieces": 150,
+                        "queue_days": 1.0,
+                        "processing_days": 1.1538461538461537,
+                        "transport_days": 1,
+                        "estimated_days": 3.1538461538461537,
+                        "estimated_cost": 180.0,
+                        "defect_rate": 0.05
+                      }
+                    ],
+                    "estimated_days": 3.1538461538461537,
+                    "estimated_cost": 180.0,
+                    "expected_defect_rate": 0.05,
+                    "score": 180.0
+                  },
+                  {
+                    "workshop_id": "W2",
+                    "workshop_name": "SteadyHands",
+                    "allocation": [
+                      {
+                        "workshop_id": "W2",
+                        "workshop_name": "SteadyHands",
+                        "pieces": 150,
+                        "queue_days": 2.5,
+                        "processing_days": 0.8823529411764706,
+                        "transport_days": 2,
+                        "estimated_days": 5.382352941176471,
+                        "estimated_cost": 195.0,
+                        "defect_rate": 0.03
+                      }
+                    ],
+                    "estimated_days": 5.382352941176471,
+                    "estimated_cost": 195.0,
+                    "expected_defect_rate": 0.03,
+                    "score": 195.0
+                  },
+                  {
+                    "workshop_id": "W1",
+                    "workshop_name": "QuickStitch",
+                    "allocation": [
+                      {
+                        "workshop_id": "W1",
+                        "workshop_name": "QuickStitch",
+                        "pieces": 150,
+                        "queue_days": 4.0,
+                        "processing_days": 0.5,
+                        "transport_days": 1,
+                        "estimated_days": 5.5,
+                        "estimated_cost": 225.0,
+                        "defect_rate": 0.12
+                      }
+                    ],
+                    "estimated_days": 5.5,
+                    "estimated_cost": 225.0,
+                    "expected_defect_rate": 0.12,
+                    "score": 225.0
+                  }
+                ],
+                "estimated_days": 8.652173913043478,
+                "estimated_cost": 120.0,
+                "expected_defect_rate": 0.09,
+                "score": 120.0,
+                "recommended_workshop_id": "W3",
+                "recommended_workshop_name": "BudgetWorks",
+                "estimated_delivery_date": "2026-04-10",
+                "deadline_met": false,
+                "message": "Allocated 150 pieces to 1 workshop(s) using min_cost."
+              }
+            }
+          }
+        },
+        {
+          "invocation_key": "accept-production:acceptance-14",
+          "request_id": "accept-production",
+          "skill_name": "commit-and-production",
+          "skill_hash": "12393337ec4c23410106e6b237974efd598906f3171b95b0842e488c125133fc",
+          "tool_name": "load_skill",
+          "state_before": "CONFIRMED",
+          "state_after": "CONFIRMED",
+          "created_at": "2026-10-15T10:13:22.824451+00:00",
+          "arguments": {
+            "name": "commit-and-production"
+          },
+          "result": {
+            "ok": true,
+            "data": {
+              "name": "commit-and-production",
+              "description": "Guide explicit recommendation confirmation and audited production actions.",
+              "tools": [
+                "inspect_recommendation",
+                "get_order",
+                "record_production_event",
+                "ask_user"
+              ],
+              "content": "# Commit and production\n\nAn ordinary model tool call cannot authorize a recommendation commitment. Ask the user to confirm the exact recommendation with the UI confirmation action. The server validates owner, recommendation ID, session and task versions, fresh order/workshop/queue facts, and writes the allocation and queue updates in one database transaction. For a message that changes requirements and asks to confirm, load the revision Skill, invalidate the old recommendation, and request fresh confirmation. For production events, first use `get_order` to obtain the current version. Call `record_production_event` only if the current user message explicitly names the order, action, and audit reason, and any completion quantity and workshop. The runtime supplies the actor and idempotent event ID. The existing lifecycle service validates version, order state, quantity, queue, and transaction rules. If details are missing, use `ask_user`. Never claim an event succeeded without its tool result.",
+              "hash": "12393337ec4c23410106e6b237974efd598906f3171b95b0842e488c125133fc"
+            }
+          }
+        },
+        {
+          "invocation_key": "accept-production:acceptance-15",
+          "request_id": "accept-production",
+          "skill_name": "commit-and-production",
+          "skill_hash": "12393337ec4c23410106e6b237974efd598906f3171b95b0842e488c125133fc",
+          "tool_name": "get_order",
+          "state_before": "CONFIRMED",
+          "state_after": "CONFIRMED",
+          "created_at": "2026-10-15T10:13:22.857025+00:00",
+          "arguments": {
+            "order_id": "ORD-045"
+          },
+          "result": {
+            "ok": true,
+            "data": {
+              "order_id": "ORD-045",
+              "customer": "Cotton Club",
+              "product": "Vest",
+              "category": "TOPS",
+              "pieces": 150,
+              "order_date": "2026-03-21",
+              "due_date": "2026-04-09",
+              "source_status": "IN_PROGRESS",
+              "state": "WORKING",
+              "version": 1,
+              "completed_pieces": 0,
+              "remaining_pieces": 150
+            }
+          }
+        },
+        {
+          "invocation_key": "accept-production:acceptance-16",
+          "request_id": "accept-production",
+          "skill_name": "commit-and-production",
+          "skill_hash": "12393337ec4c23410106e6b237974efd598906f3171b95b0842e488c125133fc",
+          "tool_name": "record_production_event",
+          "state_before": "CONFIRMED",
+          "state_after": "CONFIRMED",
+          "created_at": "2026-10-15T10:13:22.898873+00:00",
+          "arguments": {
+            "action": "complete",
+            "order_id": "ORD-045",
+            "expected_version": 1,
+            "reason": "inspection passed",
+            "workshop_id": "W3",
+            "pieces": 1
+          },
+          "result": {
+            "ok": true,
+            "data": {
+              "request_id": "5a61b2237c3155c3a3a1ec20eb7605c4",
+              "replayed": false,
+              "pipeline_version": "mvp_v0.2",
+              "trace": {
+                "db_changes": [
+                  {
+                    "table": "working_order",
+                    "workshop_id": "W3",
+                    "completed_pieces_delta": 1,
+                    "released_queue_days": 0.004347826086956497
+                  }
+                ]
+              },
+              "result": {
+                "success": true,
+                "decision_status": "COMPLETE",
+                "reason_codes": [
+                  "LIFECYCLE_APPLIED"
+                ],
+                "allocation": [],
+                "warnings": [],
+                "message": "Production event recorded.",
+                "candidate_ranking": [],
+                "request_id": "5a61b2237c3155c3a3a1ec20eb7605c4"
+              },
+              "order": {
+                "order_id": "ORD-045",
+                "customer": "Cotton Club",
+                "product": "Vest",
+                "category": "TOPS",
+                "pieces": 150,
+                "order_date": "2026-03-21",
+                "due_date": "2026-04-09",
+                "source_status": "IN_PROGRESS",
+                "state": "WORKING",
+                "version": 2,
+                "completed_pieces": 1,
+                "remaining_pieces": 149,
+                "allocations": [
+                  {
+                    "order_id": "ORD-045",
+                    "workshop_id": "W3",
+                    "request_id": "chat-commit-bffb17ac3c4940359fabc5c3821bf194",
+                    "pieces": 150,
+                    "estimated_days": 8.652173913043478,
+                    "estimated_cost": 120.0,
+                    "objective": "min_cost",
+                    "assigned_at": "2026-10-15T10:13:22.749702+00:00",
+                    "completed_pieces": 1,
+                    "capacity_at_assignment": 230,
+                    "queue_remaining_days": 0.6478260869565218
+                  }
+                ]
+              },
+              "event": {
+                "action": "complete",
+                "order_id": "ORD-045",
+                "actor": "acceptance",
+                "reason": "inspection passed",
+                "expected_version": 1,
+                "event_id": "5a61b2237c3155c3a3a1ec20eb7605c4",
+                "as_of_date": "2026-04-01",
+                "workshop_id": "W3",
+                "pieces": 1,
+                "objective": "min_delay",
+                "exclusion": [],
+                "max_workshops": 1,
+                "preferred_workshop": null,
+                "deadline_required": false
+              }
+            }
+          }
+        }
+      ],
+      "events": [
+        {
+          "request_id": "accept-allocation",
+          "event_type": "start",
+          "created_at": "2026-10-15T10:13:22.277696+00:00",
+          "detail": {
+            "session_version": 0,
+            "task_id": "9706604cdfe4487a8c6747f96ebe3c5c",
+            "task_version": 0
+          }
+        },
+        {
+          "request_id": "accept-allocation",
+          "event_type": "tool_result",
+          "created_at": "2026-10-15T10:13:22.326999+00:00",
+          "detail": {
+            "tool": "load_skill",
+            "skill": "allocation-recommendation",
+            "skill_hash": "98332161d424a4afc26272a81890a3ce40caac17a81478bc6a95db441c496ecd",
+            "arguments": {
+              "name": "allocation-recommendation"
+            },
+            "result": {
+              "ok": true,
+              "data": {
+                "name": "allocation-recommendation",
+                "description": "Collect allocation constraints, calculate a checked plan, and save a recommendation for confirmation.",
+                "tools": [
+                  "get_order",
+                  "list_workshops",
+                  "get_queue",
+                  "score_workshop",
+                  "update_constraints",
+                  "check_requirements",
+                  "compute_plan",
+                  "save_recommendation",
+                  "ask_user"
+                ],
+                "content": "# Allocation recommendation\n\nIdentify the order and relevant constraints from the user's current words and saved task. Use `update_constraints` for grounded changes; omit it when the saved draft already has the facts. Query order, workshops, or queues as needed. `check_requirements` establishes whether the task may enter READY; if it reports a blocker, ask the user a precise question with `ask_user`. `compute_plan` runs the current integer split planner and verifies capacity, eligibility, quantity conservation, and any hard deadline. `save_recommendation` accepts only a plan computed in this run and rechecks fresh business facts. A saved recommendation is a preview: no production allocation or queue write occurs. Include recommendation ID, version, objective, split quantities, delivery date, and cost from tool results. Invite confirmation using the specific recommendation card/button. Never call a confirmation from an ordinary recommendation request. For workshop comparison, `score_workshop` exposes the restored single-workshop formulas; do not treat its original hybrid score as the planner's weighted hybrid score.",
+                "hash": "98332161d424a4afc26272a81890a3ce40caac17a81478bc6a95db441c496ecd"
+              }
+            },
+            "state_before": "COLLECTING",
+            "state_after": "COLLECTING"
+          }
+        },
+        {
+          "request_id": "accept-allocation",
+          "event_type": "tool_result",
+          "created_at": "2026-10-15T10:13:22.356883+00:00",
+          "detail": {
+            "tool": "update_constraints",
+            "skill": "allocation-recommendation",
+            "skill_hash": "98332161d424a4afc26272a81890a3ce40caac17a81478bc6a95db441c496ecd",
+            "arguments": {
+              "field": "order_id",
+              "value": "ORD-045"
+            },
+            "result": {
+              "ok": true,
+              "data": {
+                "draft": {
+                  "order_id": "ORD-045",
+                  "customer": null,
+                  "product": null,
+                  "category": null,
+                  "pieces": null,
+                  "order_date": null,
+                  "due_date": null,
+                  "objective": "min_delay",
+                  "exclusion": [],
+                  "num_workshop_allowed": null,
+                  "parse_status": "ok",
+                  "missing_fields": [],
+                  "ambiguities": [],
+                  "preferred_workshop": null,
+                  "deadline_required": false
+                },
+                "task_version": 1,
+                "state": "COLLECTING",
+                "previous_recommendation_invalidated": true
+              }
+            },
+            "state_before": "COLLECTING",
+            "state_after": "COLLECTING"
+          }
+        },
+        {
+          "request_id": "accept-allocation",
+          "event_type": "tool_result",
+          "created_at": "2026-10-15T10:13:22.389935+00:00",
+          "detail": {
+            "tool": "score_workshop",
+            "skill": "allocation-recommendation",
+            "skill_hash": "98332161d424a4afc26272a81890a3ce40caac17a81478bc6a95db441c496ecd",
+            "arguments": {
+              "workshop_id": "W1",
+              "order_id": "ORD-045"
+            },
+            "result": {
+              "ok": true,
+              "data": {
+                "workshop_id": "W1",
+                "order_id": "ORD-045",
+                "pieces": 150,
+                "sent_date": "2026-04-01",
+                "queue_days": 4.0,
+                "estimated_completion_days": 5.5,
+                "lateness_score_days": -2.5,
+                "defect_score": 0.12,
+                "original_hybrid_score": 0.12,
+                "eligibility_rejection": null,
+                "score_semantics": "Original single-workshop formulas; original hybrid returns defect rate only if on time, otherwise 10000. The planner uses a different weighted objective."
+              }
+            },
+            "state_before": "COLLECTING",
+            "state_after": "COLLECTING"
+          }
+        },
+        {
+          "request_id": "accept-allocation",
+          "event_type": "tool_result",
+          "created_at": "2026-10-15T10:13:22.412082+00:00",
+          "detail": {
+            "tool": "check_requirements",
+            "skill": "allocation-recommendation",
+            "skill_hash": "98332161d424a4afc26272a81890a3ce40caac17a81478bc6a95db441c496ecd",
+            "arguments": {},
+            "result": {
+              "ok": true,
+              "data": {
+                "state": "READY",
+                "report": {
+                  "ready_for_planning": true,
+                  "ready_for_recommendation": false,
+                  "blocking_issues": [],
+                  "warnings": [],
+                  "resolved_fields": {
+                    "order_id": "ORD-045",
+                    "customer": "Cotton Club",
+                    "product": "Vest",
+                    "category": "TOPS",
+                    "pieces": 150,
+                    "order_date": "2026-03-21",
+                    "due_date": "2026-04-09",
+                    "source_status": "IN_PROGRESS",
+                    "state": "READY",
+                    "version": 0,
+                    "completed_pieces": 0
+                  },
+                  "effective_constraints": {
+                    "objective": "min_delay",
+                    "exclusion": [],
+                    "num_workshop_allowed": 1,
+                    "preferred_workshop": null,
+                    "deadline_required": false
+                  },
+                  "sources": {
+                    "order_id": {
+                      "message_sequence": 1,
+                      "quote": "Allocate ORD-045; compare W1 first.",
+                      "operation": "set"
+                    }
+                  },
+                  "defaults": {
+                    "objective": "min_delay",
+                    "exclusion": [],
+                    "num_workshop_allowed": 1,
+                    "preferred_workshop": null,
+                    "deadline_required": false
+                  },
+                  "business_date": "2026-04-01"
+                },
+                "facts_hash": "f37f8dd1a4dd51775971b1e07b29c0778a8c9a90f3f3eb1d7d0eba74443c766e"
+              }
+            },
+            "state_before": "COLLECTING",
+            "state_after": "READY"
+          }
+        },
+        {
+          "request_id": "accept-allocation",
+          "event_type": "tool_result",
+          "created_at": "2026-10-15T10:13:22.433633+00:00",
+          "detail": {
+            "tool": "compute_plan",
+            "skill": "allocation-recommendation",
+            "skill_hash": "98332161d424a4afc26272a81890a3ce40caac17a81478bc6a95db441c496ecd",
+            "arguments": {},
+            "result": {
+              "ok": true,
+              "data": {
+                "result": {
+                  "success": true,
+                  "decision_status": "ALLOCATE",
+                  "allocation": [
+                    {
+                      "workshop_id": "W6",
+                      "workshop_name": "Nimble Needle",
+                      "pieces": 150,
+                      "queue_days": 1.0,
+                      "processing_days": 1.1538461538461537,
+                      "transport_days": 1,
+                      "estimated_days": 3.1538461538461537,
+                      "estimated_cost": 180.0,
+                      "defect_rate": 0.05
+                    }
+                  ],
+                  "objective": "min_delay",
+                  "rejected": {
+                    "W4": "cannot_make_tops",
+                    "W7": "status_suspended"
+                  },
+                  "reason_codes": [
+                    "ELIGIBLE",
+                    "BEST_CONFIGURED_SCORE",
+                    "INTEGER_PIECES_CONSERVED"
+                  ],
+                  "warnings": [],
+                  "eligible_workshops": [
+                    "W1",
+                    "W2",
+                    "W3",
+                    "W5",
+                    "W6",
+                    "W8"
+                  ],
+                  "candidate_ranking": [
+                    {
+                      "workshop_id": "W6",
+                      "workshop_name": "Nimble Needle",
+                      "allocation": [
+                        {
+                          "workshop_id": "W6",
+                          "workshop_name": "Nimble Needle",
+                          "pieces": 150,
+                          "queue_days": 1.0,
+                          "processing_days": 1.1538461538461537,
+                          "transport_days": 1,
+                          "estimated_days": 3.1538461538461537,
+                          "estimated_cost": 180.0,
+                          "defect_rate": 0.05
+                        }
+                      ],
+                      "estimated_days": 3.1538461538461537,
+                      "estimated_cost": 180.0,
+                      "expected_defect_rate": 0.05,
+                      "score": 3.1538461538461537
+                    },
+                    {
+                      "workshop_id": "W8",
+                      "workshop_name": "FreshStart",
+                      "allocation": [
+                        {
+                          "workshop_id": "W8",
+                          "workshop_name": "FreshStart",
+                          "pieces": 150,
+                          "queue_days": 0.0,
+                          "processing_days": 1.5,
+                          "transport_days": 2,
+                          "estimated_days": 3.5,
+                          "estimated_cost": 150.0,
+                          "defect_rate": 0.04
+                        }
+                      ],
+                      "estimated_days": 3.5,
+                      "estimated_cost": 150.0,
+                      "expected_defect_rate": 0.04,
+                      "score": 3.5
+                    },
+                    {
+                      "workshop_id": "W2",
+                      "workshop_name": "SteadyHands",
+                      "allocation": [
+                        {
+                          "workshop_id": "W2",
+                          "workshop_name": "SteadyHands",
+                          "pieces": 150,
+                          "queue_days": 2.5,
+                          "processing_days": 0.8823529411764706,
+                          "transport_days": 2,
+                          "estimated_days": 5.382352941176471,
+                          "estimated_cost": 195.0,
+                          "defect_rate": 0.03
+                        }
+                      ],
+                      "estimated_days": 5.382352941176471,
+                      "estimated_cost": 195.0,
+                      "expected_defect_rate": 0.03,
+                      "score": 5.382352941176471
+                    },
+                    {
+                      "workshop_id": "W1",
+                      "workshop_name": "QuickStitch",
+                      "allocation": [
+                        {
+                          "workshop_id": "W1",
+                          "workshop_name": "QuickStitch",
+                          "pieces": 150,
+                          "queue_days": 4.0,
+                          "processing_days": 0.5,
+                          "transport_days": 1,
+                          "estimated_days": 5.5,
+                          "estimated_cost": 225.0,
+                          "defect_rate": 0.12
+                        }
+                      ],
+                      "estimated_days": 5.5,
+                      "estimated_cost": 225.0,
+                      "expected_defect_rate": 0.12,
+                      "score": 5.5
+                    },
+                    {
+                      "workshop_id": "W5",
+                      "workshop_name": "GiantWeave",
+                      "allocation": [
+                        {
+                          "workshop_id": "W5",
+                          "workshop_name": "GiantWeave",
+                          "pieces": 150,
+                          "queue_days": 3.0,
+                          "processing_days": 0.375,
+                          "transport_days": 4,
+                          "estimated_days": 7.375,
+                          "estimated_cost": 165.0,
+                          "defect_rate": 0.06
+                        }
+                      ],
+                      "estimated_days": 7.375,
+                      "estimated_cost": 165.0,
+                      "expected_defect_rate": 0.06,
+                      "score": 7.375
+                    },
+                    {
+                      "workshop_id": "W3",
+                      "workshop_name": "BudgetWorks",
+                      "allocation": [
+                        {
+                          "workshop_id": "W3",
+                          "workshop_name": "BudgetWorks",
+                          "pieces": 150,
+                          "queue_days": 5.0,
+                          "processing_days": 0.6521739130434783,
+                          "transport_days": 3,
+                          "estimated_days": 8.652173913043478,
+                          "estimated_cost": 120.0,
+                          "defect_rate": 0.09
+                        }
+                      ],
+                      "estimated_days": 8.652173913043478,
+                      "estimated_cost": 120.0,
+                      "expected_defect_rate": 0.09,
+                      "score": 8.652173913043478
+                    }
+                  ],
+                  "estimated_days": 3.1538461538461537,
+                  "estimated_cost": 180.0,
+                  "expected_defect_rate": 0.05,
+                  "score": 3.1538461538461537,
+                  "recommended_workshop_id": "W6",
+                  "recommended_workshop_name": "Nimble Needle",
+                  "estimated_delivery_date": "2026-04-05",
+                  "deadline_met": true,
+                  "message": "Allocated 150 pieces to 1 workshop(s) using min_delay."
+                },
+                "report": {
+                  "ready_for_planning": true,
+                  "ready_for_recommendation": true,
+                  "blocking_issues": [],
+                  "warnings": [],
+                  "resolved_fields": {
+                    "order_id": "ORD-045",
+                    "customer": "Cotton Club",
+                    "product": "Vest",
+                    "category": "TOPS",
+                    "pieces": 150,
+                    "order_date": "2026-03-21",
+                    "due_date": "2026-04-09",
+                    "source_status": "IN_PROGRESS",
+                    "state": "READY",
+                    "version": 0,
+                    "completed_pieces": 0
+                  },
+                  "effective_constraints": {
+                    "objective": "min_delay",
+                    "exclusion": [],
+                    "num_workshop_allowed": 1,
+                    "preferred_workshop": null,
+                    "deadline_required": false
+                  },
+                  "sources": {
+                    "order_id": {
+                      "message_sequence": 1,
+                      "quote": "Allocate ORD-045; compare W1 first.",
+                      "operation": "set"
+                    }
+                  },
+                  "defaults": {
+                    "objective": "min_delay",
+                    "exclusion": [],
+                    "num_workshop_allowed": 1,
+                    "preferred_workshop": null,
+                    "deadline_required": false
+                  },
+                  "business_date": "2026-04-01"
+                },
+                "facts_hash": "f37f8dd1a4dd51775971b1e07b29c0778a8c9a90f3f3eb1d7d0eba74443c766e",
+                "plan_hash": "13fbe4cff7f80d3bcab2fdee21b78fe127dc7fce1d7b25ddebf212de1bd6be09",
+                "task_version": 1
+              }
+            },
+            "state_before": "READY",
+            "state_after": "READY"
+          }
+        },
+        {
+          "request_id": "accept-allocation",
+          "event_type": "tool_result",
+          "created_at": "2026-10-15T10:13:22.480543+00:00",
+          "detail": {
+            "tool": "save_recommendation",
+            "skill": "allocation-recommendation",
+            "skill_hash": "98332161d424a4afc26272a81890a3ce40caac17a81478bc6a95db441c496ecd",
+            "arguments": {},
+            "result": {
+              "ok": true,
+              "data": {
+                "recommendation_id": "5fa0c2776ea1491792e6210369162079",
+                "task_version": 1,
+                "status": "valid",
+                "result": {
+                  "success": true,
+                  "decision_status": "ALLOCATE",
+                  "allocation": [
+                    {
+                      "workshop_id": "W6",
+                      "workshop_name": "Nimble Needle",
+                      "pieces": 150,
+                      "queue_days": 1.0,
+                      "processing_days": 1.1538461538461537,
+                      "transport_days": 1,
+                      "estimated_days": 3.1538461538461537,
+                      "estimated_cost": 180.0,
+                      "defect_rate": 0.05
+                    }
+                  ],
+                  "objective": "min_delay",
+                  "rejected": {
+                    "W4": "cannot_make_tops",
+                    "W7": "status_suspended"
+                  },
+                  "reason_codes": [
+                    "ELIGIBLE",
+                    "BEST_CONFIGURED_SCORE",
+                    "INTEGER_PIECES_CONSERVED"
+                  ],
+                  "warnings": [],
+                  "eligible_workshops": [
+                    "W1",
+                    "W2",
+                    "W3",
+                    "W5",
+                    "W6",
+                    "W8"
+                  ],
+                  "candidate_ranking": [
+                    {
+                      "workshop_id": "W6",
+                      "workshop_name": "Nimble Needle",
+                      "allocation": [
+                        {
+                          "workshop_id": "W6",
+                          "workshop_name": "Nimble Needle",
+                          "pieces": 150,
+                          "queue_days": 1.0,
+                          "processing_days": 1.1538461538461537,
+                          "transport_days": 1,
+                          "estimated_days": 3.1538461538461537,
+                          "estimated_cost": 180.0,
+                          "defect_rate": 0.05
+                        }
+                      ],
+                      "estimated_days": 3.1538461538461537,
+                      "estimated_cost": 180.0,
+                      "expected_defect_rate": 0.05,
+                      "score": 3.1538461538461537
+                    },
+                    {
+                      "workshop_id": "W8",
+                      "workshop_name": "FreshStart",
+                      "allocation": [
+                        {
+                          "workshop_id": "W8",
+                          "workshop_name": "FreshStart",
+                          "pieces": 150,
+                          "queue_days": 0.0,
+                          "processing_days": 1.5,
+                          "transport_days": 2,
+                          "estimated_days": 3.5,
+                          "estimated_cost": 150.0,
+                          "defect_rate": 0.04
+                        }
+                      ],
+                      "estimated_days": 3.5,
+                      "estimated_cost": 150.0,
+                      "expected_defect_rate": 0.04,
+                      "score": 3.5
+                    },
+                    {
+                      "workshop_id": "W2",
+                      "workshop_name": "SteadyHands",
+                      "allocation": [
+                        {
+                          "workshop_id": "W2",
+                          "workshop_name": "SteadyHands",
+                          "pieces": 150,
+                          "queue_days": 2.5,
+                          "processing_days": 0.8823529411764706,
+                          "transport_days": 2,
+                          "estimated_days": 5.382352941176471,
+                          "estimated_cost": 195.0,
+                          "defect_rate": 0.03
+                        }
+                      ],
+                      "estimated_days": 5.382352941176471,
+                      "estimated_cost": 195.0,
+                      "expected_defect_rate": 0.03,
+                      "score": 5.382352941176471
+                    },
+                    {
+                      "workshop_id": "W1",
+                      "workshop_name": "QuickStitch",
+                      "allocation": [
+                        {
+                          "workshop_id": "W1",
+                          "workshop_name": "QuickStitch",
+                          "pieces": 150,
+                          "queue_days": 4.0,
+                          "processing_days": 0.5,
+                          "transport_days": 1,
+                          "estimated_days": 5.5,
+                          "estimated_cost": 225.0,
+                          "defect_rate": 0.12
+                        }
+                      ],
+                      "estimated_days": 5.5,
+                      "estimated_cost": 225.0,
+                      "expected_defect_rate": 0.12,
+                      "score": 5.5
+                    },
+                    {
+                      "workshop_id": "W5",
+                      "workshop_name": "GiantWeave",
+                      "allocation": [
+                        {
+                          "workshop_id": "W5",
+                          "workshop_name": "GiantWeave",
+                          "pieces": 150,
+                          "queue_days": 3.0,
+                          "processing_days": 0.375,
+                          "transport_days": 4,
+                          "estimated_days": 7.375,
+                          "estimated_cost": 165.0,
+                          "defect_rate": 0.06
+                        }
+                      ],
+                      "estimated_days": 7.375,
+                      "estimated_cost": 165.0,
+                      "expected_defect_rate": 0.06,
+                      "score": 7.375
+                    },
+                    {
+                      "workshop_id": "W3",
+                      "workshop_name": "BudgetWorks",
+                      "allocation": [
+                        {
+                          "workshop_id": "W3",
+                          "workshop_name": "BudgetWorks",
+                          "pieces": 150,
+                          "queue_days": 5.0,
+                          "processing_days": 0.6521739130434783,
+                          "transport_days": 3,
+                          "estimated_days": 8.652173913043478,
+                          "estimated_cost": 120.0,
+                          "defect_rate": 0.09
+                        }
+                      ],
+                      "estimated_days": 8.652173913043478,
+                      "estimated_cost": 120.0,
+                      "expected_defect_rate": 0.09,
+                      "score": 8.652173913043478
+                    }
+                  ],
+                  "estimated_days": 3.1538461538461537,
+                  "estimated_cost": 180.0,
+                  "expected_defect_rate": 0.05,
+                  "score": 3.1538461538461537,
+                  "recommended_workshop_id": "W6",
+                  "recommended_workshop_name": "Nimble Needle",
+                  "estimated_delivery_date": "2026-04-05",
+                  "deadline_met": true,
+                  "message": "Allocated 150 pieces to 1 workshop(s) using min_delay."
+                }
+              }
+            },
+            "state_before": "READY",
+            "state_after": "RECOMMENDED"
+          }
+        },
+        {
+          "request_id": "accept-allocation",
+          "event_type": "finish",
+          "created_at": "2026-10-15T10:13:22.510917+00:00",
+          "detail": {
+            "state": "RECOMMENDED",
+            "recommendation_id": "5fa0c2776ea1491792e6210369162079",
+            "session_version": 1,
+            "question": null
+          }
+        },
+        {
+          "request_id": "accept-revision",
+          "event_type": "start",
+          "created_at": "2026-10-15T10:13:22.526404+00:00",
+          "detail": {
+            "session_version": 1,
+            "task_id": "9706604cdfe4487a8c6747f96ebe3c5c",
+            "task_version": 1
+          }
+        },
+        {
+          "request_id": "accept-revision",
+          "event_type": "tool_result",
+          "created_at": "2026-10-15T10:13:22.569618+00:00",
+          "detail": {
+            "tool": "load_skill",
+            "skill": "constraint-revision",
+            "skill_hash": "8a3727bbf4f2b676c8bb841274877f23561568e620002a3a37167707eeec5057",
+            "arguments": {
+              "name": "constraint-revision"
+            },
+            "result": {
+              "ok": true,
+              "data": {
+                "name": "constraint-revision",
+                "description": "Apply a grounded requirement change and invalidate an affected recommendation.",
+                "tools": [
+                  "update_constraints",
+                  "check_requirements",
+                  "compute_plan",
+                  "save_recommendation",
+                  "ask_user"
+                ],
+                "content": "# Constraint revision\n\nGround each `update_constraints` call in the current user message. A revision supersedes the old recommendation before any further planning. If the message also says confirm, apply the revision and generate a new recommendation; the old recommendation cannot be committed. Use `check_requirements`, `compute_plan`, and `save_recommendation` only when needed. Ask for unresolved conflicts. State which recommendation is now valid and wait for a new explicit confirmation.",
+                "hash": "8a3727bbf4f2b676c8bb841274877f23561568e620002a3a37167707eeec5057"
+              }
+            },
+            "state_before": "RECOMMENDED",
+            "state_after": "RECOMMENDED"
+          }
+        },
+        {
+          "request_id": "accept-revision",
+          "event_type": "tool_result",
+          "created_at": "2026-10-15T10:13:22.627601+00:00",
+          "detail": {
+            "tool": "update_constraints",
+            "skill": "constraint-revision",
+            "skill_hash": "8a3727bbf4f2b676c8bb841274877f23561568e620002a3a37167707eeec5057",
+            "arguments": {
+              "field": "objective",
+              "value": "min_cost"
+            },
+            "result": {
+              "ok": true,
+              "data": {
+                "draft": {
+                  "order_id": "ORD-045",
+                  "customer": null,
+                  "product": null,
+                  "category": null,
+                  "pieces": null,
+                  "order_date": null,
+                  "due_date": null,
+                  "objective": "min_cost",
+                  "exclusion": [],
+                  "num_workshop_allowed": null,
+                  "parse_status": "ok",
+                  "missing_fields": [],
+                  "ambiguities": [],
+                  "preferred_workshop": null,
+                  "deadline_required": false
+                },
+                "task_version": 2,
+                "state": "COLLECTING",
+                "previous_recommendation_invalidated": true
+              }
+            },
+            "state_before": "RECOMMENDED",
+            "state_after": "COLLECTING"
+          }
+        },
+        {
+          "request_id": "accept-revision",
+          "event_type": "tool_result",
+          "created_at": "2026-10-15T10:13:22.651765+00:00",
+          "detail": {
+            "tool": "check_requirements",
+            "skill": "constraint-revision",
+            "skill_hash": "8a3727bbf4f2b676c8bb841274877f23561568e620002a3a37167707eeec5057",
+            "arguments": {},
+            "result": {
+              "ok": true,
+              "data": {
+                "state": "READY",
+                "report": {
+                  "ready_for_planning": true,
+                  "ready_for_recommendation": false,
+                  "blocking_issues": [],
+                  "warnings": [],
+                  "resolved_fields": {
+                    "order_id": "ORD-045",
+                    "customer": "Cotton Club",
+                    "product": "Vest",
+                    "category": "TOPS",
+                    "pieces": 150,
+                    "order_date": "2026-03-21",
+                    "due_date": "2026-04-09",
+                    "source_status": "IN_PROGRESS",
+                    "state": "READY",
+                    "version": 0,
+                    "completed_pieces": 0
+                  },
+                  "effective_constraints": {
+                    "objective": "min_cost",
+                    "exclusion": [],
+                    "num_workshop_allowed": 1,
+                    "preferred_workshop": null,
+                    "deadline_required": false
+                  },
+                  "sources": {
+                    "order_id": {
+                      "message_sequence": 1,
+                      "quote": "Allocate ORD-045; compare W1 first.",
+                      "operation": "set"
+                    },
+                    "objective": {
+                      "message_sequence": 3,
+                      "quote": "Change the objective to lowest cost.",
+                      "operation": "set"
+                    }
+                  },
+                  "defaults": {
+                    "exclusion": [],
+                    "num_workshop_allowed": 1,
+                    "preferred_workshop": null,
+                    "deadline_required": false
+                  },
+                  "business_date": "2026-04-01"
+                },
+                "facts_hash": "7a655578b3c1b72148755a5551a53a86a57f6c116c5566ff9512cd7b9fe85710"
+              }
+            },
+            "state_before": "COLLECTING",
+            "state_after": "READY"
+          }
+        },
+        {
+          "request_id": "accept-revision",
+          "event_type": "tool_result",
+          "created_at": "2026-10-15T10:13:22.676024+00:00",
+          "detail": {
+            "tool": "compute_plan",
+            "skill": "constraint-revision",
+            "skill_hash": "8a3727bbf4f2b676c8bb841274877f23561568e620002a3a37167707eeec5057",
+            "arguments": {},
+            "result": {
+              "ok": true,
+              "data": {
+                "result": {
+                  "success": true,
+                  "decision_status": "ALLOCATE",
+                  "allocation": [
+                    {
+                      "workshop_id": "W3",
+                      "workshop_name": "BudgetWorks",
+                      "pieces": 150,
+                      "queue_days": 5.0,
+                      "processing_days": 0.6521739130434783,
+                      "transport_days": 3,
+                      "estimated_days": 8.652173913043478,
+                      "estimated_cost": 120.0,
+                      "defect_rate": 0.09
+                    }
+                  ],
+                  "objective": "min_cost",
+                  "rejected": {
+                    "W4": "cannot_make_tops",
+                    "W7": "status_suspended"
+                  },
+                  "reason_codes": [
+                    "ELIGIBLE",
+                    "BEST_CONFIGURED_SCORE",
+                    "INTEGER_PIECES_CONSERVED"
+                  ],
+                  "warnings": [
+                    "ESTIMATED_DEADLINE_MISS"
+                  ],
+                  "eligible_workshops": [
+                    "W1",
+                    "W2",
+                    "W3",
+                    "W5",
+                    "W6",
+                    "W8"
+                  ],
+                  "candidate_ranking": [
+                    {
+                      "workshop_id": "W3",
+                      "workshop_name": "BudgetWorks",
+                      "allocation": [
+                        {
+                          "workshop_id": "W3",
+                          "workshop_name": "BudgetWorks",
+                          "pieces": 150,
+                          "queue_days": 5.0,
+                          "processing_days": 0.6521739130434783,
+                          "transport_days": 3,
+                          "estimated_days": 8.652173913043478,
+                          "estimated_cost": 120.0,
+                          "defect_rate": 0.09
+                        }
+                      ],
+                      "estimated_days": 8.652173913043478,
+                      "estimated_cost": 120.0,
+                      "expected_defect_rate": 0.09,
+                      "score": 120.0
+                    },
+                    {
+                      "workshop_id": "W8",
+                      "workshop_name": "FreshStart",
+                      "allocation": [
+                        {
+                          "workshop_id": "W8",
+                          "workshop_name": "FreshStart",
+                          "pieces": 150,
+                          "queue_days": 0.0,
+                          "processing_days": 1.5,
+                          "transport_days": 2,
+                          "estimated_days": 3.5,
+                          "estimated_cost": 150.0,
+                          "defect_rate": 0.04
+                        }
+                      ],
+                      "estimated_days": 3.5,
+                      "estimated_cost": 150.0,
+                      "expected_defect_rate": 0.04,
+                      "score": 150.0
+                    },
+                    {
+                      "workshop_id": "W5",
+                      "workshop_name": "GiantWeave",
+                      "allocation": [
+                        {
+                          "workshop_id": "W5",
+                          "workshop_name": "GiantWeave",
+                          "pieces": 150,
+                          "queue_days": 3.0,
+                          "processing_days": 0.375,
+                          "transport_days": 4,
+                          "estimated_days": 7.375,
+                          "estimated_cost": 165.0,
+                          "defect_rate": 0.06
+                        }
+                      ],
+                      "estimated_days": 7.375,
+                      "estimated_cost": 165.0,
+                      "expected_defect_rate": 0.06,
+                      "score": 165.0
+                    },
+                    {
+                      "workshop_id": "W6",
+                      "workshop_name": "Nimble Needle",
+                      "allocation": [
+                        {
+                          "workshop_id": "W6",
+                          "workshop_name": "Nimble Needle",
+                          "pieces": 150,
+                          "queue_days": 1.0,
+                          "processing_days": 1.1538461538461537,
+                          "transport_days": 1,
+                          "estimated_days": 3.1538461538461537,
+                          "estimated_cost": 180.0,
+                          "defect_rate": 0.05
+                        }
+                      ],
+                      "estimated_days": 3.1538461538461537,
+                      "estimated_cost": 180.0,
+                      "expected_defect_rate": 0.05,
+                      "score": 180.0
+                    },
+                    {
+                      "workshop_id": "W2",
+                      "workshop_name": "SteadyHands",
+                      "allocation": [
+                        {
+                          "workshop_id": "W2",
+                          "workshop_name": "SteadyHands",
+                          "pieces": 150,
+                          "queue_days": 2.5,
+                          "processing_days": 0.8823529411764706,
+                          "transport_days": 2,
+                          "estimated_days": 5.382352941176471,
+                          "estimated_cost": 195.0,
+                          "defect_rate": 0.03
+                        }
+                      ],
+                      "estimated_days": 5.382352941176471,
+                      "estimated_cost": 195.0,
+                      "expected_defect_rate": 0.03,
+                      "score": 195.0
+                    },
+                    {
+                      "workshop_id": "W1",
+                      "workshop_name": "QuickStitch",
+                      "allocation": [
+                        {
+                          "workshop_id": "W1",
+                          "workshop_name": "QuickStitch",
+                          "pieces": 150,
+                          "queue_days": 4.0,
+                          "processing_days": 0.5,
+                          "transport_days": 1,
+                          "estimated_days": 5.5,
+                          "estimated_cost": 225.0,
+                          "defect_rate": 0.12
+                        }
+                      ],
+                      "estimated_days": 5.5,
+                      "estimated_cost": 225.0,
+                      "expected_defect_rate": 0.12,
+                      "score": 225.0
+                    }
+                  ],
+                  "estimated_days": 8.652173913043478,
+                  "estimated_cost": 120.0,
+                  "expected_defect_rate": 0.09,
+                  "score": 120.0,
+                  "recommended_workshop_id": "W3",
+                  "recommended_workshop_name": "BudgetWorks",
+                  "estimated_delivery_date": "2026-04-10",
+                  "deadline_met": false,
+                  "message": "Allocated 150 pieces to 1 workshop(s) using min_cost."
+                },
+                "report": {
+                  "ready_for_planning": true,
+                  "ready_for_recommendation": true,
+                  "blocking_issues": [],
+                  "warnings": [
+                    "ESTIMATED_DEADLINE_MISS"
+                  ],
+                  "resolved_fields": {
+                    "order_id": "ORD-045",
+                    "customer": "Cotton Club",
+                    "product": "Vest",
+                    "category": "TOPS",
+                    "pieces": 150,
+                    "order_date": "2026-03-21",
+                    "due_date": "2026-04-09",
+                    "source_status": "IN_PROGRESS",
+                    "state": "READY",
+                    "version": 0,
+                    "completed_pieces": 0
+                  },
+                  "effective_constraints": {
+                    "objective": "min_cost",
+                    "exclusion": [],
+                    "num_workshop_allowed": 1,
+                    "preferred_workshop": null,
+                    "deadline_required": false
+                  },
+                  "sources": {
+                    "order_id": {
+                      "message_sequence": 1,
+                      "quote": "Allocate ORD-045; compare W1 first.",
+                      "operation": "set"
+                    },
+                    "objective": {
+                      "message_sequence": 3,
+                      "quote": "Change the objective to lowest cost.",
+                      "operation": "set"
+                    }
+                  },
+                  "defaults": {
+                    "exclusion": [],
+                    "num_workshop_allowed": 1,
+                    "preferred_workshop": null,
+                    "deadline_required": false
+                  },
+                  "business_date": "2026-04-01"
+                },
+                "facts_hash": "7a655578b3c1b72148755a5551a53a86a57f6c116c5566ff9512cd7b9fe85710",
+                "plan_hash": "953c1dedda748196152155def8774eace482c441adab2683ff46f364851b9398",
+                "task_version": 2
+              }
+            },
+            "state_before": "READY",
+            "state_after": "READY"
+          }
+        },
+        {
+          "request_id": "accept-revision",
+          "event_type": "tool_result",
+          "created_at": "2026-10-15T10:13:22.699006+00:00",
+          "detail": {
+            "tool": "save_recommendation",
+            "skill": "constraint-revision",
+            "skill_hash": "8a3727bbf4f2b676c8bb841274877f23561568e620002a3a37167707eeec5057",
+            "arguments": {},
+            "result": {
+              "ok": true,
+              "data": {
+                "recommendation_id": "bffb17ac3c4940359fabc5c3821bf194",
+                "task_version": 2,
+                "status": "valid",
+                "result": {
+                  "success": true,
+                  "decision_status": "ALLOCATE",
+                  "allocation": [
+                    {
+                      "workshop_id": "W3",
+                      "workshop_name": "BudgetWorks",
+                      "pieces": 150,
+                      "queue_days": 5.0,
+                      "processing_days": 0.6521739130434783,
+                      "transport_days": 3,
+                      "estimated_days": 8.652173913043478,
+                      "estimated_cost": 120.0,
+                      "defect_rate": 0.09
+                    }
+                  ],
+                  "objective": "min_cost",
+                  "rejected": {
+                    "W4": "cannot_make_tops",
+                    "W7": "status_suspended"
+                  },
+                  "reason_codes": [
+                    "ELIGIBLE",
+                    "BEST_CONFIGURED_SCORE",
+                    "INTEGER_PIECES_CONSERVED"
+                  ],
+                  "warnings": [
+                    "ESTIMATED_DEADLINE_MISS"
+                  ],
+                  "eligible_workshops": [
+                    "W1",
+                    "W2",
+                    "W3",
+                    "W5",
+                    "W6",
+                    "W8"
+                  ],
+                  "candidate_ranking": [
+                    {
+                      "workshop_id": "W3",
+                      "workshop_name": "BudgetWorks",
+                      "allocation": [
+                        {
+                          "workshop_id": "W3",
+                          "workshop_name": "BudgetWorks",
+                          "pieces": 150,
+                          "queue_days": 5.0,
+                          "processing_days": 0.6521739130434783,
+                          "transport_days": 3,
+                          "estimated_days": 8.652173913043478,
+                          "estimated_cost": 120.0,
+                          "defect_rate": 0.09
+                        }
+                      ],
+                      "estimated_days": 8.652173913043478,
+                      "estimated_cost": 120.0,
+                      "expected_defect_rate": 0.09,
+                      "score": 120.0
+                    },
+                    {
+                      "workshop_id": "W8",
+                      "workshop_name": "FreshStart",
+                      "allocation": [
+                        {
+                          "workshop_id": "W8",
+                          "workshop_name": "FreshStart",
+                          "pieces": 150,
+                          "queue_days": 0.0,
+                          "processing_days": 1.5,
+                          "transport_days": 2,
+                          "estimated_days": 3.5,
+                          "estimated_cost": 150.0,
+                          "defect_rate": 0.04
+                        }
+                      ],
+                      "estimated_days": 3.5,
+                      "estimated_cost": 150.0,
+                      "expected_defect_rate": 0.04,
+                      "score": 150.0
+                    },
+                    {
+                      "workshop_id": "W5",
+                      "workshop_name": "GiantWeave",
+                      "allocation": [
+                        {
+                          "workshop_id": "W5",
+                          "workshop_name": "GiantWeave",
+                          "pieces": 150,
+                          "queue_days": 3.0,
+                          "processing_days": 0.375,
+                          "transport_days": 4,
+                          "estimated_days": 7.375,
+                          "estimated_cost": 165.0,
+                          "defect_rate": 0.06
+                        }
+                      ],
+                      "estimated_days": 7.375,
+                      "estimated_cost": 165.0,
+                      "expected_defect_rate": 0.06,
+                      "score": 165.0
+                    },
+                    {
+                      "workshop_id": "W6",
+                      "workshop_name": "Nimble Needle",
+                      "allocation": [
+                        {
+                          "workshop_id": "W6",
+                          "workshop_name": "Nimble Needle",
+                          "pieces": 150,
+                          "queue_days": 1.0,
+                          "processing_days": 1.1538461538461537,
+                          "transport_days": 1,
+                          "estimated_days": 3.1538461538461537,
+                          "estimated_cost": 180.0,
+                          "defect_rate": 0.05
+                        }
+                      ],
+                      "estimated_days": 3.1538461538461537,
+                      "estimated_cost": 180.0,
+                      "expected_defect_rate": 0.05,
+                      "score": 180.0
+                    },
+                    {
+                      "workshop_id": "W2",
+                      "workshop_name": "SteadyHands",
+                      "allocation": [
+                        {
+                          "workshop_id": "W2",
+                          "workshop_name": "SteadyHands",
+                          "pieces": 150,
+                          "queue_days": 2.5,
+                          "processing_days": 0.8823529411764706,
+                          "transport_days": 2,
+                          "estimated_days": 5.382352941176471,
+                          "estimated_cost": 195.0,
+                          "defect_rate": 0.03
+                        }
+                      ],
+                      "estimated_days": 5.382352941176471,
+                      "estimated_cost": 195.0,
+                      "expected_defect_rate": 0.03,
+                      "score": 195.0
+                    },
+                    {
+                      "workshop_id": "W1",
+                      "workshop_name": "QuickStitch",
+                      "allocation": [
+                        {
+                          "workshop_id": "W1",
+                          "workshop_name": "QuickStitch",
+                          "pieces": 150,
+                          "queue_days": 4.0,
+                          "processing_days": 0.5,
+                          "transport_days": 1,
+                          "estimated_days": 5.5,
+                          "estimated_cost": 225.0,
+                          "defect_rate": 0.12
+                        }
+                      ],
+                      "estimated_days": 5.5,
+                      "estimated_cost": 225.0,
+                      "expected_defect_rate": 0.12,
+                      "score": 225.0
+                    }
+                  ],
+                  "estimated_days": 8.652173913043478,
+                  "estimated_cost": 120.0,
+                  "expected_defect_rate": 0.09,
+                  "score": 120.0,
+                  "recommended_workshop_id": "W3",
+                  "recommended_workshop_name": "BudgetWorks",
+                  "estimated_delivery_date": "2026-04-10",
+                  "deadline_met": false,
+                  "message": "Allocated 150 pieces to 1 workshop(s) using min_cost."
+                }
+              }
+            },
+            "state_before": "READY",
+            "state_after": "RECOMMENDED"
+          }
+        },
+        {
+          "request_id": "accept-revision",
+          "event_type": "finish",
+          "created_at": "2026-10-15T10:13:22.727190+00:00",
+          "detail": {
+            "state": "RECOMMENDED",
+            "recommendation_id": "bffb17ac3c4940359fabc5c3821bf194",
+            "session_version": 2,
+            "question": null
+          }
+        },
+        {
+          "request_id": "accept-confirm",
+          "event_type": "confirmation_committed",
+          "created_at": "2026-10-15T10:13:22.748860+00:00",
+          "detail": {
+            "recommendation_id": "bffb17ac3c4940359fabc5c3821bf194",
+            "session_version_before": 2,
+            "task_version": 2,
+            "facts_hash": "7a655578b3c1b72148755a5551a53a86a57f6c116c5566ff9512cd7b9fe85710",
+            "plan_hash": "953c1dedda748196152155def8774eace482c441adab2683ff46f364851b9398",
+            "business_request_id": "chat-commit-bffb17ac3c4940359fabc5c3821bf194",
+            "state_before": "RECOMMENDED",
+            "state_after": "CONFIRMED",
+            "committed": true
+          }
+        },
+        {
+          "request_id": "accept-production",
+          "event_type": "start",
+          "created_at": "2026-10-15T10:13:22.774265+00:00",
+          "detail": {
+            "session_version": 3,
+            "task_id": "9706604cdfe4487a8c6747f96ebe3c5c",
+            "task_version": 2
+          }
+        },
+        {
+          "request_id": "accept-production",
+          "event_type": "tool_result",
+          "created_at": "2026-10-15T10:13:22.824629+00:00",
+          "detail": {
+            "tool": "load_skill",
+            "skill": "commit-and-production",
+            "skill_hash": "12393337ec4c23410106e6b237974efd598906f3171b95b0842e488c125133fc",
+            "arguments": {
+              "name": "commit-and-production"
+            },
+            "result": {
+              "ok": true,
+              "data": {
+                "name": "commit-and-production",
+                "description": "Guide explicit recommendation confirmation and audited production actions.",
+                "tools": [
+                  "inspect_recommendation",
+                  "get_order",
+                  "record_production_event",
+                  "ask_user"
+                ],
+                "content": "# Commit and production\n\nAn ordinary model tool call cannot authorize a recommendation commitment. Ask the user to confirm the exact recommendation with the UI confirmation action. The server validates owner, recommendation ID, session and task versions, fresh order/workshop/queue facts, and writes the allocation and queue updates in one database transaction. For a message that changes requirements and asks to confirm, load the revision Skill, invalidate the old recommendation, and request fresh confirmation. For production events, first use `get_order` to obtain the current version. Call `record_production_event` only if the current user message explicitly names the order, action, and audit reason, and any completion quantity and workshop. The runtime supplies the actor and idempotent event ID. The existing lifecycle service validates version, order state, quantity, queue, and transaction rules. If details are missing, use `ask_user`. Never claim an event succeeded without its tool result.",
+                "hash": "12393337ec4c23410106e6b237974efd598906f3171b95b0842e488c125133fc"
+              }
+            },
+            "state_before": "CONFIRMED",
+            "state_after": "CONFIRMED"
+          }
+        },
+        {
+          "request_id": "accept-production",
+          "event_type": "tool_result",
+          "created_at": "2026-10-15T10:13:22.857153+00:00",
+          "detail": {
+            "tool": "get_order",
+            "skill": "commit-and-production",
+            "skill_hash": "12393337ec4c23410106e6b237974efd598906f3171b95b0842e488c125133fc",
+            "arguments": {
+              "order_id": "ORD-045"
+            },
+            "result": {
+              "ok": true,
+              "data": {
+                "order_id": "ORD-045",
+                "customer": "Cotton Club",
+                "product": "Vest",
+                "category": "TOPS",
+                "pieces": 150,
+                "order_date": "2026-03-21",
+                "due_date": "2026-04-09",
+                "source_status": "IN_PROGRESS",
+                "state": "WORKING",
+                "version": 1,
+                "completed_pieces": 0,
+                "remaining_pieces": 150
+              }
+            },
+            "state_before": "CONFIRMED",
+            "state_after": "CONFIRMED"
+          }
+        },
+        {
+          "request_id": "accept-production",
+          "event_type": "production_result",
+          "created_at": "2026-10-15T10:13:22.899020+00:00",
+          "detail": {
+            "arguments": {
+              "action": "complete",
+              "order_id": "ORD-045",
+              "expected_version": 1,
+              "reason": "inspection passed",
+              "workshop_id": "W3",
+              "pieces": 1
+            },
+            "result": {
+              "ok": true,
+              "data": {
+                "request_id": "5a61b2237c3155c3a3a1ec20eb7605c4",
+                "replayed": false,
+                "pipeline_version": "mvp_v0.2",
+                "trace": {
+                  "db_changes": [
+                    {
+                      "table": "working_order",
+                      "workshop_id": "W3",
+                      "completed_pieces_delta": 1,
+                      "released_queue_days": 0.004347826086956497
+                    }
+                  ]
+                },
+                "result": {
+                  "success": true,
+                  "decision_status": "COMPLETE",
+                  "reason_codes": [
+                    "LIFECYCLE_APPLIED"
+                  ],
+                  "allocation": [],
+                  "warnings": [],
+                  "message": "Production event recorded.",
+                  "candidate_ranking": [],
+                  "request_id": "5a61b2237c3155c3a3a1ec20eb7605c4"
+                },
+                "order": {
+                  "order_id": "ORD-045",
+                  "customer": "Cotton Club",
+                  "product": "Vest",
+                  "category": "TOPS",
+                  "pieces": 150,
+                  "order_date": "2026-03-21",
+                  "due_date": "2026-04-09",
+                  "source_status": "IN_PROGRESS",
+                  "state": "WORKING",
+                  "version": 2,
+                  "completed_pieces": 1,
+                  "remaining_pieces": 149,
+                  "allocations": [
+                    {
+                      "order_id": "ORD-045",
+                      "workshop_id": "W3",
+                      "request_id": "chat-commit-bffb17ac3c4940359fabc5c3821bf194",
+                      "pieces": 150,
+                      "estimated_days": 8.652173913043478,
+                      "estimated_cost": 120.0,
+                      "objective": "min_cost",
+                      "assigned_at": "2026-10-15T10:13:22.749702+00:00",
+                      "completed_pieces": 1,
+                      "capacity_at_assignment": 230,
+                      "queue_remaining_days": 0.6478260869565218
+                    }
+                  ]
+                },
+                "event": {
+                  "action": "complete",
+                  "order_id": "ORD-045",
+                  "actor": "acceptance",
+                  "reason": "inspection passed",
+                  "expected_version": 1,
+                  "event_id": "5a61b2237c3155c3a3a1ec20eb7605c4",
+                  "as_of_date": "2026-04-01",
+                  "workshop_id": "W3",
+                  "pieces": 1,
+                  "objective": "min_delay",
+                  "exclusion": [],
+                  "max_workshops": 1,
+                  "preferred_workshop": null,
+                  "deadline_required": false
+                }
+              }
+            },
+            "skill_hash": "12393337ec4c23410106e6b237974efd598906f3171b95b0842e488c125133fc",
+            "state_before": "CONFIRMED",
+            "state_after": "CONFIRMED"
+          }
+        },
+        {
+          "request_id": "accept-production",
+          "event_type": "finish",
+          "created_at": "2026-10-15T10:13:22.924110+00:00",
+          "detail": {
+            "state": "CONFIRMED",
+            "recommendation_id": null,
+            "session_version": 4,
+            "question": null
+          }
+        }
+      ]
+    }
+  },
+  "production": {
+    "reply": "The completion event was recorded.",
+    "offered_tools": [
+      [
+        "load_skill"
+      ],
+      [
+        "load_skill",
+        "ask_user",
+        "get_order",
+        "inspect_recommendation",
+        "record_production_event"
+      ],
+      [
+        "load_skill",
+        "ask_user",
+        "get_order",
+        "inspect_recommendation",
+        "record_production_event"
+      ],
+      [
+        "load_skill",
+        "ask_user",
+        "get_order",
+        "inspect_recommendation",
+        "record_production_event"
+      ]
+    ],
+    "event_count": 1
+  },
+  "wait_and_resume": {
+    "question": "Which order should I check?",
+    "pending_after_resume": null,
+    "resumed_reply": "ORD-045 is working; its current state came from the order tool.",
+    "offered_tools_before_wait": [
+      [
+        "load_skill"
+      ],
+      [
+        "load_skill",
+        "ask_user",
+        "check_requirements",
+        "compute_plan",
+        "get_order",
+        "get_queue",
+        "list_workshops",
+        "save_recommendation",
+        "score_workshop",
+        "update_constraints"
+      ]
+    ],
+    "offered_tools_after_resume": [
+      [
+        "load_skill",
+        "ask_user",
+        "check_requirements",
+        "compute_plan",
+        "get_order",
+        "get_queue",
+        "list_workshops",
+        "save_recommendation",
+        "score_workshop",
+        "update_constraints"
+      ],
+      [
+        "load_skill",
+        "ask_user",
+        "check_requirements",
+        "compute_plan",
+        "get_order",
+        "get_queue",
+        "list_workshops",
+        "save_recommendation",
+        "score_workshop",
+        "update_constraints"
+      ]
+    ],
+    "trace": {
+      "session_id": "7ced7e54e61d4c2d8a11ed35a19b19b8",
+      "tool_calls": [
+        {
+          "invocation_key": "accept-wait:acceptance-17",
+          "request_id": "accept-wait",
+          "skill_name": "allocation-recommendation",
+          "skill_hash": "98332161d424a4afc26272a81890a3ce40caac17a81478bc6a95db441c496ecd",
+          "tool_name": "load_skill",
+          "state_before": "COLLECTING",
+          "state_after": "COLLECTING",
+          "created_at": "2026-10-15T10:13:22.984828+00:00",
+          "arguments": {
+            "name": "allocation-recommendation"
+          },
+          "result": {
+            "ok": true,
+            "data": {
+              "name": "allocation-recommendation",
+              "description": "Collect allocation constraints, calculate a checked plan, and save a recommendation for confirmation.",
+              "tools": [
+                "get_order",
+                "list_workshops",
+                "get_queue",
+                "score_workshop",
+                "update_constraints",
+                "check_requirements",
+                "compute_plan",
+                "save_recommendation",
+                "ask_user"
+              ],
+              "content": "# Allocation recommendation\n\nIdentify the order and relevant constraints from the user's current words and saved task. Use `update_constraints` for grounded changes; omit it when the saved draft already has the facts. Query order, workshops, or queues as needed. `check_requirements` establishes whether the task may enter READY; if it reports a blocker, ask the user a precise question with `ask_user`. `compute_plan` runs the current integer split planner and verifies capacity, eligibility, quantity conservation, and any hard deadline. `save_recommendation` accepts only a plan computed in this run and rechecks fresh business facts. A saved recommendation is a preview: no production allocation or queue write occurs. Include recommendation ID, version, objective, split quantities, delivery date, and cost from tool results. Invite confirmation using the specific recommendation card/button. Never call a confirmation from an ordinary recommendation request. For workshop comparison, `score_workshop` exposes the restored single-workshop formulas; do not treat its original hybrid score as the planner's weighted hybrid score.",
+              "hash": "98332161d424a4afc26272a81890a3ce40caac17a81478bc6a95db441c496ecd"
+            }
+          }
+        },
+        {
+          "invocation_key": "accept-wait:acceptance-18",
+          "request_id": "accept-wait",
+          "skill_name": "allocation-recommendation",
+          "skill_hash": "98332161d424a4afc26272a81890a3ce40caac17a81478bc6a95db441c496ecd",
+          "tool_name": "ask_user",
+          "state_before": "COLLECTING",
+          "state_after": "COLLECTING",
+          "created_at": "2026-10-15T10:13:23.005707+00:00",
+          "arguments": {
+            "question": "Which order should I check?"
+          },
+          "result": {
+            "ok": true,
+            "data": {
+              "question": "Which order should I check?"
+            }
+          }
+        },
+        {
+          "invocation_key": "accept-resume:acceptance-19",
+          "request_id": "accept-resume",
+          "skill_name": "allocation-recommendation",
+          "skill_hash": "98332161d424a4afc26272a81890a3ce40caac17a81478bc6a95db441c496ecd",
+          "tool_name": "get_order",
+          "state_before": "COLLECTING",
+          "state_after": "COLLECTING",
+          "created_at": "2026-10-15T10:13:23.057783+00:00",
+          "arguments": {
+            "order_id": "ORD-045"
+          },
+          "result": {
+            "ok": true,
+            "data": {
+              "order_id": "ORD-045",
+              "customer": "Cotton Club",
+              "product": "Vest",
+              "category": "TOPS",
+              "pieces": 150,
+              "order_date": "2026-03-21",
+              "due_date": "2026-04-09",
+              "source_status": "IN_PROGRESS",
+              "state": "WORKING",
+              "version": 2,
+              "completed_pieces": 1,
+              "remaining_pieces": 149
+            }
+          }
+        }
+      ],
+      "events": [
+        {
+          "request_id": "accept-wait",
+          "event_type": "start",
+          "created_at": "2026-10-15T10:13:22.942845+00:00",
+          "detail": {
+            "session_version": 0,
+            "task_id": "45691d5572cd4b0094805a6b3f176c62",
+            "task_version": 0
+          }
+        },
+        {
+          "request_id": "accept-wait",
+          "event_type": "tool_result",
+          "created_at": "2026-10-15T10:13:22.984982+00:00",
+          "detail": {
+            "tool": "load_skill",
+            "skill": "allocation-recommendation",
+            "skill_hash": "98332161d424a4afc26272a81890a3ce40caac17a81478bc6a95db441c496ecd",
+            "arguments": {
+              "name": "allocation-recommendation"
+            },
+            "result": {
+              "ok": true,
+              "data": {
+                "name": "allocation-recommendation",
+                "description": "Collect allocation constraints, calculate a checked plan, and save a recommendation for confirmation.",
+                "tools": [
+                  "get_order",
+                  "list_workshops",
+                  "get_queue",
+                  "score_workshop",
+                  "update_constraints",
+                  "check_requirements",
+                  "compute_plan",
+                  "save_recommendation",
+                  "ask_user"
+                ],
+                "content": "# Allocation recommendation\n\nIdentify the order and relevant constraints from the user's current words and saved task. Use `update_constraints` for grounded changes; omit it when the saved draft already has the facts. Query order, workshops, or queues as needed. `check_requirements` establishes whether the task may enter READY; if it reports a blocker, ask the user a precise question with `ask_user`. `compute_plan` runs the current integer split planner and verifies capacity, eligibility, quantity conservation, and any hard deadline. `save_recommendation` accepts only a plan computed in this run and rechecks fresh business facts. A saved recommendation is a preview: no production allocation or queue write occurs. Include recommendation ID, version, objective, split quantities, delivery date, and cost from tool results. Invite confirmation using the specific recommendation card/button. Never call a confirmation from an ordinary recommendation request. For workshop comparison, `score_workshop` exposes the restored single-workshop formulas; do not treat its original hybrid score as the planner's weighted hybrid score.",
+                "hash": "98332161d424a4afc26272a81890a3ce40caac17a81478bc6a95db441c496ecd"
+              }
+            },
+            "state_before": "COLLECTING",
+            "state_after": "COLLECTING"
+          }
+        },
+        {
+          "request_id": "accept-wait",
+          "event_type": "tool_result",
+          "created_at": "2026-10-15T10:13:23.005863+00:00",
+          "detail": {
+            "tool": "ask_user",
+            "skill": "allocation-recommendation",
+            "skill_hash": "98332161d424a4afc26272a81890a3ce40caac17a81478bc6a95db441c496ecd",
+            "arguments": {
+              "question": "Which order should I check?"
+            },
+            "result": {
+              "ok": true,
+              "data": {
+                "question": "Which order should I check?"
+              }
+            },
+            "state_before": "COLLECTING",
+            "state_after": "COLLECTING"
+          }
+        },
+        {
+          "request_id": "accept-wait",
+          "event_type": "wait_user",
+          "created_at": "2026-10-15T10:13:23.013126+00:00",
+          "detail": {
+            "state": "COLLECTING",
+            "recommendation_id": null,
+            "session_version": 1,
+            "question": "Which order should I check?"
+          }
+        },
+        {
+          "request_id": "accept-resume",
+          "event_type": "start",
+          "created_at": "2026-10-15T10:13:23.022504+00:00",
+          "detail": {
+            "session_version": 1,
+            "task_id": "45691d5572cd4b0094805a6b3f176c62",
+            "task_version": 0
+          }
+        },
+        {
+          "request_id": "accept-resume",
+          "event_type": "tool_result",
+          "created_at": "2026-10-15T10:13:23.057913+00:00",
+          "detail": {
+            "tool": "get_order",
+            "skill": "allocation-recommendation",
+            "skill_hash": "98332161d424a4afc26272a81890a3ce40caac17a81478bc6a95db441c496ecd",
+            "arguments": {
+              "order_id": "ORD-045"
+            },
+            "result": {
+              "ok": true,
+              "data": {
+                "order_id": "ORD-045",
+                "customer": "Cotton Club",
+                "product": "Vest",
+                "category": "TOPS",
+                "pieces": 150,
+                "order_date": "2026-03-21",
+                "due_date": "2026-04-09",
+                "source_status": "IN_PROGRESS",
+                "state": "WORKING",
+                "version": 2,
+                "completed_pieces": 1,
+                "remaining_pieces": 149
+              }
+            },
+            "state_before": "COLLECTING",
+            "state_after": "COLLECTING"
+          }
+        },
+        {
+          "request_id": "accept-resume",
+          "event_type": "finish",
+          "created_at": "2026-10-15T10:13:23.087878+00:00",
+          "detail": {
+            "state": "COLLECTING",
+            "recommendation_id": null,
+            "session_version": 2,
+            "question": null
+          }
+        }
+      ]
+    }
+  },
+  "database_after": {
+    "order": {
+      "order_id": "ORD-045",
+      "state": "WORKING",
+      "version": 2,
+      "pieces": 150,
+      "completed_pieces": 1
+    },
+    "working_order": [
+      {
+        "order_id": "ORD-045",
+        "workshop_id": "W3",
+        "pieces": 150,
+        "completed_pieces": 1
+      }
+    ]
+  }
+}
