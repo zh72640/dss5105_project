@@ -19,10 +19,11 @@
 
 | 目录 | 目标职责 |
 | --- | --- |
-| `app/agent/` | Agent 执行、LangGraph 节点与路由、State 管理、Skill 加载、Tool 调度、暂停与恢复。 |
+| `app/agent/` | LLM Agent：Main Graph、Allocation 子图、Tool Loop、Skill 加载、Checkpoint 启动与恢复。 |
+| `app/offline/` | Chat v2 Offline 解释图与确定性回复（非原生 Tool Agent）。 |
 | `app/skills/` | Markdown Skill，定义业务任务的步骤、工具使用、分支、澄清和 Fallback 方法。 |
 | `app/tools/` | 向 Agent 暴露标准化能力；验证输入、调用 Service 或 DB Repository，并封装结构化结果。 |
-| `app/services/` | 确定性业务操作、计算、评分、优化算法、业务规则和执行策略。 |
+| `app/services/` | 确定性业务操作、计算、评分、优化算法、业务规则和执行策略；含 `responses/` 桌面审计文案。 |
 | `app/db/` | 所有数据库访问，包括 SQL、CRUD、Repository、连接、事务及迁移。 |
 | `app/prompts/` | 独立管理 LLM Prompt 模板及加载逻辑。 |
 | `app/schemas/` | HTTP、Agent State、Tool 输入输出及业务数据契约。 |

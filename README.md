@@ -63,7 +63,7 @@ Open the conversation assistant at `/chat` (Desk “New request” redirects the
 
 The Agent discovers `app/skills/*/SKILL.md` at runtime. The allocation subgraph loads its recommendation Skill after fixed preparation; compatible tasks can request Skills from the catalog. Loaded instructions and their hashes are saved for recovery. A completed turn clears loaded Tool permissions; a pending question keeps its Skill snapshot. Versioned YAML prompts for both current and compatibility paths live under `app/prompts/catalog/`.
 
-Business replies in LLM chat are grounded in Tool results and saved facts. The server checks direct commitment and production-success claims against authoritative results. Compatibility responses live in `app/agent/responses/` and `app/agent/conversation/reply.py`; the canonical prompt catalog is described in its [guide](app/prompts/README.md).
+Business replies in LLM chat are grounded in Tool results and saved facts. The server checks direct commitment and production-success claims against authoritative results. Offline replies live in `app/offline/reply.py`; desk allocation summaries in `app/services/responses/`. The prompt catalog is described in its [guide](app/prompts/README.md).
 
 ## Documentation
 

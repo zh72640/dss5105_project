@@ -14,7 +14,7 @@ from app.prompts import PromptCatalogError, PromptRegistry, PromptRenderError, g
 from app.prompts.registry import CATALOG
 from app.prompts.parser_v1 import messages
 from app.core.providers.deepseek_client import DeepSeekBackend
-from app.agent.responses import formatter
+from app.services.responses import formatter
 
 FIXTURES = Path(__file__).parent / "fixtures"
 
@@ -52,7 +52,7 @@ class PromptCatalogTests(unittest.TestCase):
 
     def test_prompt_version_and_reply_help_match_catalog(self):
         from app.prompts.parser_v1 import SYSTEM_PROMPT, PROMPT_VERSION
-        from app.agent.responses.templates import REPLY_HELP
+        from app.services.responses.templates import REPLY_HELP
         self.assertTrue(REPLY_HELP)
         self.assertEqual(PROMPT_VERSION, "parser_v1")
         self.assertEqual(SYSTEM_PROMPT, get_registry().get("parsing.request").system)

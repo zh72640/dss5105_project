@@ -6,7 +6,7 @@ from dataclasses import asdict
 from datetime import datetime, timezone
 
 from app.db.database import Database
-from app.agent.responses.formatter import allocation_reply
+from app.services.responses.formatter import allocation_reply
 from app.db.workshop_repository import get_all
 
 

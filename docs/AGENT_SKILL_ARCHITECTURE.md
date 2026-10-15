@@ -5,7 +5,7 @@
 | Existing component | Responsibility after this change |
 | --- | --- |
 | `app.services.chat` and `chat_*` SQLite tables | Session ownership, explicit confirmation, recommendation versions, transactionally saved business state, API compatibility, and the separate offline rules demo. |
-| `app.agent.router.chat_graph` and conversation interpreter | Offline demo interpretation. They are not evidence of native model tool calls. |
+| `app.offline.graph` and offline interpreter | Offline demo interpretation. They are not evidence of native model tool calls. |
 | `app.agent.dynamic` | LangGraph model/tool loop, Skill snapshots, durable checkpoints, execution cap, wait state, and restart recovery for `llm` chat sessions. |
 | `app.agent.skills` and `app/skills/*/SKILL.md` | Runtime Skill discovery and complete instructions loaded on model request. Business operation advice lives here. |
 | `app.tools.registry` / `app.tools.operations` | Named, schema-described tools; validation and binding. Business handlers live in `app.services.agent_operations`. |

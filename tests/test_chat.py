@@ -12,7 +12,7 @@ from fastapi.testclient import TestClient
 from langchain_core.messages import AIMessage
 from app.db.database import Database, DB_VERSION
 from app.services import chat
-from app.agent.conversation.interpreter import rule_interpret, validate_interpretation
+from app.services.interpretation import rule_interpret, validate_interpretation
 from app.core.models.registry import ModelRegistry
 from app.core.models.specs import ModelSettings, ModelSpec, ModelSelectionError
 from app.schemas.chat import TurnInterpretation

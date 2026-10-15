@@ -1,6 +1,6 @@
 # Prompt catalog and message rendering
 
-This package is the source of runtime LLM instructions. User-facing clarification and allocation replies live in `app/agent/responses/`; UI labels remain in `app/ui/`. Providers read prepared messages and handle transport options and output-schema adaptation.
+This package is the source of runtime LLM instructions. Offline conversation replies live in `app/offline/`; desk allocation summaries in `app/services/responses/`; UI labels remain in `app/ui/`. Providers read prepared messages and handle transport options and output-schema adaptation.
 
 ## Current catalog
 
@@ -125,7 +125,7 @@ Every model parse records the original `prompt_version` field plus `prompt_bundl
 
 ## Compatibility and verification
 
-`app/prompts/parser_v1.py` provides the parser-specific adapter; `app/agent/intake/prompts.py` remains an import compatibility alias. New workflow code imports `app.prompts` directly. `app/agent/prompt_catalog/` is also a compatibility path, including an older duplicate catalog that must not replace the canonical manifest. Deterministic reply formatting remains in `app.agent.responses` for compatibility flows.
+`app/prompts/parser_v1.py` provides parsing prompt adapters for model clients. New workflow code imports `app.prompts` directly. Deterministic desk summaries live in `app.services.responses`.
 
 Frozen fixtures in `tests/fixtures/prompt_messages_v1.json` and `response_messages_v1.json` were captured before migration. They verify exact provider message and reply parity. Registry tests cover generic function discovery, version selection, pinned retries, invalid YAML, unknown variables, metadata and the active parser/reply contracts. Provider tests use mock transports and make no real model calls.
 

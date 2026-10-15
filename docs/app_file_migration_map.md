@@ -46,28 +46,27 @@ Internal callers, tests, demos, and evaluation scripts use canonical imports. Th
 | `app/tools/allocator/**` | `app/services/planner.py` |
 | `app/tools/database/**` | `app/db/*_repository.py` |
 
-Empty packages `app/agent/providers/` and `app/agent/models/` may remain as namespaces.
-
-## 3. Retained product flows (after 2026-10-16 retirement)
+## 3. Retained product flows (after agent layout tidy)
 
 | Current files | Used by |
 | --- | --- |
-| `app/agent/router/chat_graph.py` + `app/agent/conversation/*` | Chat v2 **offline** interpret path |
-| `app/agent/checkpoints.py` | SqliteSaver bootstrap at lifespan (was under router/checkpointer) |
-| `app/agent/responses/{formatter,templates}.py` | Deterministic reply / audit summary text |
+| `app/agent/{runtime,main_graph,allocation_graph,executor,dynamic,skills}.py` | LLM Chat Main Graph / Allocation / Tool loop |
+| `app/agent/checkpoints.py` | SqliteSaver bootstrap at lifespan |
+| `app/offline/{graph,interpreter,reply}.py` | Chat v2 **offline** interpret path (moved out of `agent/`) |
+| `app/services/responses/{formatter,templates}.py` | Desk / audit allocation summaries |
 | `app/services/dispatch.py` helpers + `seed_allocation` | Lifecycle decide/apply helpers; offline test/demo seeding (**not** HTTP) |
 | `app/services/chat.py` | Chat v2 LLM + offline facade |
-| `app/agent/dynamic.py` via `runtime.py` | LLM Main Graph / Tool loop + checkpoint resume |
 
-**Retired (deleted from product surface):** `/api/requests` (Parser v1), `/api/sessions*`, `/api/jobs` (`session_revise`), `services/{sessions,jobs,multimodel_gateway}.py`, legacy router graph/state/request_graph, `agent/intake` Parser stack, `legacy_backend_bridge`, Desk/legacy session editors (`sessions.js`, `legacy.html`). Desk new-request flows redirect to `/chat`.
+**Retired / removed from `app/agent/`:** empty `models/` & `providers/`; `router/` & `conversation/` (now `app/offline/`); `responses/` (now `app/services/responses/`); Parser v1 / old Session APIs (earlier).
 
 ## Recommended migration order — progress
 
 1. **Freeze the map — completed 2026-10-16.**
-2. **Remove import ambiguity — completed.** Callers on canonical paths; unused §2 shims and duplicate prompt YAML removed.
-3. **Separate business boundaries — partial.** Clarified module roles via docstrings. `auth_me` SQL moved to `app/db/account_repository.py`. **Deferred:** splitting `agent_operations.execute`; moving remaining SQL out of `dispatch` / `read_models` / `core/security`; splitting `chat.py` LLM vs offline files.
-4. **Retire Parser v1 + legacy sessions — completed 2026-10-16.** Chat v2 is the conversational product; Offline Chat mode retained inside Chat.
-5. **Verify each phase — temporary DB + mock only; mock ≠ live LLM.**
+2. **Remove import ambiguity — completed.**
+3. **Separate business boundaries — partial.** Offline + responses moved out of `agent/`. **Deferred:** splitting `agent_operations.execute`; remaining SQL in `dispatch` / `read_models` / `core/security`; splitting `chat.py` LLM vs offline files.
+4. **Retire Parser v1 + legacy sessions — completed 2026-10-16.**
+5. **Tidy `app/agent/` layout — completed.** Offline under `app/offline/`; LLM runtime flat under `app/agent/`.
+6. **Verify — temporary DB + mock only; mock ≠ live LLM.**
 
 ## Differences noted (docs vs prior assumptions)
 

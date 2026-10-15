@@ -1,7 +1,7 @@
 """Chat v2 LLM LangGraph entry: select Main Graph or resume a legacy checkpoint.
 
 HTTP turns reach here via ``services.chat.turn`` → ``services.agent_chat.turn``.
-Offline Chat uses ``agent.router.chat_graph``; legacy ``/api/sessions`` was retired.
+Offline Chat uses ``app.offline.graph`` (not this module).
 """
 from contextlib import closing
 import sqlite3

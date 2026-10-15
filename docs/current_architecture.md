@@ -68,7 +68,7 @@ flowchart LR
 
 ### 离线路径
 
-Chat v2 的 `offline` 消息使用 `app/agent/router/chat_graph.py`、`app/agent/conversation/` 的解释与草稿修订，然后由 `app/services/chat.py` 计算或保存推荐。这是规则演示路径，不等同于 LLM 原生 Tool Agent。Parser v1 与旧 Session API 已退役。
+Chat v2 的 `offline` 消息使用 `app/offline/graph.py`、`interpreter.py`、`reply.py`，再由 `app/services/chat.py` 计算或保存推荐。这是规则演示路径，不等同于 LLM 原生 Tool Agent（`app/agent/runtime.py` → Main Graph）。Parser v1 与旧 Session API 已退役。
 
 ## 4. 推荐、确认与生产状态
 

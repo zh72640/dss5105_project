@@ -1,7 +1,7 @@
 """Chat v2 session facade: create/inspect, offline turns, and explicit confirm.
 
 LLM ``action=message`` turns delegate to ``app.services.agent_chat`` then
-``app.agent.runtime``. Offline mode uses ``app.agent.router.chat_graph``.
+``app.agent.runtime``. Offline mode uses ``app.offline.graph``.
 Do not merge those paths; they keep separate graphs and completion rules.
 """
 import json
@@ -14,8 +14,8 @@ from app.schemas.parser_schema import ParseResult
 from app.schemas.chat import TurnInterpretation
 from app.services.conversation_context import build_context
 from app.services.constraint_patches import apply_interpretation
-from app.agent.conversation.reply import solution_reply, clarification_reply, explain, conversational_reply
-from app.agent.router.chat_graph import GRAPH
+from app.offline.reply import solution_reply, clarification_reply, explain, conversational_reply
+from app.offline.graph import GRAPH
 from app.core.providers.llm_client import BackendError
 from app.core.models.specs import ModelSelectionError
 from pydantic import ValidationError

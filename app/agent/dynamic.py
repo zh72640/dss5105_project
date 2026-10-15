@@ -1,8 +1,8 @@
-"""Reusable Agent–Tool loop and legacy checkpoint graph.
+"""Reusable Agent–Tool loop and legacy ``chat-agent:*`` checkpoint graph.
 
-``executor.py`` uses this loop for Main Graph tasks. ``runtime.py`` may still
-resume older ``chat-agent:*`` checkpoints compiled from this module. Keep both
-roles until an explicit checkpoint migration retires the legacy branch.
+``executor.py`` uses this loop for Main Graph / Allocation tasks. ``runtime.py``
+may still resume older session checkpoints compiled from ``build_graph`` here.
+Keep both roles until an explicit checkpoint migration retires the legacy branch.
 """
 from dataclasses import dataclass
 from datetime import date
