@@ -11,11 +11,11 @@ function setup(fetch) {
   const href = {value: ''};
   const node = id => {
     if (!nodes.has(id)) nodes.set(id, {id, value:'', disabled:false, hidden:false, textContent:'',
-      classList:{toggle(){}}, addEventListener(){}, replaceChildren(){}, focus(){}, close(){}, showModal(){}, scrollIntoView(){}});
+      classList:{toggle(){}}, listeners:{}, addEventListener(name,callback){this.listeners[name]=callback;}, replaceChildren(){}, focus(){}, close(){}, showModal(){}, scrollIntoView(){}});
     return nodes.get(id);
   };
   const context = vm.createContext({
-    document:{documentElement:{dataset:{}},getElementById:node,querySelectorAll(){return [];}},
+    document:{documentElement:{dataset:{}},getElementById:node,querySelectorAll(selector){return selector==='[data-action="new"]'?['overview-new','recommendations-new','empty-new'].map(node):[];}},
     localStorage:{setItem:(k,v)=>storage.set(k,v),getItem:k=>storage.get(k)},
     sessionStorage:{setItem(){},getItem(){return null}},
     window:{addEventListener(){},scrollTo(){}},
@@ -70,7 +70,7 @@ test('accept is disabled for missing, blocked, rejected and already closed draft
 test('new request and session turns redirect to Chat v2',async()=>{
   const {api,href}=setup();
   await api.startRequest('Allocate cheapest.');
-  assert.equal(href.value,'/chat');
+  assert.equal(href.value,'/chat?new=1');
   href.value='';
   await api.turn('message','ORD-045');
   assert.equal(href.value,'/chat');
@@ -105,4 +105,17 @@ test('text size persists across initialization and invalid storage uses medium',
   api.initTextSize();assert.equal(storage.get('sweaterco.text-size'),'large');
   storage.set('sweaterco.text-size','invalid');api.initTextSize();
   assert.equal(storage.get('sweaterco.text-size'),'medium');
+});
+
+test('all existing New request buttons route directly to a new Chat session even with a pending Desk operation',async()=>{
+  const {api,nodes,href}=setup();api.state.pending={kind:'event'};api.state.busy=true;api.controls();
+  for(const id of ['overview-new','recommendations-new','empty-new']){
+    assert.equal(nodes.get(id).disabled,false);await nodes.get(id).listeners.click();
+    assert.equal(href.value,'/chat?new=1');href.value='';
+  }
+  const html=fs.readFileSync(path.join(__dirname,'../app/ui/index.html'),'utf8');
+  const entries=html.match(/<button[^>]*data-action="new"[^>]*>/g);
+  assert.equal(entries.length,3);assert.ok(entries.every(entry=>!entry.includes('data-mutate')));
+  assert.doesNotMatch(html,/id="new-dialog"|id="new-request-form"/);
+  assert.doesNotMatch(source,/sweaterco\.chat\.draft|new-message|new-objective/);
 });
