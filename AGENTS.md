@@ -24,6 +24,7 @@
 | `app/skills/` | Markdown Skill，定义业务任务的步骤、工具使用、分支、澄清和 Fallback 方法。 |
 | `app/tools/` | 向 Agent 暴露标准化能力；验证输入、调用 Service 或 DB Repository，并封装结构化结果。 |
 | `app/services/` | 确定性业务操作、计算、评分、优化算法、业务规则和执行策略；含 `responses/` 桌面审计文案。 |
+| `app/allocator/` | 确定性分配计算：`allocate()`、资格、评分与整数拆单（无 DB/Agent 依赖）。 |
 | `app/db/` | 所有数据库访问，包括 SQL、CRUD、Repository、连接、事务及迁移。 |
 | `app/prompts/` | 独立管理 LLM Prompt 模板及加载逻辑。 |
 | `app/schemas/` | HTTP、Agent State、Tool 输入输出及业务数据契约。 |

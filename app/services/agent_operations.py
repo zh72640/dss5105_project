@@ -7,9 +7,9 @@ Do not import it from HTTP routes; go through ``app.tools.operations``.
 from dataclasses import asdict
 from datetime import date
 import re
-from app.services import scoring as original_scores
+from app.allocator import scoring as original_scores
+from app.allocator import exclusion_reason
 from app.db.workshop_repository import get_all
-from app.services.eligibility import exclusion_reason
 from app.services import allocation
 from app.services.allocation_preflight import preflight
 from app.services.conversation_context import build_context

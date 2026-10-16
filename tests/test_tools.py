@@ -6,7 +6,7 @@ from app.db.database import Database
 from app.db.order_repository import retrieve
 from app.db.workshop_repository import get_all
 from app.schemas.parser_schema import ParseResult
-from app.services.eligibility import exclusion_reason
+from app.allocator import exclusion_reason
 from app.services.intake.rule_parser import extract
 
 

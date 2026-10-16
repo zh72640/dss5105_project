@@ -56,7 +56,7 @@ def get_defect_score(
 
     Returns:
         float: The defect score.
-    """    
+    """
     return workshop.defect_rate if workshop.status == "ACTIVE" else 10000
 
 

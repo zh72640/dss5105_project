@@ -1,5 +1,5 @@
 """Shared deterministic allocation decisions and transactional business writes."""
-from app.services.planner import plan
+from app.allocator import AllocationRequest, allocate
 from app.db import allocation_repository as repo
 from app.db.order_repository import retrieve
 from app.db.workshop_repository import get_all
@@ -10,16 +10,28 @@ def terminal(status, code, message):
     return {"success": False, "decision_status": status, "allocation": [], "reason_codes": [code],
             "warnings": [], "message": message, "candidate_ranking": []}
 
+
+def _planning_max_workshops(limit, sources=None):
+    """Chat/Agent: only provenanced limits >=2 enable multi-workshop planning."""
+    authorized = sources is not None and "num_workshop_allowed" in sources
+    return limit if (authorized and type(limit) is int and limit >= 2) else 1
+
+
 def recommend(connection, draft, as_of, pending=(), sources=None):
     from app.services.allocation_preflight import preflight, check_solution, digest
-    from app.schemas.parser_schema import ParseResult
     report, order, workshops, facts_hash = preflight(connection, draft, as_of, pending, sources)
     trace = {'db_changes': [], 'order': order}
     if not report['ready_for_planning']:
         return report, None, trace, None, None
-    parsed = ParseResult(**{**draft, 'parse_status': 'ok', 'missing_fields': [], 'ambiguities': []})
+    constraints = report['effective_constraints']
+    max_workshops = _planning_max_workshops(constraints['num_workshop_allowed'], sources)
+    report['planning_max_workshops'] = max_workshops
     remaining = {**order, 'pieces': order['pieces'] - order['completed_pieces']}
-    result = plan(remaining, workshops, parsed, report['effective_constraints']['objective'], as_of)
+    result = allocate(AllocationRequest(
+        order=remaining, workshops=workshops, as_of=as_of,
+        objective=constraints['objective'], exclusion=list(constraints['exclusion']),
+        preferred_workshop=constraints['preferred_workshop'],
+        deadline_required=constraints['deadline_required'], max_workshops=max_workshops))
     check_solution(result, order, workshops, draft, report, as_of)
     trace.update(queue={w.workshop_id: w.queue_days for w in workshops},
         eligible_workshops=result.get('eligible_workshops', []), rejected_workshops=result.get('rejected', {}))
@@ -27,7 +39,8 @@ def recommend(connection, draft, as_of, pending=(), sources=None):
     return report, result, trace, facts_hash, plan_hash
 
 
-def decide(connection, parsed, objective, as_of, trace):
+def decide(connection, parsed, objective, as_of, trace, *, max_workshops=1):
+    """Decide an allocation. Default max_workshops=1 (seed / single-workshop product rule)."""
     if parsed.parse_status != "ok":
         if parsed.parse_status == "invalid":
             return terminal("DECLINE", "INVALID_REQUEST", "Unsupported or invalid request: " + ", ".join(parsed.ambiguities))
@@ -47,8 +60,14 @@ def decide(connection, parsed, objective, as_of, trace):
     unknown = set(parsed.exclusion) - {w.workshop_id for w in workshops}
     if unknown:
         return terminal("CLARIFY", "UNKNOWN_EXCLUDED_WORKSHOP", "Unknown workshop ID(s): " + ", ".join(sorted(unknown)))
+    if type(max_workshops) is not int or not 1 <= max_workshops <= 8:
+        return terminal("ERROR", "INVALID_ARGUMENT", "max_workshops must be an integer from 1 to 8.")
     remaining_order = {**order, "pieces": order["pieces"] - order["completed_pieces"]}
-    result = plan(remaining_order, workshops, parsed, parsed.objective or objective, as_of)
+    result = allocate(AllocationRequest(
+        order=remaining_order, workshops=workshops, as_of=as_of,
+        objective=parsed.objective or objective, exclusion=list(parsed.exclusion or []),
+        preferred_workshop=parsed.preferred_workshop,
+        deadline_required=bool(parsed.deadline_required), max_workshops=max_workshops))
     trace["eligible_workshops"] = result["eligible_workshops"]
     trace["rejected_workshops"] = result["rejected"]
     return result
@@ -77,7 +96,6 @@ def apply(connection, request_id, result, trace, as_of):
     elif result["decision_status"] == "ESCALATE" or (result["decision_status"] == "REFUSE" and "rejected" in result):
         repo.mark_unassigned(connection, order["order_id"], request_id, result["reason_codes"][0])
         changes.append({"table": "unassigned_order", "order_id": order["order_id"], "reason": result["reason_codes"][0]})
-
 
 
 def record(connection, request_id, fingerprint, message, outcome, response):

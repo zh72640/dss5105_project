@@ -34,7 +34,16 @@ class EndToEnd(unittest.TestCase):
         self.assertEqual(row['parsed_objective'],'min_cost'); self.assertIsNone(row['parsed_pieces'])
 
     def test_02_multiple_workshops_conserve_pieces(self):
-        r=self.run_request('Allocate ORD-093 fastest; at most two workshops.')
+        from uuid import uuid4
+        from app.services.lifecycle import process_event
+        # Seed / offline process_request always max_workshops=1 (product rule).
+        seeded=self.run_request('Allocate ORD-093 fastest; at most two workshops.')
+        self.assertEqual(len(seeded['result']['allocation']),1)
+        self.assertEqual(seeded['result']['allocation'][0]['pieces'],100)
+        # Explicit lifecycle reassign may permit multi-workshop.
+        r=process_event('reassign','ORD-093',database=self.db,actor='test',reason='split test',
+                        event_id=str(uuid4()),expected_version=1,max_workshops=2,objective='min_delay')
+        self.assertTrue(r['result']['success'])
         parts=r['result']['allocation']; self.assertEqual(len(parts),2)
         self.assertEqual(sum(p['pieces'] for p in parts),100)
         self.assertEqual(self.count('working_order'),2)
@@ -60,8 +69,9 @@ class EndToEnd(unittest.TestCase):
     def test_06_capacity_infeasible_no_dirty_queue(self):
         self.db.connection.execute('UPDATE workshops SET max_batch_pieces=20')
         before=list(self.db.connection.execute('SELECT * FROM workshop_queue'))
+        # Seed locks max_workshops=1, so each shop fails eligibility instead of multi capacity search.
         r=self.run_request('Allocate ORD-045; at most two workshops.')
-        self.assertEqual(r['result']['reason_codes'],['CAPACITY_INFEASIBLE'])
+        self.assertEqual(r['result']['reason_codes'],['NO_ELIGIBLE_WORKSHOP'])
         self.assertEqual(before,list(self.db.connection.execute('SELECT * FROM workshop_queue')))
         self.assertEqual(self.state(),'UNASSIGNED')
 

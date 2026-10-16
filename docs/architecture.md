@@ -13,7 +13,8 @@
 - **LLM** 理解自然语言请求并进行必要的动态推理，选择下一步行动和组织解释；其输出不直接构成业务事实或状态变更。
 - **Markdown Skill** 指导 Agent 执行任务，说明步骤、工具使用、分支、澄清与 Fallback 方法。
 - **Tool** 向 Agent 暴露标准化能力，验证输入，调用 Service 或 DB Repository，并返回结构化结果。
-- **Service** 执行确定性的业务计算、评分、规划、规则校验和状态变更策略。
+- **Service** 执行确定性的业务操作、规则校验、推荐/确认编排和状态变更策略。
+- **Allocator**（`app/allocator/`）执行独立的确定性分配计算：`allocate(AllocationRequest)`，拆单仅由 `max_workshops` 控制（默认 1；≥2 才枚举多工坊）。
 - **DB 层** 统一管理持久化，包括 Repository、SQL、连接、事务和迁移。
 
 ### 系统整体架构
@@ -32,6 +33,7 @@ flowchart LR
     AGENT -->|确定性节点的内部操作| SERVICE
     TOOL -->|业务规则或计算| SERVICE
     TOOL -->|简单查询| REPO[DB Repository]
+    SERVICE -->|分配计算| ALLOC[Allocator]
     SERVICE --> REPO
     REPO --> FACTS[(SQLite 业务及审计表)]
     AGENT --> CHECKPOINT[(LangGraph checkpoint)]
@@ -62,7 +64,7 @@ SQLite 业务表是订单、队列、推荐、分配及任务状态的权威来�
 | LangChain 模型适配层与 ModelRegistry | 配置并调用 OpenAI、Claude、Gemini、DeepSeek 模型，支持原生 Tool 调用。 |
 | Markdown Skill、PyYAML、Prompt 模板 | 保存任务指引、加载 Skill 元数据及管理模型提示内容。 |
 | Pydantic | 校验 HTTP 输入输出契约；目标分层也将 Agent State 与 Tool 契约集中管理。 |
-| Service 与确定性规划器 | 执行资格判断、交期估算、评分、分配规划和生产规则。 |
+| Service 与独立 Allocator | Service 编排推荐/确认与生产规则；`app/allocator/` 提供 `allocate()`、资格、评分与整数拆单（`max_workshops` 默认 1）。 |
 | SQLite | 保存业务数据、审计记录、Job 状态及 LangGraph checkpoint；业务表与 checkpoint 的权威范围不同。 |
 | 原生 HTML、CSS、JavaScript | 提供工作台和 Chat 界面。 |
 
@@ -83,7 +85,8 @@ SQLite 业务表是订单、队列、推荐、分配及任务状态的权威来�
 | Skill（`app/skills/`） | 用 Markdown 描述任务步骤、工具使用、分支、澄清及 Fallback。 | 是由 Loader 加载的资源，不主动依赖或执行 Agent；文本不授予权限，也不代替代码中的业务规则。 |
 | Prompt（`app/prompts/`） | 保存模型提示模板及其版本，供 Loader 读取并组装模型输入。 | 是被加载的资源，不主动依赖或执行 Agent；不保存需要确定性执行或审计的业务规则。 |
 | Tool（`app/tools/`） | 向 LLM Agent 暴露具名能力；校验接口参数、调用权限与上下文，调用下层接口，并返回结构化结果。 | 不复制业务计算，不直接编写业务 SQL；Tool 的校验不能代替 Service / Policy 的业务校验。 |
-| Service / Policy（`app/services/`） | 独立执行确定性业务操作与规则，包括资格判断、交期估算、评分、规划、约束校验、推荐、确认和生产事件。 | 无论调用方是 Tool、API 还是 LangGraph 确定性节点，都必须自行强制执行业务规则；不依赖上层已完成的检查。 |
+| Service / Policy（`app/services/`） | 独立执行确定性业务操作与规则，包括约束校验、推荐/确认编排、生产事件；分配数学通过 Allocator 调用。 | 无论调用方是 Tool、API 还是 LangGraph 确定性节点，都必须自行强制执行业务规则；不依赖上层已完成的检查。 |
+| Allocator（`app/allocator/`） | `allocate()`：资格、评分、整数拆单与方案枚举；无 DB/Agent 依赖。 | 仅接受结构化 `AllocationRequest`；拆单只看 `max_workshops`（1–8；默认 1）；不读消息、不自行授权。 |
 | DB（`app/db/`） | 管理连接、SQL、CRUD、Repository、事务和迁移，提供业务数据访问接口。 | 不决定派单策略，也不依赖 Agent、Tool、Service 或 API。 |
 | Schema（`app/schemas/`） | 定义 HTTP、Agent State、Tool 输入输出及业务数据契约。 | 承载数据结构与校验，不编排工作流或执行持久化。 |
 | Config（`app/config/`） | 启动配置（数据库路径、业务日期、模型环境）。 | 不承载派单规则或 LLM 调用实现。 |
@@ -211,7 +214,7 @@ Allocation Subgraph 先执行固定准备阶段。字段提取节点使用 Promp
 
 字段缺失或模糊、订单不存在时，MVP 跳过推荐并返回带有 `issues` 的 `blocked` 结果。提取信息与数据库记录不一致时，以数据库作为业务事实依据；用户明确提出的约束仍须保留并验证。无法安全处理的冲突不得由 LLM 自行猜测。系统执行错误返回 `failed`。
 
-准备完成后，Subgraph 加载 allocation Skill，进入 Agent–Tool Loop。Skill 定义推荐策略，包括核对哪些信息、如何寻找候选与备选、何时调用相应 Tool，以及如何解释结果。Agent 根据 Skill 和 Tool 结果提出下一步调用；Runtime 限定并执行调用。工坊资格、产能与队列约束、交期估算、评分、拆分和排序等确定性判断由 Service / Policy 执行。
+准备完成后，Subgraph 加载 allocation Skill，进入 Agent–Tool Loop。Skill 定义推荐策略，包括核对哪些信息、如何寻找候选与备选、何时调用相应 Tool，以及如何解释结果。Agent 根据 Skill 和 Tool 结果提出下一步调用；Runtime 限定并执行调用。工坊资格、产能与队列约束、交期估算、评分、拆分和排序等确定性判断由 Allocator（经 Service 传入 `max_workshops`）与 Service / Policy 执行。
 
 推荐须包含可供用户审阅的方案、依据及限制。Completion Guard 核对必要业务结果后，才允许报告推荐已生成。推荐是待确认结果，不改变已提交分配或生产队列；等待确认时，`TaskResult.status` 为 `waiting_user`，推荐数据放在业务 `result` 中。
 

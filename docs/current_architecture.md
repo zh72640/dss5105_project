@@ -72,13 +72,13 @@ Chat v2 的 `offline` 消息使用 `app/offline/graph.py`、`interpreter.py`、`
 
 ## 4. 推荐、确认与生产状态
 
-`app/services/allocation_preflight.py` 依据登记订单、工坊资料、队列及用户约束形成阻塞项与事实 hash。`app/services/allocation.py:recommend` 调用 `app/services/planner.py` 计算整数拆单方案，再检查资格、数量守恒、工坊数、指定工坊与硬交期。`app/tools/allocator/planner.py` 仅保留旧导入。方案 hash 与事实 hash 随推荐保存。推荐是预览，**不写** `working_order` 或生产队列。
+`app/services/allocation_preflight.py` 依据登记订单、工坊资料、队列及用户约束形成阻塞项与事实 hash。`app/services/allocation.py:recommend` 调用 `app/allocator.allocate`（`max_workshops` 默认 1；≥2 才拆单；Chat/Agent 仅在 `sources` 含用户授权的工坊上限时传入 ≥2）计算整数方案，再检查资格、数量守恒、工坊数、指定工坊与硬交期。方案 hash 与事实 hash 随推荐保存。推荐是预览，**不写** `working_order` 或生产队列。
 
 Chat v2 任务状态为 `COLLECTING`、`BLOCKED`、`READY`、`RECOMMENDED`、`CONFIRMED`、`CANCELLED`。修改约束会增加任务版本并使旧推荐失效；工坊或队列事实改变也会使旧推荐过期。显式 `confirm` 必须带推荐 ID 和会话版本；`app/services/chat.py` 在同一写事务里复核 owner、任务版本、最新事实和方案，才调用 `app/services/allocation.py:apply` 写入分配、队列、订单状态、审计及确认反馈。同一确认可按请求 ID 或已确认推荐重放，不再分配一次。带修订内容的确认请求会被拒绝；普通 LLM 消息不能直接提交推荐。
 
 生产完成、取消、失效与重分配统一由 `app/services/lifecycle.py:process_event` 处理，校验订单版本、动作、数量、队列和审计原因。Agent 的 `record_production_event` 还要求当前用户消息明确给出动作、订单和原因，并从已认证会话取得 actor；它使用稳定事件 ID 以支持重试。HTTP `/api/events` 使用同一生产服务。
 
-`app/services/scoring.py` 的四个函数是单工坊评分公式，供 `score_workshop` 使用；`app/tools/allocation.py` 仅保留旧导入。其中原始 `get_hybrid_score` 是“按交期门控的缺陷率”。完整规划器的 `hybrid` 则使用 `0.6 × estimated_days + 0.4 × defect_rate × 100`。这两种分数的含义不同，不能互换。
+`app/allocator/scoring.py` 的四个函数是单工坊评分公式，供 `score_workshop` 使用。其中原始 `get_hybrid_score` 是“按交期门控的缺陷率”。完整规划器的 `hybrid` 则使用 `0.6 × estimated_days + 0.4 × defect_rate × 100`。这两种分数的含义不同，不能互换。
 
 ## 5. 持久化、恢复与审计
 
@@ -99,7 +99,7 @@ Chat v2 任务状态为 `COLLECTING`、`BLOCKED`、`READY`、`RECOMMENDED`、`CO
 | 职责 | 当前状态与正式路径 |
 | --- | --- |
 | Tool | 正式 schema、注册与执行在 `app/tools/registry.py`、`operations.py`、`production.py`。`app/services/agent_operations.py` 仍集中按名称分派多个业务能力（有意保留，未为减层而拆分）。 |
-| 业务规则与规划 | 正式资格、评分及规划在 `app/services/eligibility.py`、`scoring.py`、`planner.py` 等。 |
+| 业务规则与规划 | 正式资格、评分及规划在 `app/allocator/`（`allocate` / eligibility / scoring / planner）。 |
 | DB Repository | 正式实现与迁移在 `app/db/`。`app/services/auth.py` 的 `auth_me` 已走 `account_repository`；`dispatch.py`、`read_models.py` 与 `core/security.py` 仍有直接 SQL，后续分阶段下沉。 |
 | Prompt | Chat 与 Agent 的正式 YAML、加载器及版本信息在 `app/prompts/`；Parser v1 专用模板已移除。 |
 | 模型与状态 | LLM 注册表在 `app/llm/`。`app/core/` 仅 lifespan 与鉴权。`AgentState` 等仍在 Agent 图模块，尚未统一到 `app/schemas/`。 |

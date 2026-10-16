@@ -18,6 +18,7 @@ app/
   prompts/                Versioned prompt resources and loader
   config/                 Settings and environment snapshots
   llm/                    LLM ModelRegistry (LangChain); not ORM
+  allocator/              Deterministic allocate(); scoring and eligibility
   core/                   Authentication and application lifespan
   cli/                    Command-line entry points
   ui/                     Browser assets
@@ -27,7 +28,7 @@ app/
 
 ## 1. Canonical implementation paths
 
-Keep implementations under `api/`, `agent/`, `offline/`, `skills/`, `tools/`, `services/`, `db/`, `prompts/`, `schemas/`, `config/`, `llm/`, `core/` (lifespan/security only), `cli/`, `ui/`.
+Keep implementations under `api/`, `agent/`, `offline/`, `skills/`, `tools/`, `services/`, `allocator/`, `db/`, `prompts/`, `schemas/`, `config/`, `llm/`, `core/` (lifespan/security only), `cli/`, `ui/`.
 
 ## 2. Compatibility import paths — status
 
@@ -42,8 +43,9 @@ Internal callers, tests, demos, and evaluation scripts use canonical imports. Th
 | `app/agent/prompt_catalog/**` (Python + duplicate YAML) | `app/prompts/**` |
 | `app/agent/intake/{normalization,rule_parser,prompts}.py` | `app/services/intake/*`, `app/prompts/parser_v1.py` |
 | `app/agent/conversation/{context,patches}.py` | `app/services/{conversation_context,constraint_patches}.py` |
-| `app/tools/{allocation,eligibility,models}.py` | `app/services/{scoring,eligibility}.py`, `app/schemas/business.py` |
-| `app/tools/allocator/**` | `app/services/planner.py` |
+| `app/tools/{allocation,eligibility,models}.py` | `app/allocator/{scoring,eligibility}.py`, `app/schemas/business.py` |
+| `app/tools/allocator/**` | `app/allocator/` (`allocate`, planner, scoring, eligibility) |
+| `app/services/{planner,scoring,eligibility}.py` | `app/allocator/` (max_workshops-only split; default 1) |
 | `app/tools/database/**` | `app/db/*_repository.py` |
 
 ## 3. Retained product flows (after agent layout tidy)
@@ -51,13 +53,13 @@ Internal callers, tests, demos, and evaluation scripts use canonical imports. Th
 | Current files | Used by |
 | --- | --- |
 | `app/agent/{runtime,main_graph,allocation_graph,executor,dynamic,skills}.py` | LLM Chat Main Graph / Allocation / Tool loop |
-| `app/agent/checkpoints.py` | SqliteSaver bootstrap at lifespan |
+| `app/core/lifespan.py` | Application resource lifecycle and SqliteSaver bootstrap |
 | `app/offline/{graph,interpreter,reply}.py` | Chat v2 **offline** interpret path (moved out of `agent/`) |
 | `app/services/responses/{formatter,templates}.py` | Desk / audit allocation summaries |
 | `app/services/dispatch.py` helpers + `seed_allocation` | Lifecycle decide/apply helpers; offline test/demo seeding (**not** HTTP) |
 | `app/services/chat.py` | Chat v2 LLM + offline facade |
 
-**Retired / removed:** `app/domain/` (lifecycle rules folded into `app/services/lifecycle.py`); `app/core/providers` (direct backends); former `app/core/models` (now `app/llm`); empty agent `models/` & `providers/`; `router/` & `conversation/` (now `app/offline/`); `responses/` (now `app/services/responses/`); Parser v1 / old Session APIs (earlier).
+**Retired / removed:** `app/services/{planner,scoring,eligibility}.py` (now `app/allocator/`); `app/domain/` (lifecycle rules folded into `app/services/lifecycle.py`); `app/core/providers` (direct backends); former `app/core/models` (now `app/llm`); empty agent `models/` & `providers/`; `router/` & `conversation/` (now `app/offline/`); `responses/` (now `app/services/responses/`); Parser v1 / old Session APIs (earlier).
 
 ## Recommended migration order — progress
 

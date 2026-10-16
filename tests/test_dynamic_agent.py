@@ -18,7 +18,7 @@ from app.agent import dynamic, skills
 from app.agent.dynamic import LOAD_SKILL
 from app.agent.main_graph import INTENT_SCHEMA
 from app.schemas.chat import TurnInterpretation
-from app.services import scoring as original_scores
+from app.allocator import scoring as original_scores
 from app.db.database import Database
 from app.llm.registry import ModelRegistry, build_model
 from app.config.model_settings import ModelSettings, ModelSpec

@@ -2,7 +2,8 @@
 import math
 from datetime import date, timedelta
 from itertools import combinations
-from app.services.eligibility import exclusion_reason
+
+from app.allocator.eligibility import exclusion_reason
 
 
 def _split(subset, pieces, objective, day_limit=None):
@@ -41,13 +42,16 @@ def _split(subset, pieces, objective, day_limit=None):
     return parts if remaining == 0 else None
 
 
-def plan(order, workshops, parsed, objective, as_of):
+def plan(order, workshops, *, objective, as_of, max_workshops=1, exclusion=None,
+         preferred_workshop=None, deadline_required=False):
+    """Enumerate 1..max_workshops configurations. max_workshops>=2 enables splits."""
     pieces = order["pieces"]
-    max_workshops = min(parsed.num_workshop_allowed or 1, len(workshops))
+    exclusion = list(exclusion or [])
+    max_workshops = min(max_workshops, len(workshops))
     rejected, eligible = {}, []
     for w in workshops:
         # For splits, batch caps constrain each part, not the full order.
-        reason = exclusion_reason(w, order["category"], pieces if max_workshops == 1 else 1, parsed.exclusion)
+        reason = exclusion_reason(w, order["category"], pieces if max_workshops == 1 else 1, exclusion)
         if w.capacity <= 0 or w.queue_days < 0:
             reason = "invalid_capacity_or_queue"
         if reason:
@@ -57,9 +61,10 @@ def plan(order, workshops, parsed, objective, as_of):
     base = {"success": False, "decision_status": "ESCALATE", "allocation": [],
             "objective": objective, "rejected": rejected, "reason_codes": [], "warnings": [],
             "eligible_workshops": [w.workshop_id for w in eligible], "candidate_ranking": []}
-    if parsed.preferred_workshop:
-        preferred = next((w for w in workshops if w.workshop_id == parsed.preferred_workshop), None)
-        reason = "unknown_workshop" if preferred is None else exclusion_reason(preferred, order["category"], pieces, parsed.exclusion)
+    if preferred_workshop:
+        preferred = next((w for w in workshops if w.workshop_id == preferred_workshop), None)
+        reason = "unknown_workshop" if preferred is None else exclusion_reason(
+            preferred, order["category"], pieces, exclusion)
         if reason:
             return {**base, "decision_status": "REFUSE", "reason_codes": [reason.upper()],
                     "message": "Requested workshop cannot take the full batch; submit a new request with an eligible alternative."}
@@ -68,7 +73,7 @@ def plan(order, workshops, parsed, objective, as_of):
     if not eligible:
         return {**base, "reason_codes": ["NO_ELIGIBLE_WORKSHOP"], "message": "No workshop satisfies eligibility rules."}
     deadline = date.fromisoformat(order["due_date"])
-    day_limit = (deadline - as_of).days if parsed.deadline_required else None
+    day_limit = (deadline - as_of).days if deadline_required else None
     options = []
     for count in range(1, min(max_workshops, len(eligible)) + 1):
         for subset in combinations(eligible, count):
@@ -83,7 +88,7 @@ def plan(order, workshops, parsed, objective, as_of):
             options.append({"allocation": parts, "estimated_days": days, "estimated_cost": cost,
                             "expected_defect_rate": defects, "score": score})
     if not options:
-        reason = "DEADLINE_INFEASIBLE" if parsed.deadline_required else "CAPACITY_INFEASIBLE"
+        reason = "DEADLINE_INFEASIBLE" if deadline_required else "CAPACITY_INFEASIBLE"
         return {**base, "reason_codes": [reason], "message": "No complete integer allocation satisfies the batch/count/deadline constraints."}
     options.sort(key=lambda p: (round(p["score"], 10), p["estimated_days"], p["estimated_cost"],
                                len(p["allocation"]), [a["workshop_id"] for a in p["allocation"]]))

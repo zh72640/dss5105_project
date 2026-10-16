@@ -69,8 +69,11 @@ class LifecycleTests(unittest.TestCase):
         self.assertEqual(self.allocate()["result"]["reason_codes"], ["ORDER_ALREADY_COMPLETED"])
 
     def test_split_completion_does_not_complete_whole_order_early(self):
-        allocated = self.allocate("Allocate ORD-093 fastest; at most two workshops.")
-        parts = allocated["result"]["allocation"]
+        # Seed always max_workshops=1; multi-part plans come from explicit reassign permit.
+        self.allocate("Allocate ORD-093 fastest.")
+        allocated = self.event("reassign", "ORD-093", max_workshops=2, objective="min_delay")
+        self.assertTrue(allocated["result"]["success"])
+        parts = allocated["order"]["allocations"]
         self.assertEqual(len(parts), 2)
         first = self.event("complete", "ORD-093", workshop_id=parts[0]["workshop_id"], pieces=parts[0]["pieces"])
         self.assertEqual(first["order"]["state"], "WORKING")
@@ -203,7 +206,7 @@ class LifecycleTests(unittest.TestCase):
         self.assertEqual(before, self.business())
 
     def test_split_partial_completion_then_reassign_conserves_quantity(self):
-        r = self.allocate("Allocate ORD-093 fastest; at most two workshops.")
+        r = self.allocate("Allocate ORD-093 fastest.")
         part = r["result"]["allocation"][0]
         self.event("complete", "ORD-093", workshop_id=part["workshop_id"], pieces=10)
         r = self.event("reassign", "ORD-093", max_workshops=2, exclusion=[part["workshop_id"]])

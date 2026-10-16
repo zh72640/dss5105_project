@@ -1,11 +1,19 @@
 """Load configuration and own application resources for each ASGI lifespan."""
-from contextlib import ExitStack, asynccontextmanager
+import sqlite3
+from contextlib import ExitStack, asynccontextmanager, closing
+
+from langgraph.checkpoint.sqlite import SqliteSaver
 
 from app.llm.registry import ModelRegistry
-from app.agent.checkpoints import initialize_checkpoints
 from app.api.routes.auth import LoginLimiter
 from app.config.bootstrap import load_configuration
 from app.core.security import require_initialized
+
+
+def initialize_checkpoints(db_path):
+    """Prepare WAL and checkpoint tables before request handling starts."""
+    with closing(sqlite3.connect(str(db_path), timeout=10, check_same_thread=False)) as connection:
+        SqliteSaver(connection).get_tuple({"configurable": {"thread_id": "__startup__"}})
 
 
 @asynccontextmanager

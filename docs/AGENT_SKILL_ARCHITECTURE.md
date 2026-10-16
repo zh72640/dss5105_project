@@ -9,8 +9,8 @@
 | `app.agent.dynamic` | LangGraph model/tool loop, Skill snapshots, durable checkpoints, execution cap, wait state, and restart recovery for `llm` chat sessions. |
 | `app.agent.skills` and `app/skills/*/SKILL.md` | Runtime Skill discovery and complete instructions loaded on model request. Business operation advice lives here. |
 | `app.tools.registry` / `app.tools.operations` | Named, schema-described tools; validation and binding. Business handlers live in `app.services.agent_operations`. |
-| `app.services.allocation_preflight`, `app.services.allocation`, `app.services.planner` | Authoritative input checks, full integer split planning, solution validation, and transactional allocation writes. |
-| `app.services.scoring` | Original single-workshop timing and score formulas, called by `score_workshop`. |
+| `app.services.allocation_preflight`, `app.services.allocation`, `app.allocator` | Authoritative input checks; `allocate()` planning (`max_workshops`); solution validation; transactional allocation writes. |
+| `app.allocator.scoring` | Original single-workshop timing and score formulas, called by `score_workshop`. |
 | `app.services.lifecycle` | Audited, idempotent production event transaction, reused by the Agent production tool and `/events`. |
 
 The user sends a message to the existing chat API. In an `llm` session the graph first shows the model the Skill catalog. The model requests `load_skill`, receives the exact Skill content and its permitted tool descriptions, then chooses subsequent tool calls. The tool node validates the loaded Skill, arguments, account scope, task state, and business facts. It executes the requested capability and returns a structured `{ok, data}` or `{ok: false, error: {code, message}}` result to the model. The model may call more tools, ask a question, or answer. It cannot set the task state directly.
@@ -53,14 +53,14 @@ Tool schemas are defined in `app.tools.registry.TOOLS`. The generic return envel
 
 An authenticated owner can review these records at `GET /api/chat/sessions/{session_id}/trace?limit=100`. The endpoint returns tool calls and events in execution order. For example, the tested recommendation path is `load_skill → update_constraints(order_id) → score_workshop → check_requirements(COLLECTING→READY) → compute_plan → save_recommendation(READY→RECOMMENDED)`. The confirmation button then moves the task to `CONFIRMED` in the existing chat transaction; a plain recommendation turn never does.
 
-`score_workshop` is a thin adapter around the four restored functions in `app/services/scoring.py`. It loads a real `Workshop`, uses the aged queue returned by `workshop_repository.get_all`, uses a positive integer batch, converts the registered due date to a `date`, and uses the session business date as `sent_date`. The original formulas are unchanged:
+`score_workshop` is a thin adapter around the four restored functions in `app/allocator/scoring.py`. It loads a real `Workshop`, uses the aged queue returned by `workshop_repository.get_all`, uses a positive integer batch, converts the registered due date to a `date`, and uses the session business date as `sent_date`. The original formulas are unchanged:
 
 - `get_estimated_completion_time`: `pieces / capacity + lead_days + queue_days`, in days.
 - `get_lateness_score`: estimated days minus `(due_date - sent_date).days` for an active workshop; `10000` otherwise. Negative values indicate time before the deadline.
 - `get_defect_score`: the workshop defect rate for an active workshop; `10000` otherwise.
 - `get_hybrid_score`: defect rate if the original lateness score is nonpositive; `10000` otherwise.
 
-These functions score a single workshop and batch. They do not enforce the full split, maximum batch, category, exclusion, capacity, or quantity conservation rules. The current planner's `hybrid` score is `0.6 * estimated_days + 0.4 * defect_rate * 100`; it is **not** equivalent to the original deadline-gated hybrid score. `score_workshop` exposes both its eligibility rejection and the original score semantics. Full recommendations continue to use the existing planner plus `check_solution`; no original formula was copied into a second implementation.
+These functions score a single workshop and batch. They do not enforce the full split, maximum batch, category, exclusion, capacity, or quantity conservation rules. The allocator planner's `hybrid` score is `0.6 * estimated_days + 0.4 * defect_rate * 100`; it is **not** equivalent to the original deadline-gated hybrid score. `score_workshop` exposes both its eligibility rejection and the original score semantics. Full recommendations continue to use `app.allocator.allocate` (split only when `max_workshops >= 2`) plus `check_solution`; no original formula was copied into a second implementation.
 
 ## State, authority, and transactions
 

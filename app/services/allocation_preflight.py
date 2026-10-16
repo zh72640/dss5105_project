@@ -7,7 +7,7 @@ from datetime import date
 from app.schemas.parser_schema import OBJECTIVES, ParseResult
 from app.db.workshop_repository import get_all
 from app.db.order_repository import get_order
-from app.services.eligibility import exclusion_reason
+from app.allocator import exclusion_reason
 
 
 def digest(value):
@@ -106,8 +106,9 @@ def check_solution(result, order, workshops, draft, report, as_of):
     constraints = report['effective_constraints']
     parts = result['allocation']
     known = {w.workshop_id: w for w in workshops}
+    planned_limit = report.get('planning_max_workshops', constraints['num_workshop_allowed'])
     valid = (bool(parts) and len({p['workshop_id'] for p in parts}) == len(parts) and
-        len(parts) <= constraints['num_workshop_allowed'] and
+        len(parts) <= planned_limit and
         all(type(p['pieces']) is int and p['pieces'] > 0 for p in parts) and
         sum(p['pieces'] for p in parts) == order['pieces'] - order['completed_pieces'])
     for p in parts:

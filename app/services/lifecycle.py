@@ -115,7 +115,8 @@ def _transition(connection, payload, before, response):
             parsed = ParseResult(order_id=order_id, objective=payload["objective"], exclusion=payload["exclusion"],
                                  num_workshop_allowed=payload["max_workshops"], preferred_workshop=payload["preferred_workshop"],
                                  deadline_required=payload["deadline_required"], parse_status="ok")
-            result = _decide(connection, parsed, payload["objective"], as_of, response["trace"])
+            result = _decide(connection, parsed, payload["objective"], as_of, response["trace"],
+                             max_workshops=payload["max_workshops"])
             if not result["success"]:
                 return result
             _apply(connection, payload["event_id"], result, response["trace"], as_of)

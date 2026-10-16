@@ -58,7 +58,7 @@ def compare(seeds=(5105,)):
                                        "order_id": batch["order_id"], "worse_metrics": worse,
                                        "planner": ours, "baseline_outcome": theirs})
     hashes = {f: hashlib.sha256((ROOT / f).read_bytes()).hexdigest() for f in
-              ("harness/simulate.py", "data/orders.csv", "data/workshops.csv", "app/services/planner.py", "evaluation/simulator_adapter.py")}
+              ("harness/simulate.py", "data/orders.csv", "data/workshops.csv", "app/allocator/planner.py", "evaluation/simulator_adapter.py")}
     return {"schema_version": "simulator_comparison_v1", "seeds": list(seeds), "source_sha256": hashes,
             "primary_setting": "min_delay (existing default; team objective assignment pending confirmation)",
             "hybrid_score": "0.6 * estimated_days + 0.4 * expected_defect_rate * 100",
