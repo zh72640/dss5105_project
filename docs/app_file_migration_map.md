@@ -17,17 +17,17 @@ app/
   schemas/                HTTP, Agent, Tool, and business data contracts
   prompts/                Versioned prompt resources and loader
   config/                 Settings and environment snapshots
-  core/                   Model clients, authentication, application lifespan
-  domain/                 Pure shared policies, only while their boundary is clear
+  llm/                    LLM ModelRegistry (LangChain); not ORM
+  core/                   Authentication and application lifespan
   cli/                    Command-line entry points
   ui/                     Browser assets
 ```
 
-`app/core/models/` means **LLM model runtime**; `app/schemas/` means **data contracts**.
+`app/llm/` means **LLM model runtime**; `app/schemas/` means **data contracts**; `app/core/` means **lifespan + auth**.
 
 ## 1. Canonical implementation paths
 
-Unchanged from the design table: keep implementations under `api/`, `agent/` (main/allocation/executor/runtime/skills/dynamic), `skills/`, `tools/{registry,operations,production}`, `services/`, `db/`, `prompts/`, `schemas/`, `config/`, `core/`, `domain/lifecycle.py`, `cli/`, `ui/`.
+Keep implementations under `api/`, `agent/`, `offline/`, `skills/`, `tools/`, `services/`, `db/`, `prompts/`, `schemas/`, `config/`, `llm/`, `core/` (lifespan/security only), `cli/`, `ui/`.
 
 ## 2. Compatibility import paths — status
 
@@ -37,8 +37,8 @@ Internal callers, tests, demos, and evaluation scripts use canonical imports. Th
 | --- | --- |
 | `app/core/config.py`, `app/core/model_settings.py` | `app/config/settings.py`, `app/config/model_settings.py` |
 | `app/agent/toolset.py` | `app/tools/{registry,operations}.py`, `app/schemas/tool.py` |
-| `app/agent/models/{factory,registry,result,specs}.py` | `app/core/models/*` |
-| `app/agent/providers/{llm_client,deepseek_client}.py` | `app/core/providers/*` |
+| `app/agent/models/*`, `app/core/models/*` | `app/llm/*` |
+| `app/agent/providers/*`, `app/core/providers/*` | **deleted** (LangChain via `app/llm/factory.py` only) |
 | `app/agent/prompt_catalog/**` (Python + duplicate YAML) | `app/prompts/**` |
 | `app/agent/intake/{normalization,rule_parser,prompts}.py` | `app/services/intake/*`, `app/prompts/parser_v1.py` |
 | `app/agent/conversation/{context,patches}.py` | `app/services/{conversation_context,constraint_patches}.py` |
@@ -57,7 +57,7 @@ Internal callers, tests, demos, and evaluation scripts use canonical imports. Th
 | `app/services/dispatch.py` helpers + `seed_allocation` | Lifecycle decide/apply helpers; offline test/demo seeding (**not** HTTP) |
 | `app/services/chat.py` | Chat v2 LLM + offline facade |
 
-**Retired / removed from `app/agent/`:** empty `models/` & `providers/`; `router/` & `conversation/` (now `app/offline/`); `responses/` (now `app/services/responses/`); Parser v1 / old Session APIs (earlier).
+**Retired / removed:** `app/domain/` (lifecycle rules folded into `app/services/lifecycle.py`); `app/core/providers` (direct backends); former `app/core/models` (now `app/llm`); empty agent `models/` & `providers/`; `router/` & `conversation/` (now `app/offline/`); `responses/` (now `app/services/responses/`); Parser v1 / old Session APIs (earlier).
 
 ## Recommended migration order — progress
 
@@ -66,7 +66,9 @@ Internal callers, tests, demos, and evaluation scripts use canonical imports. Th
 3. **Separate business boundaries — partial.** Offline + responses moved out of `agent/`. **Deferred:** splitting `agent_operations.execute`; remaining SQL in `dispatch` / `read_models` / `core/security`; splitting `chat.py` LLM vs offline files.
 4. **Retire Parser v1 + legacy sessions — completed 2026-10-16.**
 5. **Tidy `app/agent/` layout — completed.** Offline under `app/offline/`; LLM runtime flat under `app/agent/`.
-6. **Verify — temporary DB + mock only; mock ≠ live LLM.**
+6. **Split `app/llm/` from core; delete direct providers — completed.** `core/` is lifespan + auth only.
+7. **Fold `domain/lifecycle` into `services/lifecycle` — completed.** `app/domain/` removed.
+8. **Verify — temporary DB + mock only; mock ≠ live LLM.**
 
 ## Differences noted (docs vs prior assumptions)
 

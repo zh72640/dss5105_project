@@ -3,7 +3,7 @@ import json
 import math
 import os
 import re
-from app.core.models.specs import ModelSettings, ModelSpec
+from app.llm.specs import ModelSettings, ModelSpec
 
 PROVIDERS = (
     ("openai", "OPENAI", "OPENAI_API_KEY", None),

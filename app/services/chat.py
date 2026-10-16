@@ -16,8 +16,8 @@ from app.services.conversation_context import build_context
 from app.services.constraint_patches import apply_interpretation
 from app.offline.reply import solution_reply, clarification_reply, explain, conversational_reply
 from app.offline.graph import GRAPH
-from app.core.providers.llm_client import BackendError
-from app.core.models.specs import ModelSelectionError
+from app.llm.errors import BackendError
+from app.llm.specs import ModelSelectionError
 from pydantic import ValidationError
 from app.db import chat_repository as repository
 from app.services import allocation

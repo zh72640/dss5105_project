@@ -22,10 +22,6 @@ from evaluation.compare_simulator import compare, markdown
 from app import APP_VERSION
 from app.db.database import DB_VERSION
 from app.services.dispatch import PIPELINE_VERSION
-from app.core.providers.llm_client import GEMINI_PROVIDER, gemini_model
-from app.core.providers.deepseek_client import DEEPSEEK_MODEL
-
-
 def main():
     out = ROOT / "evaluation/results"
     out.mkdir(parents=True, exist_ok=True)
@@ -67,9 +63,9 @@ def main():
         "simulator_policy_runs": len(comparison["runs"]),
         "original_dispatch_behavior_matches": dispatch["behavior_matches"],
         "official_simulator_matches_week4": baseline_matches,
-        "llm_provider": GEMINI_PROVIDER, "llm_model": gemini_model(),
-        "supported_online_backends": {"llm": gemini_model(), "deepseek": DEEPSEEK_MODEL},
+        "llm_stack": "app.llm.ModelRegistry",
         "parser_v1_and_legacy_sessions": "RETIRED",
+        "direct_providers": "REMOVED",
         "real_llm_call": "NOT_RUN: transports may be mocked; live model quality remains a separate check",
     }
     (out / "verification_summary.json").write_text(json.dumps(summary, indent=2) + "\n")

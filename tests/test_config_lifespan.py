@@ -61,7 +61,7 @@ class ConfigurationLifecycle(unittest.TestCase):
             self.assertEqual(models.default_mode, "llm")
 
     def test_registry_failure_unregisters_runtime_and_closes_models(self):
-        from app.core.models.registry import _runtimes
+        from app.llm.registry import _runtimes
         registry = Mock()
         app = create_app(Settings(db_path=self.path))
         with patch("app.core.lifespan.ModelRegistry", return_value=registry), \

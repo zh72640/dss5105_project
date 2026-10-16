@@ -1,4 +1,4 @@
-"""Small initialization mapping; provider packages own the HTTP/SDK adapters."""
+"""LangChain chat-model initialization from ModelSpec."""
 from app.schemas.parser_schema import json_schema
 
 INTEGRATIONS = {"openai": "openai", "claude": "anthropic", "gemini": "google_genai", "deepseek": "deepseek"}

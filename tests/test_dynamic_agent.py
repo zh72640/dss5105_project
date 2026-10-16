@@ -15,9 +15,9 @@ from app.agent import dynamic, skills
 from app.agent.dynamic import LOAD_SKILL
 from app.services import scoring as original_scores
 from app.db.database import Database
-from app.core.models.registry import ModelRegistry
-from app.core.models.factory import build_model
-from app.core.models.specs import ModelSettings, ModelSpec
+from app.llm.registry import ModelRegistry
+from app.llm.factory import build_model
+from app.llm.specs import ModelSettings, ModelSpec
 from app.config.settings import Settings
 from app.main import create_app
 from app.services import chat

@@ -86,7 +86,9 @@ SQLite 业务表是订单、队列、推荐、分配及任务状态的权威来�
 | Service / Policy（`app/services/`） | 独立执行确定性业务操作与规则，包括资格判断、交期估算、评分、规划、约束校验、推荐、确认和生产事件。 | 无论调用方是 Tool、API 还是 LangGraph 确定性节点，都必须自行强制执行业务规则；不依赖上层已完成的检查。 |
 | DB（`app/db/`） | 管理连接、SQL、CRUD、Repository、事务和迁移，提供业务数据访问接口。 | 不决定派单策略，也不依赖 Agent、Tool、Service 或 API。 |
 | Schema（`app/schemas/`） | 定义 HTTP、Agent State、Tool 输入输出及业务数据契约。 | 承载数据结构与校验，不编排工作流或执行持久化。 |
-| Config/Core（`app/config/`、`app/core/`） | 管理配置、应用生命周期、模型客户端、身份认证及通用基础设施。 | 不承载具体派单规则。 |
+| Config（`app/config/`） | 启动配置（数据库路径、业务日期、模型环境）。 | 不承载派单规则或 LLM 调用实现。 |
+| Core（`app/core/`） | ASGI 生命周期、本地账号与 Cookie 鉴权。 | 不存放 LLM 客户端或业务规则。 |
+| LLM（`app/llm/`） | LLM ModelRegistry、LangChain 工厂与选择/错误契约。 | 不实现派单算法；不代替 Prompt/Tool。 |
 
 *Policy 是 Service 层中负责确定性业务决策与约束执行的逻辑，可以实现为独立模块或函数，不要求每项规则都创建单独的 Service。*
 

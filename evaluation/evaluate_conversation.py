@@ -7,7 +7,7 @@ from datetime import date
 from pathlib import Path
 from app.db.database import Database
 from app.services import chat
-from app.core.models.registry import ModelRegistry
+from app.llm.registry import ModelRegistry
 from app.config.model_settings import load_model_settings
 
 

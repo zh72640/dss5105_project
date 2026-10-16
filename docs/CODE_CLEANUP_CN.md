@@ -8,7 +8,7 @@ This is the **2026-10-14 cleanup record**, not an inventory of the current worki
 | Business scoring, eligibility, and planning | `app/services/scoring.py`, `app/services/eligibility.py`, `app/services/planner.py` |
 | Database repositories | `app/db/` |
 | Prompt loader, resources, and guide | `app/prompts/` |
-| Model runtime and provider clients | `app/core/models/`, `app/core/providers/` |
+| Model runtime (LangChain ModelRegistry) | `app/llm/` (direct `core/providers` removed) |
 | Data contracts | `app/schemas/` |
 
 Compatibility imports currently remain under `app/agent/models/`, `app/agent/providers/`, `app/agent/prompt_catalog/`, `app/agent/toolset.py`, `app/tools/database/`, and `app/tools/allocator/`. Offline Chat v2, Parser v1, old sessions, and `/api/requests` remain executable compatibility flows. The current prompt catalog manifest has additional Agent and allocation entries; its older copy must not replace it.

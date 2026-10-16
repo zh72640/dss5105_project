@@ -20,3 +20,8 @@ def ai_status(ctx: Context = Depends(require_user), registry=Depends(get_model_r
     spec = selection.spec
     return {"backend": selection.mode, "configured": selection.mode == "offline" or bool(spec and spec.configured),
             "model": selection.metadata["model"]}
+
+
+@router.get("/models", response_model=dict, tags=["Models"])
+def models(ctx=Depends(require_user), registry=Depends(get_model_registry)):
+    return registry.public()

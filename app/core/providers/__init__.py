@@ -1,1 +1,0 @@
-"""Optional model transport adapters."""

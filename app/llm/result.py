@@ -1,6 +1,6 @@
 """Normalize different provider content blocks without logging response bodies."""
 import json
-from app.core.model_errors import BackendError
+from app.llm.errors import BackendError
 
 
 def normalize_response(response):

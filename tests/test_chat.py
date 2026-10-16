@@ -13,8 +13,8 @@ from langchain_core.messages import AIMessage
 from app.db.database import Database, DB_VERSION
 from app.services import chat
 from app.services.interpretation import rule_interpret, validate_interpretation
-from app.core.models.registry import ModelRegistry
-from app.core.models.specs import ModelSettings, ModelSpec, ModelSelectionError
+from app.llm.registry import ModelRegistry
+from app.llm.specs import ModelSettings, ModelSpec, ModelSelectionError
 from app.schemas.chat import TurnInterpretation
 from app.main import create_app
 from app.config.settings import Settings

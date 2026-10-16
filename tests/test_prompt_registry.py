@@ -12,8 +12,7 @@ import yaml
 
 from app.prompts import PromptCatalogError, PromptRegistry, PromptRenderError, get_registry
 from app.prompts.registry import CATALOG
-from app.prompts.parser_v1 import messages
-from app.core.providers.deepseek_client import DeepSeekBackend
+from app.prompts.parser_v1 import messages, parser_snapshot
 from app.services.responses import formatter
 
 FIXTURES = Path(__file__).parent / "fixtures"
@@ -104,17 +103,9 @@ class PromptCatalogTests(unittest.TestCase):
         self.assertEqual(json.loads(bundle.messages[2].content), {"intent": "allocation"})
         self.assertEqual(bundle.metadata["output_contract"], "intent_v1")
         self.assertIn("intent.classify", [item["id"] for item in registry.list()])
-        # A new feature sends its own bundle through the existing provider unchanged.
-        with patch.dict("os.environ", {"DEEPSEEK_API_KEY": "disposable-test-key"}, clear=True), \
-                patch("app.core.providers.deepseek_client.build_opener") as factory:
-            factory.return_value.open.return_value.__enter__.return_value.read.return_value = json.dumps({
-                "choices": [{"finish_reason": "stop", "message": {"content": '{"intent":"history"}'}}]}).encode()
-            backend = DeepSeekBackend()
-            self.assertEqual(backend.generate(bundle, output_schema={"type": "object"}), '{"intent":"history"}')
-            sent = json.loads(factory.return_value.open.call_args.args[0].data)
-            self.assertEqual(sent["messages"], bundle.as_messages())
-            self.assertEqual(sent["response_format"], {"type": "json_object"})
-            backend.close()
+        # Bundles stay transport-agnostic for ModelRegistry.invoke_task.
+        self.assertEqual(bundle.as_messages()[-1]["content"], "What happened yesterday?")
+        self.assertEqual(json.loads(bundle.as_messages()[2]["content"]), {"intent": "allocation"})
 
     def test_active_switch_keeps_old_versions_and_pinned_components(self):
         new_fragment = self.read("parsing/fragment_policy_v1.yaml")
@@ -191,36 +182,26 @@ class PromptCatalogTests(unittest.TestCase):
         with self.assertRaisesRegex(PromptCatalogError, "within"):
             self.registry._read(Path(self.temp.name) / "outside.yaml")
 
-    def test_backend_outgoing_messages_match_catalog(self):
+    def test_parser_messages_match_catalog_fixture(self):
         fixture = next(case for case in json.loads((FIXTURES / "prompt_messages_v1.json").read_text(encoding="utf-8"))
                        if case["profile"] == "deepseek" and case["feedback"] is None)
-        with patch.dict("os.environ", {"DEEPSEEK_API_KEY": "disposable-test-key"}, clear=True), \
-                patch("app.core.providers.deepseek_client.build_opener") as factory:
-            factory.return_value.open.return_value.__enter__.return_value.read.return_value = json.dumps({
-                "choices": [{"finish_reason": "stop", "message": {"content": "{}"}}]}).encode()
-            backend = DeepSeekBackend()
-            backend.complete(fixture["message"], date(2026, 4, 1))
-            self.assertEqual(json.loads(factory.return_value.open.call_args.args[0].data)["messages"], fixture["expected"])
-            self.assertNotIn("disposable-test-key", json.dumps(backend.prompt_metadata))
-            backend.close()
+        self.assertEqual(
+            messages(fixture["message"], date.fromisoformat(fixture["reference_date"]),
+                     fixture["feedback"], profile=fixture["profile"]),
+            fixture["expected"])
 
-    def test_backend_snapshot_survives_another_catalog_becoming_active(self):
-        with patch.dict("os.environ", {"DEEPSEEK_API_KEY": "disposable-test-key"}, clear=True), \
-                patch("app.core.providers.deepseek_client.build_opener") as factory, \
-                patch("app.prompts.parser_v1.get_registry", return_value=self.registry) as selected:
-            backend = DeepSeekBackend()
-            before = backend.prompt_metadata
+    def test_parser_snapshot_survives_another_catalog_becoming_active(self):
+        with patch("app.prompts.parser_v1.get_registry", return_value=self.registry) as selected:
+            snap = parser_snapshot("deepseek")
+            before = snap.metadata
             revised = self.read("parsing/retry_v1.yaml")
             revised["system"] = "New retry: ${feedback}"
             self.write("parsing/retry_v1.yaml", revised)
             selected.return_value = PromptRegistry(self.root)
-            factory.return_value.open.return_value.__enter__.return_value.read.return_value = json.dumps({
-                "choices": [{"finish_reason": "stop", "message": {"content": "{}"}}]}).encode()
-            backend.complete("ORD-045", date(2026, 4, 1), "invalid_json")
-            sent = json.loads(factory.return_value.open.call_args.args[0].data)["messages"]
-            self.assertTrue(sent[-2]["content"].startswith("Previous attempt failed validation:"))
-            self.assertEqual(backend.prompt_metadata, before)
-            backend.close()
+            rendered = messages("ORD-045", date(2026, 4, 1), "invalid_json",
+                                profile="deepseek", snapshot=snap)
+            self.assertTrue(rendered[-2]["content"].startswith("Previous attempt failed validation:"))
+            self.assertEqual(snap.metadata, before)
 
 
 if __name__ == "__main__":

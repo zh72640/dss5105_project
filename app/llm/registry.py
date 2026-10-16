@@ -2,9 +2,9 @@
 import threading
 from dataclasses import replace
 from app.prompts.parser_v1 import parser_snapshot
-from app.core.models.factory import build_model
-from app.core.models.specs import ModelSelectionError, ResolvedSelection
-from app.core.models.result import normalize_response, translate_error
+from app.llm.factory import build_model
+from app.llm.specs import ModelSelectionError, ResolvedSelection
+from app.llm.result import normalize_response, translate_error
 
 
 class ModelRegistry:
@@ -46,7 +46,7 @@ class ModelRegistry:
         spec = selection.spec
         model = self._instances.get(spec.key) if spec else None
         if model is None:
-            from app.core.model_errors import BackendError
+            from app.llm.errors import BackendError
             raise BackendError("model_not_configured", retryable=False)
         try:
             return normalize_response(model.invoke(prepared_messages))
@@ -56,17 +56,17 @@ class ModelRegistry:
     def invoke_task(self, mode, model_key, bundle):
         """Task prompts must not inherit the frozen parser structured-output schema."""
         selection = self.resolve(mode, model_key)
-        selection = replace(selection, prompt_hash=bundle.metadata['content_hash'])
+        selection = replace(selection, prompt_hash=bundle.metadata["content_hash"])
         spec = selection.spec
         with self._task_lock:
             if spec.key not in self._task_instances:
-                self._task_instances[spec.key] = self.factory(replace(spec, output_method='prompt'))
+                self._task_instances[spec.key] = self.factory(replace(spec, output_method="prompt"))
             model = self._task_instances[spec.key]
         try:
             result = normalize_response(model.invoke(bundle.as_messages()))
         except Exception as error:
             raise translate_error(error, spec.provider) from None
-        return result, {**selection.metadata, 'prompt': bundle.metadata}
+        return result, {**selection.metadata, "prompt": bundle.metadata}
 
     def require_native_tools(self, mode, model_key):
         """Check capability before entering a tool-driven graph."""
@@ -74,11 +74,11 @@ class ModelRegistry:
         spec = selection.spec
         with self._task_lock:
             if spec.key not in self._task_instances:
-                self._task_instances[spec.key] = self.factory(replace(spec, output_method='prompt'))
+                self._task_instances[spec.key] = self.factory(replace(spec, output_method="prompt"))
             model = self._task_instances[spec.key]
-        if not callable(getattr(model, 'bind_tools', None)):
-            raise ModelSelectionError('TOOLS_UNSUPPORTED',
-                'The selected model does not support native tool calls.', 503)
+        if not callable(getattr(model, "bind_tools", None)):
+            raise ModelSelectionError("TOOLS_UNSUPPORTED",
+                "The selected model does not support native tool calls.", 503)
 
     def invoke_tools(self, mode, model_key, messages, tool_schemas):
         """Invoke a native provider tool call; never parse a JSON plan from text."""
@@ -86,16 +86,16 @@ class ModelRegistry:
         spec = selection.spec
         with self._task_lock:
             if spec.key not in self._task_instances:
-                self._task_instances[spec.key] = self.factory(replace(spec, output_method='prompt'))
+                self._task_instances[spec.key] = self.factory(replace(spec, output_method="prompt"))
             model = self._task_instances[spec.key]
-        if not callable(getattr(model, 'bind_tools', None)):
-            raise ModelSelectionError('TOOLS_UNSUPPORTED', 'The selected model does not support native tool calls.', 503)
+        if not callable(getattr(model, "bind_tools", None)):
+            raise ModelSelectionError("TOOLS_UNSUPPORTED", "The selected model does not support native tool calls.", 503)
         try:
             response = model.bind_tools(tool_schemas).invoke(messages)
         except Exception as error:
             raise translate_error(error, spec.provider) from None
-        if not hasattr(response, 'tool_calls'):
-            raise ModelSelectionError('TOOLS_UNSUPPORTED', 'The selected model returned no tool-call structure.', 503)
+        if not hasattr(response, "tool_calls"):
+            raise ModelSelectionError("TOOLS_UNSUPPORTED", "The selected model returned no tool-call structure.", 503)
         return response
 
     def public(self):
@@ -107,7 +107,6 @@ class ModelRegistry:
         seen = set()
         for model in (*self._instances.values(), *self._task_instances.values()):
             base = getattr(model, "first", model)
-            # SDK integrations own these clients. Close each unique resource once.
             for name in ("root_client", "client"):
                 client = getattr(base, name, None)
                 if client is not None and id(client) not in seen and callable(getattr(client, "close", None)):
@@ -123,8 +122,6 @@ def register_runtime(db_path, registry):
         _runtimes[str(db_path)] = registry
 
 
-
-
 def unregister_runtime(db_path, registry):
     with _runtime_lock:
         if _runtimes.get(str(db_path)) is registry:
@@ -132,6 +129,6 @@ def unregister_runtime(db_path, registry):
 
 
 def background_runtime():
-    """The existing jobs worker owns a single application per process."""
+    """Single-process helper when exactly one registry is registered."""
     with _runtime_lock:
         return next(iter(_runtimes.values())) if len(_runtimes) == 1 else None

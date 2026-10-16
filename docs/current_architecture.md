@@ -25,7 +25,7 @@ flowchart LR
     RUNTIME --> CP[(SQLite LangGraph checkpoint)]
     EXECUTOR --> CP
     AC --> DB
-    MAIN --> MODEL[app/core/models/registry.py]
+    MAIN --> MODEL[app/llm/registry.py]
     EXECUTOR --> MODEL
 ```
 
@@ -35,7 +35,7 @@ flowchart LR
 
 ## 2. 启动、配置与接口
 
-`app/server.py` 是本地 Uvicorn 入口，`app/main.py:create_app` 创建 FastAPI 应用。`app/core/lifespan.py` 在启动期间解析配置、初始化模型注册表和 SQLite checkpoint，并启动后台 Job worker；停止时释放这些资源。`app/config/settings.py` 管理数据库路径、解析后端、业务日期和鉴权开关，`app/config/model_settings.py` 在启动时读取 OpenAI、Claude、Gemini、DeepSeek 的模型别名与连接参数。运行中的模型请求使用该配置快照；应用不会自行加载 `.env`。
+`app/server.py` 是本地 Uvicorn 入口，`app/main.py:create_app` 创建 FastAPI 应用。`app/core/lifespan.py` 在启动期间解析配置、初始化 `app/llm` 注册表和 SQLite checkpoint；停止时释放这些资源（HTTP jobs worker 已退役）。`app/config/settings.py` 管理数据库路径、`offline`/`llm` 模式、业务日期和鉴权开关；`app/config/model_settings.py` 读取各供应商模型别名与密钥。运行中的模型请求使用该配置快照；应用不会自行加载 `.env`。
 
 数据库由 `app/db/database.py:Database` 打开，执行 `001_initial.sql` 至 `009_agent_runtime.sql` 的适用迁移，并以 `BEGIN IMMEDIATE` 包装写事务。已有数据库不会重新导入 CSV。业务日期影响队列折旧与交期估算；审计时间使用实际 UTC 时间。HTTP 默认使用文件型 SQLite，服务器默认监听 `127.0.0.1`。
 
@@ -64,7 +64,7 @@ flowchart LR
 4. `ask_user` 保存待答问题并结束本轮；下一条用户消息沿对应 executor checkpoint 恢复，并保留等待时的 Skill 快照。普通完成的 Turn 会清除已加载 Tool 权限。Tool Loop 每轮最多 12 次模型步骤和 32 次可执行 Tool 调用；退出时由代码检查完成条件。调用参数、结果、Skill hash 和状态变化记录在 Agent Trace。
 5. `agent_chat.py` 从数据库重读任务及推荐，检查最终答复是否无依据地宣称已确认或已记录生产事件，再保存用户消息、答复和会话版本。界面上的 `committed` 标志与推荐卡来自数据库事实。
 
-模型调用使用 `app/core/models/registry.py:ModelRegistry` 和 `app/core/providers/`；Prompt 模板、加载器及版本化 YAML 位于 `app/prompts/`。模型不会执行看似 JSON 的文本“工具计划”；没有原生 Tool 调用能力的模型返回 `TOOLS_UNSUPPORTED`。
+模型调用使用 `app/llm/registry.py:ModelRegistry`（LangChain）；旧直连 `core/providers` 已删除。Prompt 模板、加载器及版本化 YAML 位于 `app/prompts/`。模型不会执行看似 JSON 的文本“工具计划”；没有原生 Tool 调用能力的模型返回 `TOOLS_UNSUPPORTED`。
 
 ### 离线路径
 
@@ -102,7 +102,7 @@ Chat v2 任务状态为 `COLLECTING`、`BLOCKED`、`READY`、`RECOMMENDED`、`CO
 | 业务规则与规划 | 正式资格、评分及规划在 `app/services/eligibility.py`、`scoring.py`、`planner.py` 等。 |
 | DB Repository | 正式实现与迁移在 `app/db/`。`app/services/auth.py` 的 `auth_me` 已走 `account_repository`；`dispatch.py`、`read_models.py` 与 `core/security.py` 仍有直接 SQL，后续分阶段下沉。 |
 | Prompt | 正式 YAML、加载器及历史 parsing 模板在 `app/prompts/`（供模型客户端与 offline 规则复用词汇，不再服务 `/api/requests`）。 |
-| 模型与状态 | 模型客户端在 `app/core/models/`、`app/core/providers/`。`AgentState`、`MainState`、`AllocationState` 仍分别定义在 Agent 图模块，尚未统一到 `app/schemas/`。 |
+| 模型与状态 | LLM 注册表在 `app/llm/`。`app/core/` 仅 lifespan 与鉴权。`AgentState` 等仍在 Agent 图模块，尚未统一到 `app/schemas/`。 |
 
 文件级处理顺序见 [迁移表](app_file_migration_map.md)。实施目标分层时须保留现有 API、状态和事务语义，并避免产生第二套业务计算或数据库真相。
 

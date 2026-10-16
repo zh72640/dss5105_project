@@ -28,7 +28,9 @@
 | `app/prompts/` | 独立管理 LLM Prompt 模板及加载逻辑。 |
 | `app/schemas/` | HTTP、Agent State、Tool 输入输出及业务数据契约。 |
 | `app/api/` | FastAPI 接口、HTTP 请求处理和响应。 |
-| `app/config/`、`app/core/` | 通用配置、应用基础设施、模型客户端和安全机制。 |
+| `app/llm/` | LLM ModelRegistry、LangChain 工厂与选择契约（非 ORM）。 |
+| `app/config/` | 启动配置（数据库路径、业务日期、模型环境目录）。 |
+| `app/core/` | 应用基础设施：ASGI lifespan、本地账号与 Cookie 鉴权。 |
 
 上表是后续开发与重构的目标，不表示代码已经全部迁移。现有目录位置及其与目标分层的差距见 `docs/current_architecture.md`；其他目录继续承担各自的命令、页面、数据、验证和运行文件职责。
 

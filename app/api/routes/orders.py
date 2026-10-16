@@ -1,7 +1,6 @@
 from fastapi import APIRouter, Depends, Response
 from app.api.dependencies import Context, require_user
 from app.api.errors import ApiError, business_responses
-from app.api.status import event_status
 from app.schemas.api import EventInput, DispatchOutput, OrderOutput
 from app.services import lifecycle
 
@@ -23,5 +22,11 @@ def event(body: EventInput, response: Response, ctx: Context = Depends(require_u
     if ctx.settings.require_auth:
         data["actor"] = ctx.username
     payload = lifecycle.event(**data, db_path=ctx.settings.db_path, as_of=ctx.settings.as_of)
-    response.status_code = event_status(payload)
+    codes = payload["result"]["reason_codes"]
+    status = (400 if "INVALID_ARGUMENT" in codes else 404 if "ORDER_NOT_FOUND" in codes else
+              503 if payload["result"]["decision_status"] == "ERROR" else
+              409 if not payload["result"]["success"] else 200)
+    if "IDEMPOTENCY_CONFLICT" in codes:
+        status = 409
+    response.status_code = status
     return payload

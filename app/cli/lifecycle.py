@@ -4,8 +4,7 @@ import json
 from datetime import date
 from pathlib import Path
 
-from app.domain.lifecycle import ACTIONS
-from app.services.lifecycle import inspect_order, process_event
+from app.services.lifecycle import ACTIONS, inspect_order, process_event
 from app.schemas.parser_schema import OBJECTIVES
 
 

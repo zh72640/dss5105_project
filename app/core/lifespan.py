@@ -1,7 +1,7 @@
 """Load configuration and own application resources for each ASGI lifespan."""
 from contextlib import ExitStack, asynccontextmanager
 
-from app.core.models.registry import ModelRegistry, register_runtime, unregister_runtime
+from app.llm.registry import ModelRegistry, register_runtime, unregister_runtime
 from app.agent.checkpoints import initialize_checkpoints
 from app.api.routes.auth import LoginLimiter
 from app.config.bootstrap import load_configuration

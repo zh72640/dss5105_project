@@ -8,8 +8,8 @@ import uuid
 from app.agent.dynamic import AgentContext, final_text
 from app.agent.runtime import RunInProgress, run as run_runtime
 from app.agent import skills
-from app.core.models.specs import ModelSelectionError
-from app.core.providers.llm_client import BackendError
+from app.llm.specs import ModelSelectionError
+from app.llm.errors import BackendError
 from app.db.database import Database, utc_now
 from app.services.allocation_preflight import digest
 from app.db import agent_repository

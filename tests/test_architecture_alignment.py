@@ -150,7 +150,7 @@ class AlignmentBehavior(unittest.TestCase):
         self.assertIsNotNone(resumed["recommendation_id"])
         self.assertNotIn("Updated instructions.", second.agent_messages[0][0].content)
     def test_retry_same_request_after_intent_backend_failure(self):
-        from app.core.model_errors import BackendError
+        from app.llm.errors import BackendError
 
         class FlakyIntent(NativeScript):
             fail_once = True

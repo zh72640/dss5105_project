@@ -1,6 +1,6 @@
 """Local application configuration. CLI arguments take precedence over environment."""
 import os
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import date
 from pathlib import Path
 
@@ -17,9 +17,14 @@ class Settings:
 
     @classmethod
     def from_env(cls):
-        from app.core.providers.deepseek_client import default_backend
         business_date = os.getenv("DISPATCH_AS_OF", "")
-        return cls(db_path=os.getenv("DISPATCH_DB", cls.db_path), backend=default_backend(),
+        # AGENT_MODE is canonical; PARSER_BACKEND=offline remains a legacy alias.
+        mode = os.getenv("AGENT_MODE") or (
+            "offline" if os.getenv("PARSER_BACKEND", "").strip() == "offline" else None)
+        if mode not in (None, "offline", "llm"):
+            mode = "offline"
+        backend = mode or "offline"
+        return cls(db_path=os.getenv("DISPATCH_DB", cls.db_path), backend=backend,
                    as_of=date.fromisoformat(business_date) if business_date else None,
                    require_auth=os.getenv("DISPATCH_NO_AUTH", "0") != "1")
 
@@ -27,12 +32,11 @@ class Settings:
         from app.db.database import Database
         if self.db_path == ":memory:":
             raise ValueError("HTTP requires a file SQLite database shared by request threads.")
-        if self.backend not in ("offline", "llm", "deepseek"):
-            raise ValueError("Unknown parser backend.")
+        if self.backend not in ("offline", "llm"):
+            raise ValueError("Unknown mode; use offline or llm.")
         with Database(self.db_path) as db:
             latest = db.connection.execute("SELECT MAX(as_of_date) FROM workshop_queue").fetchone()[0]
         business_date = self.as_of or (date.fromisoformat(latest) if latest else date(2026, 4, 1))
         if latest and business_date < date.fromisoformat(latest):
             raise ValueError("Business date cannot precede the latest workshop queue snapshot.")
-        from dataclasses import replace
         return replace(self, db_path=str(Path(self.db_path).resolve()), as_of=business_date)

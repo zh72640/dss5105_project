@@ -81,7 +81,7 @@ bundle = get_registry().render(
 )
 messages = bundle.as_messages()
 metadata = bundle.metadata
-# Either existing LLMBackend or DeepSeekBackend accepts the same prepared bundle.
+# ModelRegistry.invoke_task accepts the same prepared bundle.
 raw = backend.generate(bundle, output_schema=schema)
 # Validate raw against the function's schema before using it.
 ```
