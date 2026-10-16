@@ -1,7 +1,7 @@
 """Load configuration and own application resources for each ASGI lifespan."""
 from contextlib import ExitStack, asynccontextmanager
 
-from app.llm.registry import ModelRegistry, register_runtime, unregister_runtime
+from app.llm.registry import ModelRegistry
 from app.agent.checkpoints import initialize_checkpoints
 from app.api.routes.auth import LoginLimiter
 from app.config.bootstrap import load_configuration
@@ -24,6 +24,4 @@ async def lifespan(app, *, settings=None, model_settings=None, model_factory=Non
         registry.initialize()
         app.state.model_registry = registry
         initialize_checkpoints(settings.db_path)
-        register_runtime(settings.db_path, registry)
-        cleanup.callback(unregister_runtime, settings.db_path, registry)
         yield

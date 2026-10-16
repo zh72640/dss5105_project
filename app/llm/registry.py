@@ -1,26 +1,52 @@
-"""Application-owned model catalogue and request-local selection."""
+"""Application-scoped model catalogue and base LangChain chat models."""
+import hashlib
+import json
 import threading
-from dataclasses import replace
-from app.prompts.parser_v1 import parser_snapshot
-from app.llm.factory import build_model
-from app.llm.specs import ModelSelectionError, ResolvedSelection
-from app.llm.result import normalize_response, translate_error
+
+from langchain.chat_models import init_chat_model
+
+from app.llm.errors import ModelSelectionError
+
+
+INTEGRATIONS = {"openai": "openai", "claude": "anthropic",
+                "gemini": "google_genai", "deepseek": "deepseek"}
+
+
+def build_model(spec):
+    """Create an unbound model from the immutable startup configuration."""
+    options = spec.options
+    options.setdefault("max_output_tokens" if spec.provider == "gemini" else "max_tokens", 4096)
+    return init_chat_model(model=spec.api_model_id,
+                           model_provider=INTEGRATIONS[spec.provider],
+                           api_key=spec.credential, timeout=spec.timeout,
+                           max_retries=0, **options)
+
+
+def selection_metadata(mode, spec, prompt_hash=None):
+    """Preserve the existing non-secret model audit fields."""
+    values = {"mode": mode, "model_key": spec.key if spec else None,
+              "provider": spec.provider if spec else "offline" if mode == "offline" else None,
+              "model": spec.api_model_id if spec else "rules_v1" if mode == "offline" else None,
+              "parameters": spec.options if spec else {},
+              "timeout": spec.timeout if spec else None,
+              "output_method": spec.output_method if spec else None,
+              "prompt_hash": prompt_hash, "selection_version": "models_v1"}
+    encoded = json.dumps(values, sort_keys=True, separators=(",", ":"), allow_nan=False)
+    return {**values, "signature": hashlib.sha256(encoded.encode()).hexdigest()}
 
 
 class ModelRegistry:
     def __init__(self, settings, factory=build_model):
         self.settings, self.factory = settings, factory
         self.models = {spec.key: spec for spec in settings.models}
-        self.prompt = parser_snapshot("deepseek")
-        self._instances, self._errors = {}, {}
-        self._task_instances = {}
-        self._task_lock = threading.RLock()
+        self._models, self._errors = {}, {}
+        self._lock = threading.RLock()
 
     def initialize(self):
         for spec in self.models.values():
             if spec.configured:
                 try:
-                    self._instances[spec.key] = self.factory(spec)
+                    self.get_model("llm", spec.key)
                 except Exception:
                     self._errors[spec.key] = "MODEL_INITIALIZATION_FAILED"
 
@@ -31,72 +57,25 @@ class ModelRegistry:
         if mode == "offline":
             if model_key is not None:
                 raise ModelSelectionError("INVALID_ARGUMENT", "Offline mode does not accept a model selection.")
-            return ResolvedSelection(mode, None, self.prompt.metadata["content_hash"])
+            return None
         key = model_key or self.settings.default_model
         if key is not None and key not in self.models:
             raise ModelSelectionError("UNKNOWN_MODEL", "Choose a model listed by /api/models.")
         spec = self.models.get(key)
         if require_model and (spec is None or not spec.configured):
-            raise ModelSelectionError("MODEL_NOT_CONFIGURED", "No API key/model is configured. Configure a model or use Offline.", 503)
+            raise ModelSelectionError("MODEL_NOT_CONFIGURED",
+                "No API key/model is configured. Configure a model or use Offline.", 503)
         if require_model and key in self._errors:
-            raise ModelSelectionError("MODEL_INITIALIZATION_FAILED", "The model integration could not be initialized.", 503)
-        return ResolvedSelection(mode, spec, self.prompt.metadata["content_hash"])
+            raise ModelSelectionError("MODEL_INITIALIZATION_FAILED",
+                "The model integration could not be initialized.", 503)
+        return spec
 
-    def invoke(self, selection, prepared_messages):
-        spec = selection.spec
-        model = self._instances.get(spec.key) if spec else None
-        if model is None:
-            from app.llm.errors import BackendError
-            raise BackendError("model_not_configured", retryable=False)
-        try:
-            return normalize_response(model.invoke(prepared_messages))
-        except Exception as error:
-            raise translate_error(error, spec.provider) from None
-
-    def invoke_task(self, mode, model_key, bundle):
-        """Task prompts must not inherit the frozen parser structured-output schema."""
-        selection = self.resolve(mode, model_key)
-        selection = replace(selection, prompt_hash=bundle.metadata["content_hash"])
-        spec = selection.spec
-        with self._task_lock:
-            if spec.key not in self._task_instances:
-                self._task_instances[spec.key] = self.factory(replace(spec, output_method="prompt"))
-            model = self._task_instances[spec.key]
-        try:
-            result = normalize_response(model.invoke(bundle.as_messages()))
-        except Exception as error:
-            raise translate_error(error, spec.provider) from None
-        return result, {**selection.metadata, "prompt": bundle.metadata}
-
-    def require_native_tools(self, mode, model_key):
-        """Check capability before entering a tool-driven graph."""
-        selection = self.resolve(mode, model_key)
-        spec = selection.spec
-        with self._task_lock:
-            if spec.key not in self._task_instances:
-                self._task_instances[spec.key] = self.factory(replace(spec, output_method="prompt"))
-            model = self._task_instances[spec.key]
-        if not callable(getattr(model, "bind_tools", None)):
-            raise ModelSelectionError("TOOLS_UNSUPPORTED",
-                "The selected model does not support native tool calls.", 503)
-
-    def invoke_tools(self, mode, model_key, messages, tool_schemas):
-        """Invoke a native provider tool call; never parse a JSON plan from text."""
-        selection = self.resolve(mode, model_key)
-        spec = selection.spec
-        with self._task_lock:
-            if spec.key not in self._task_instances:
-                self._task_instances[spec.key] = self.factory(replace(spec, output_method="prompt"))
-            model = self._task_instances[spec.key]
-        if not callable(getattr(model, "bind_tools", None)):
-            raise ModelSelectionError("TOOLS_UNSUPPORTED", "The selected model does not support native tool calls.", 503)
-        try:
-            response = model.bind_tools(tool_schemas).invoke(messages)
-        except Exception as error:
-            raise translate_error(error, spec.provider) from None
-        if not hasattr(response, "tool_calls"):
-            raise ModelSelectionError("TOOLS_UNSUPPORTED", "The selected model returned no tool-call structure.", 503)
-        return response
+    def get_model(self, mode, model_key):
+        spec = self.resolve(mode, model_key)
+        with self._lock:
+            if spec.key not in self._models:
+                self._models[spec.key] = self.factory(spec)
+            return self._models[spec.key]
 
     def public(self):
         return {"default_mode": self.settings.default_mode, "default_model": self.settings.default_model,
@@ -104,31 +83,8 @@ class ModelRegistry:
                             "error": self._errors.get(spec.key)} for spec in self.models.values()]}
 
     def close(self):
-        seen = set()
-        for model in (*self._instances.values(), *self._task_instances.values()):
-            base = getattr(model, "first", model)
-            for name in ("root_client", "client"):
-                client = getattr(base, name, None)
-                if client is not None and id(client) not in seen and callable(getattr(client, "close", None)):
-                    seen.add(id(client))
-                    client.close()
-
-
-_runtimes, _runtime_lock = {}, threading.RLock()
-
-
-def register_runtime(db_path, registry):
-    with _runtime_lock:
-        _runtimes[str(db_path)] = registry
-
-
-def unregister_runtime(db_path, registry):
-    with _runtime_lock:
-        if _runtimes.get(str(db_path)) is registry:
-            _runtimes.pop(str(db_path), None)
-
-
-def background_runtime():
-    """Single-process helper when exactly one registry is registered."""
-    with _runtime_lock:
-        return next(iter(_runtimes.values())) if len(_runtimes) == 1 else None
+        for model in self._models.values():
+            close = getattr(model, "close", None)
+            if callable(close):
+                close()
+        self._models.clear()

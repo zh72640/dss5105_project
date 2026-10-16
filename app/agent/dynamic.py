@@ -22,6 +22,8 @@ from app.tools.registry import TOOLS, allowed_for_task, schema, validate_argumen
 from app.tools.operations import execute
 from app.db.database import Database
 from app.db.chat_repository import snapshot
+from app.llm.errors import ModelSelectionError, check_response, translate_error
+from app.llm.registry import selection_metadata
 
 
 LOAD_SKILL = schema("load_skill", "Load one named application Skill. Returns its exact instructions and enables its registered tools for this session.",
@@ -80,7 +82,23 @@ def system_message(context, loaded):
              "business_date": current["business_date"], "session_version": current["version"]}
     bundle = get_registry().render("agent.reply",
         variables={"skills": overview, "loaded": instructions, "facts": facts})
-    return SystemMessage(content=bundle.as_messages()[0]["content"])
+    return SystemMessage(content=bundle.as_messages()[0]["content"]), bundle.metadata
+
+
+def record_model_response(context, stage, message, prompt=None):
+    """Persist one actual model response, including its native usage and audit identity."""
+    from app.db import agent_repository
+    spec = context.registry.resolve("llm", context.model_key)
+    prompt = prompt or {}
+    metadata = getattr(message, "response_metadata", {}) or {}
+    detail = {"stage": stage, "selection": selection_metadata("llm", spec, prompt.get("content_hash")),
+              "prompt": prompt, "usage": getattr(message, "usage_metadata", None),
+              "finish_reason": metadata.get("finish_reason", metadata.get("stop_reason")),
+              "tool_call_ids": [call.get("id") for call in getattr(message, "tool_calls", [])]}
+    with Database(context.db_path) as db:
+        with db.transaction() as connection:
+            agent_repository.record_event(connection, session_id=context.session_id,
+                request_id=context.request_id, event_type="model_call", detail=detail)
 
 
 def model_node(state: AgentState, runtime: Runtime[AgentContext]):
@@ -95,9 +113,20 @@ def model_node(state: AgentState, runtime: Runtime[AgentContext]):
         current = snapshot(db.connection, context.session_id, context.owner)
     if current is None:
         raise ToolFailure("SESSION_NOT_FOUND", "The session is unavailable to this account.")
-    answer = context.registry.invoke_tools("llm", context.model_key,
-        [system_message(context, loaded), *history],
-        available_tools(loaded, state.get("task_type", "compat"), current["task"]["state"]))
+    spec = context.registry.resolve("llm", context.model_key)
+    model = context.registry.get_model("llm", context.model_key)
+    if not callable(getattr(model, "bind_tools", None)):
+        raise ModelSelectionError("TOOLS_UNSUPPORTED", "The selected model cannot use native tools.", 503)
+    system, prompt = system_message(context, loaded)
+    try:
+        answer = model.bind_tools(available_tools(loaded, state.get("task_type", "compat"),
+            current["task"]["state"])).invoke([system, *history])
+    except Exception as error:
+        raise translate_error(error, spec.provider) from error
+    if not isinstance(answer, AIMessage) or not hasattr(answer, "tool_calls"):
+        raise ModelSelectionError("TOOLS_UNSUPPORTED", "The selected model cannot use native tools.", 503)
+    record_model_response(context, "tool_loop" if answer.tool_calls else "reply", answer, prompt)
+    check_response(answer, require_text=not bool(answer.tool_calls))
     return {"messages": [answer], "step_count": count + 1}
 
 

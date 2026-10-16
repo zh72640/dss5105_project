@@ -8,7 +8,8 @@ from langgraph.graph.message import add_messages
 from langgraph.runtime import Runtime
 
 from app.agent.allocation_graph import build_graph as build_allocation_graph
-from app.agent.dynamic import AgentContext, final_text
+from app.agent.dynamic import AgentContext, final_text, record_model_response
+from app.llm.errors import check_response, check_structured, text_content, translate_error
 from app.agent.executor import run as run_executor
 from app.prompts import get_registry
 from app.services import chat
@@ -42,9 +43,22 @@ def identify(state: MainState, runtime: Runtime[AgentContext]):
                             "pending_issues": session["task"]["issues"]},
                    "output_schema": INTENT_SCHEMA},
         user_message=context.user_message)
+    spec = context.registry.resolve("llm", context.model_key)
+    model = context.registry.get_model("llm", context.model_key)
     try:
-        response, _ = context.registry.invoke_task("llm", context.model_key, bundle)
-        parsed = json.loads(response["text"])
+        if spec.output_method == "prompt":
+            raw = model.invoke(bundle.as_messages())
+        else:
+            result = model.with_structured_output({"title": "AgentIntent", **INTENT_SCHEMA},
+                method=spec.output_method,
+                include_raw=True).invoke(bundle.as_messages())
+            raw = result.get("raw") if isinstance(result, dict) else None
+    except Exception as error:
+        raise translate_error(error, spec.provider) from error
+    if raw is not None:
+        record_model_response(context, "intent", raw, bundle.metadata)
+    try:
+        parsed = json.loads(text_content(check_response(raw))) if spec.output_method == "prompt" else check_structured(result)[0]
         route = parsed.get("task_type")
         if route not in ("allocation", "compat"):
             raise ValueError("INVALID_TASK_ROUTE")

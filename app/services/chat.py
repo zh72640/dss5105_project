@@ -17,7 +17,7 @@ from app.services.constraint_patches import apply_interpretation
 from app.offline.reply import solution_reply, clarification_reply, explain, conversational_reply
 from app.offline.graph import GRAPH
 from app.llm.errors import BackendError
-from app.llm.specs import ModelSelectionError
+from app.llm.errors import ModelSelectionError
 from pydantic import ValidationError
 from app.db import chat_repository as repository
 from app.services import allocation
@@ -71,9 +71,9 @@ def create(*, owner, request_id, db_path, as_of, message='', objective='min_dela
                 sid=old['session_id']
             else:
                 if registry:
+                    mode = mode or registry.settings.default_mode
                     selection=registry.resolve(mode,model_key,require_model=False)
-                    mode=selection.mode
-                    model_key=selection.spec.key if selection.spec else None
+                    model_key=selection.key if selection else None
                 sid=insert_session(c,owner,request_id,fingerprint,objective,mode or 'offline',model_key,as_of,title=message or 'New request')
         if message.strip():
             first_key='chat-first-'+uuid.uuid5(uuid.NAMESPACE_URL,request_id).hex

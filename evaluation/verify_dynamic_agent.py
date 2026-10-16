@@ -8,6 +8,7 @@ from langchain_core.messages import AIMessage
 
 from app.db.database import Database
 from app.services import chat
+from app.config.model_settings import ModelSpec
 
 
 class ScriptedNativeModel:
@@ -17,10 +18,21 @@ class ScriptedNativeModel:
         self.responses = list(responses)
         self.offered_tools = []
 
-    def invoke_tools(self, mode, key, messages, schemas):
-        self.offered_tools.append([tool["function"]["name"] for tool in schemas])
-        return self.responses.pop(0)
+    def resolve(self, mode, key):
+        return ModelSpec("mock", "openai", "mock", "test")
 
+    def get_model(self, mode, key):
+        return self
+
+    def bind_tools(self, schemas):
+        self.offered_tools.append([tool["function"]["name"] for tool in schemas])
+        return self
+
+    def invoke(self, messages):
+        first = messages[0]["content"] if isinstance(messages[0], dict) else messages[0].content
+        if "Classify the current user message" in first:
+            return AIMessage(content='{"task_type":"compat"}')
+        return self.responses.pop(0)
 
 def call(tool_name, **arguments):
     call.sequence += 1

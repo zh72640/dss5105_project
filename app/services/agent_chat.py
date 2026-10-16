@@ -8,8 +8,7 @@ import uuid
 from app.agent.dynamic import AgentContext, final_text
 from app.agent.runtime import RunInProgress, run as run_runtime
 from app.agent import skills
-from app.llm.specs import ModelSelectionError
-from app.llm.errors import BackendError
+from app.llm.errors import BackendError, ModelSelectionError
 from app.db.database import Database, utc_now
 from app.services.allocation_preflight import digest
 from app.db import agent_repository
@@ -69,7 +68,11 @@ def turn(sid, *, owner, request_id, expected_version, db_path, message, registry
     except Exception as error:
         with Database(db_path) as db:
             with db.transaction() as connection:
-                _event(connection, sid, request_id, "execution_error", {"type": type(error).__name__})
+                _event(connection, sid, request_id, "execution_error", {
+                    "type": type(error).__name__,
+                    "code": error.code if isinstance(error, ModelSelectionError) else
+                            str(error) if isinstance(error, BackendError) else None,
+                    "retryable": error.retryable if isinstance(error, BackendError) else None})
                 if isinstance(error, ModelSelectionError) and error.code == "TOOLS_UNSUPPORTED":
                     agent_repository.set_run_status(connection, request_id, "failed")
         if isinstance(error, ModelSelectionError):
@@ -101,6 +104,7 @@ def turn(sid, *, owner, request_id, expected_version, db_path, message, registry
             telemetry = {"workflow": state.get("workflow_version", "dynamic_agent_v1"), "loaded_skills": [
                 {"name": item["name"], "hash": item["hash"]} for item in state.get("loaded_skills", {}).values()],
                 "tool_calls": len(state.get("tool_results", [])), "pending_question": state.get("pending_question")}
+            telemetry.update(agent_repository.model_usage(connection, request_id))
             agent_repository.record_turn_start(connection, turn_id=turn_id, session_id=sid,
                 request_id=request_id, fingerprint=fingerprint, base_version=expected_version,
                 input_json=encoded({"message": message}), telemetry_json=encoded(telemetry))

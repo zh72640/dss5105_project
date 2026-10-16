@@ -8,7 +8,8 @@ from pydantic import ValidationError
 from app.agent import skills
 from app.services.conversation_context import build_context
 from app.services.interpretation import validate_interpretation
-from app.agent.dynamic import AgentContext, final_text
+from app.agent.dynamic import AgentContext, final_text, record_model_response
+from app.llm.errors import check_response, check_structured, text_content, translate_error
 from app.agent.executor import run as run_executor, waiting_skill_snapshots
 from app.db.database import Database
 from app.db.chat_repository import snapshot
@@ -47,9 +48,22 @@ def extract_fields(state: AllocationState, runtime: Runtime[AgentContext]):
         variables={"context": conversation,
                    "output_schema": TurnInterpretation.model_json_schema()},
         user_message=context.user_message)
+    spec = context.registry.resolve("llm", context.model_key)
+    model = context.registry.get_model("llm", context.model_key)
     try:
-        raw, _ = context.registry.invoke_task("llm", context.model_key, bundle)
-        interpretation = TurnInterpretation.model_validate_json(raw["text"])
+        if spec.output_method == "prompt":
+            raw = model.invoke(bundle.as_messages())
+        else:
+            result = model.with_structured_output(TurnInterpretation, method=spec.output_method,
+                include_raw=True).invoke(bundle.as_messages())
+            raw = result.get("raw") if isinstance(result, dict) else None
+    except Exception as error:
+        raise translate_error(error, spec.provider) from error
+    if raw is not None:
+        record_model_response(context, "extract", raw, bundle.metadata)
+    try:
+        interpretation = (TurnInterpretation.model_validate_json(text_content(check_response(raw)))
+            if spec.output_method == "prompt" else TurnInterpretation.model_validate(check_structured(result)[0]))
         validate_interpretation(interpretation, context.user_message, conversation)
     except (ValidationError, ValueError, KeyError, TypeError):
         return {"task_result": _failed("EXTRACTION_FAILED",

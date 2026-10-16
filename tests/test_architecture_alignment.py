@@ -10,11 +10,12 @@ from langchain_core.messages import AIMessage
 
 from app.db.database import Database
 from app.services import chat
+from app.config.model_settings import ModelSpec
 
 
 class NativeScript:
     def __init__(self, *, order_id="ORD-045", pieces=None, actions=(), sequence=1,
-                 intent_text='{"task_type":"allocation"}'):
+                 intent_text='{"task_type":"allocation"}', provider="openai", output_method="prompt"):
         self.sequence = sequence
         self.intent_text = intent_text
         self.order_id = order_id
@@ -23,6 +24,42 @@ class NativeScript:
         self.offered = []
         self.preparation_prompts = []
         self.agent_messages = []
+        self.spec = ModelSpec("mock", provider, "mock", "test", output_method=output_method)
+        self.structured_bindings = []
+
+    def resolve(self, mode, key):
+        return self.spec
+
+    def get_model(self, mode, key):
+        return self
+
+    def bind_tools(self, schemas):
+        self.offered.append({item["function"]["name"] for item in schemas})
+        return self
+
+    def with_structured_output(self, schema, *, method, include_raw):
+        self.structured_bindings.append((schema, method, include_raw))
+        parent = self
+
+        class Bound:
+            def invoke(self, messages):
+                import json
+                raw = parent.invoke(messages)
+                parsed = json.loads(raw.text)
+                if hasattr(schema, "model_validate"):
+                    parsed = schema.model_validate(parsed)
+                return {"raw": raw, "parsed": parsed, "parsing_error": None}
+
+        return Bound()
+
+    def invoke(self, messages):
+        system = messages[0]["content"] if isinstance(messages[0], dict) else messages[0].content
+        if "Classify the current user message" in system:
+            return AIMessage(content=self.intent_text)
+        if "Extract the user's allocation request" in system:
+            return AIMessage(content=self.invoke_task("llm", "mock", _Bundle(messages))[0]["text"])
+        self.agent_messages.append(messages)
+        return self.actions.pop(0)
 
     def invoke_task(self, mode, key, bundle):
         identifier = bundle.metadata["id"]
@@ -42,10 +79,13 @@ class NativeScript:
         import json
         return {"text": json.dumps({"intent": "allocate_request", "patch_operations": patches})}, {}
 
-    def invoke_tools(self, mode, key, messages, schemas):
-        self.offered.append({item["function"]["name"] for item in schemas})
-        self.agent_messages.append(messages)
-        return self.actions.pop(0)
+class _Bundle:
+    def __init__(self, messages):
+        self._messages = messages
+        self.metadata = {"id": "allocation.extract"}
+
+    def as_messages(self):
+        return self._messages
 
 
 def call(name, sequence):
@@ -81,6 +121,45 @@ class AlignmentBehavior(unittest.TestCase):
                 (self.sid,)).fetchone()[0]
             import json
             self.assertEqual(json.loads(metadata)["workflow"], "main_v1")
+
+    def test_each_provider_binds_task_schema_for_current_call(self):
+        for provider in ("deepseek", "claude", "openai", "gemini"):
+            with self.subTest(provider=provider):
+                self.sid = chat.create(owner="alice", request_id="create-" + provider,
+                    db_path=self.path, as_of=date(2026, 4, 1), mode="llm")["session_id"]
+                model = NativeScript(provider=provider, output_method="json_schema",
+                    actions=[call("compute_plan", "plan-" + provider),
+                             call("save_recommendation", "save-" + provider),
+                             AIMessage(content="Review the saved recommendation.")])
+                result = chat.turn(self.sid, owner="alice", request_id="allocate-" + provider,
+                    expected_version=0, db_path=self.path, message="Allocate ORD-045.", registry=model)
+                self.assertEqual(result["task_state"], "RECOMMENDED")
+                self.assertEqual([binding[1] for binding in model.structured_bindings],
+                                 ["json_schema", "json_schema"])
+                self.assertIsNot(model.structured_bindings[0][0], model.structured_bindings[1][0])
+
+    def test_turn_usage_includes_intent_extract_tool_steps_and_reply(self):
+        class Metered(NativeScript):
+            def invoke(self, messages):
+                response = super().invoke(messages)
+                response.usage_metadata = {"input_tokens": 2, "output_tokens": 1,
+                                           "total_tokens": 3}
+                return response
+
+        model = Metered(actions=[call("compute_plan", "meter-plan"),
+                                 call("save_recommendation", "meter-save"),
+                                 AIMessage(content="Review the recommendation.")])
+        self.turn("Allocate ORD-045.", model)
+        with Database(self.path) as db:
+            import json
+            telemetry = json.loads(db.connection.execute(
+                "SELECT telemetry_json FROM chat_turns WHERE request_id='allocate'").fetchone()[0])
+            stages = [json.loads(row[0])["stage"] for row in db.connection.execute(
+                "SELECT detail_json FROM chat_agent_events WHERE request_id='allocate' AND event_type='model_call'")]
+        self.assertEqual(stages, ["intent", "extract", "tool_loop", "tool_loop", "reply"])
+        self.assertEqual(telemetry["model_calls"], 5)
+        self.assertEqual(telemetry["usage"], {"input_tokens": 10, "output_tokens": 5,
+                                               "total_tokens": 15})
 
     def test_missing_order_blocks_before_tools(self):
         model = NativeScript(order_id=None)
@@ -155,11 +234,12 @@ class AlignmentBehavior(unittest.TestCase):
         class FlakyIntent(NativeScript):
             fail_once = True
 
-            def invoke_task(self, mode, key, bundle):
-                if bundle.metadata["id"] == "agent.intent" and self.fail_once:
+            def invoke(self, messages):
+                system = messages[0]["content"] if isinstance(messages[0], dict) else messages[0].content
+                if "Classify the current user message" in system and self.fail_once:
                     self.fail_once = False
                     raise BackendError("temporary_failure")
-                return super().invoke_task(mode, key, bundle)
+                return super().invoke(messages)
 
         model = FlakyIntent(actions=[call("compute_plan", "plan"),
                                     call("save_recommendation", "save"),

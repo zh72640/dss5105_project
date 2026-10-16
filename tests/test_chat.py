@@ -14,7 +14,8 @@ from app.db.database import Database, DB_VERSION
 from app.services import chat
 from app.services.interpretation import rule_interpret, validate_interpretation
 from app.llm.registry import ModelRegistry
-from app.llm.specs import ModelSettings, ModelSpec, ModelSelectionError
+from app.config.model_settings import ModelSettings, ModelSpec
+from app.llm.errors import ModelSelectionError
 from app.schemas.chat import TurnInterpretation
 from app.main import create_app
 from app.config.settings import Settings
@@ -370,7 +371,7 @@ class ChatModels(unittest.TestCase):
         with self.assertRaises(chat.ChatError) as error:
             chat.create(owner='alice',request_id='one',db_path=path,as_of=date(2026,4,1),registry=registry,message='Allocate cheapest; exclude W3.')
         self.assertEqual(error.exception.code,'TOOLS_UNSUPPORTED')
-        self.assertEqual(methods,['json_schema','prompt'])
+        self.assertEqual(methods,['json_schema'])
         with Database(path) as db:
             self.assertEqual(db.connection.execute("SELECT COUNT(*) FROM chat_agent_runs WHERE status='failed'").fetchone()[0],1)
 

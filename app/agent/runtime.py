@@ -13,6 +13,7 @@ from app.agent.dynamic import build_graph as build_legacy_graph
 from app.agent.main_graph import build_graph as build_main_graph
 from app.db.database import Database
 from app.db import agent_repository
+from app.llm.errors import ModelSelectionError
 
 
 class RunInProgress(RuntimeError):
@@ -36,10 +37,11 @@ def run(context, registry):
         legacy_graph = build_legacy_graph(saver)
         checkpoint = legacy_graph.get_state(config)
         previous = checkpoint.values or {}
-        use_main = callable(getattr(registry, "invoke_task", None)) and (
-            previous.get("workflow_version") == "main_v1" or not checkpoint.next)
-        if use_main and callable(getattr(registry, "require_native_tools", None)):
-            registry.require_native_tools("llm", context.model_key)
+        use_main = previous.get("workflow_version") == "main_v1" or not checkpoint.next
+        if use_main:
+            model = registry.get_model("llm", context.model_key)
+            if not callable(getattr(model, "bind_tools", None)):
+                raise ModelSelectionError("TOOLS_UNSUPPORTED", "The selected model cannot use native tools.", 503)
         graph = build_main_graph(saver) if use_main else legacy_graph
         checkpoint = graph.get_state(config)
         values = checkpoint.values or {}

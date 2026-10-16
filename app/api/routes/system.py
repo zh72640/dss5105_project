@@ -16,10 +16,10 @@ def health(settings: Settings = Depends(get_settings), registry=Depends(get_mode
 
 @router.get("/ai/status", response_model=dict)
 def ai_status(ctx: Context = Depends(require_user), registry=Depends(get_model_registry)):
-    selection = registry.resolve(require_model=False)
-    spec = selection.spec
-    return {"backend": selection.mode, "configured": selection.mode == "offline" or bool(spec and spec.configured),
-            "model": selection.metadata["model"]}
+    mode = registry.settings.default_mode
+    spec = registry.resolve(require_model=False)
+    return {"backend": mode, "configured": mode == "offline" or bool(spec and spec.configured),
+            "model": spec.api_model_id if spec else "rules_v1" if mode == "offline" else None}
 
 
 @router.get("/models", response_model=dict, tags=["Models"])

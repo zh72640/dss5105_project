@@ -34,6 +34,17 @@ def record_event(connection, *, session_id, request_id, event_type, detail):
         (session_id, request_id, event_type, json.dumps(detail, ensure_ascii=False), utc_now()))
 
 
+def model_usage(connection, request_id):
+    """Sum each persisted response once, including calls made before a resumed run."""
+    rows = connection.execute("""SELECT detail_json FROM chat_agent_events
+        WHERE request_id=? AND event_type='model_call' ORDER BY rowid""", (request_id,)).fetchall()
+    calls = [json.loads(row["detail_json"]) for row in rows]
+    totals = {key: sum((call.get("usage") or {}).get(key, 0) or 0 for call in calls)
+              for key in ("input_tokens", "output_tokens", "total_tokens")}
+    return {"model_calls": len(calls),
+            "usage": totals if any(call.get("usage") for call in calls) else None}
+
+
 def saved_messages(connection, session_id):
     return connection.execute("""SELECT role,content FROM chat_messages
         WHERE session_id=? ORDER BY sequence DESC LIMIT 40""", (session_id,)).fetchall()

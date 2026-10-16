@@ -15,7 +15,7 @@
 
 The user sends a message to the existing chat API. In an `llm` session the graph first shows the model the Skill catalog. The model requests `load_skill`, receives the exact Skill content and its permitted tool descriptions, then chooses subsequent tool calls. The tool node validates the loaded Skill, arguments, account scope, task state, and business facts. It executes the requested capability and returns a structured `{ok, data}` or `{ok: false, error: {code, message}}` result to the model. The model may call more tools, ask a question, or answer. It cannot set the task state directly.
 
-All four configured providers use their LangChain chat model's native `bind_tools` method through `ModelRegistry.invoke_tools`. A backend without native tool-call support returns `TOOLS_UNSUPPORTED`; JSON text that looks like a plan is not executed. The offline rules mode is labelled as a demo and retains its existing behavior for compatibility.
+All four configured providers use their LangChain chat model's native `bind_tools` method at the Agent call site. A backend without native tool-call support returns `TOOLS_UNSUPPORTED`; JSON text that looks like a plan is not executed. The offline rules mode is labelled as a demo and retains its existing behavior for compatibility.
 
 ## Skill catalog and Toolsets
 

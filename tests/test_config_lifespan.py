@@ -45,7 +45,7 @@ class ConfigurationLifecycle(unittest.TestCase):
                     self.assertEqual(client.post("/api/chat/sessions", json={"message": "x" * 100}).status_code, 413)
                 loader.assert_called_once()
                 factory.assert_called_once()
-        model.first.root_client.close.assert_called_once()
+        model.close.assert_called_once()
 
     def test_environment_defaults_and_cli_overrides_share_one_loader(self):
         with patch.dict(os.environ, {"DISPATCH_DB": self.path, "DISPATCH_AS_OF": "2026-04-02",
@@ -60,8 +60,7 @@ class ConfigurationLifecycle(unittest.TestCase):
                              ("override.sqlite3", date(2026, 4, 3), True))
             self.assertEqual(models.default_mode, "llm")
 
-    def test_registry_failure_unregisters_runtime_and_closes_models(self):
-        from app.llm.registry import _runtimes
+    def test_registry_failure_closes_models(self):
         registry = Mock()
         app = create_app(Settings(db_path=self.path))
         with patch("app.core.lifespan.ModelRegistry", return_value=registry), \
@@ -70,7 +69,6 @@ class ConfigurationLifecycle(unittest.TestCase):
             with TestClient(app):
                 pass
         registry.close.assert_called_once()
-        self.assertNotIn(str(Path(self.path).resolve()), _runtimes)
 
     def test_canonical_settings_modules_are_importable(self):
         from app.config import settings as settings_mod

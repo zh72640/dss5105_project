@@ -3,7 +3,7 @@ from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException
 from starlette.responses import JSONResponse
 from app.schemas.api import ErrorOutput
-from app.llm.specs import ModelSelectionError
+from app.llm.errors import ModelSelectionError
 
 ERROR_RESPONSES = {code: {"model": ErrorOutput, "description": description} for code, description in (
     (400, "Invalid request"), (401, "Login required"), (403, "Administrator access required"), (404, "Resource not found"),

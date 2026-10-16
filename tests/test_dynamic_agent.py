@@ -1,5 +1,6 @@
 """Behavioral checks for the live Skill/tool graph and transactional guards."""
 from datetime import date
+from contextlib import closing
 from pathlib import Path
 import json
 import shutil
@@ -10,14 +11,17 @@ from unittest.mock import patch
 
 from fastapi.testclient import TestClient
 from langchain_core.messages import AIMessage
+from langchain_core.messages import ToolMessage
+from langgraph.checkpoint.sqlite import SqliteSaver
 
 from app.agent import dynamic, skills
 from app.agent.dynamic import LOAD_SKILL
+from app.agent.main_graph import INTENT_SCHEMA
+from app.schemas.chat import TurnInterpretation
 from app.services import scoring as original_scores
 from app.db.database import Database
-from app.llm.registry import ModelRegistry
-from app.llm.factory import build_model
-from app.llm.specs import ModelSettings, ModelSpec
+from app.llm.registry import ModelRegistry, build_model
+from app.config.model_settings import ModelSettings, ModelSpec
 from app.config.settings import Settings
 from app.main import create_app
 from app.services import chat
@@ -37,12 +41,24 @@ class ScriptedNativeModel:
         self.responses = list(responses)
         self.offered = []
         self.prompts = []
+        self.spec = ModelSpec("mock", "openai", "mock", "test")
 
-    def invoke_tools(self, mode, key, messages, schemas):
+    def resolve(self, mode, key):
+        return self.spec
+
+    def get_model(self, mode, key):
+        return self
+
+    def bind_tools(self, schemas):
         self.offered.append({item["function"]["name"] for item in schemas})
-        self.prompts.append(messages[0].content)
-        return self.responses.pop(0)
+        return self
 
+    def invoke(self, messages):
+        content = messages[0]["content"] if isinstance(messages[0], dict) else messages[0].content
+        if "Classify the current user message" in content:
+            return AIMessage(content='{"task_type":"compat"}')
+        self.prompts.append(content)
+        return self.responses.pop(0)
 
 class DynamicAgentBehavior(unittest.TestCase):
     def setUp(self):
@@ -78,10 +94,15 @@ class DynamicAgentBehavior(unittest.TestCase):
         self.assertFalse(self.rows("SELECT * FROM working_order"))
 
     def test_authenticated_http_chat_turn_uses_native_tool_graph_and_trace(self):
-        responses = [AIMessage(content='{"task_type":"compat"}'),
+        responses = [AIMessage(content='{"task_type":"compat"}', usage_metadata={
+                         "input_tokens": 2, "output_tokens": 1, "total_tokens": 3}),
                      tool("load_skill", name="order-inquiry"),
                      tool("get_order", order_id="ORD-045"),
-                     AIMessage(content="ORD-045 is ready for allocation.")]
+                     AIMessage(content="ORD-045 is ready for allocation.", usage_metadata={
+                         "input_tokens": 5, "output_tokens": 2, "total_tokens": 7})]
+        responses[1].usage_metadata = {"input_tokens": 3, "output_tokens": 1, "total_tokens": 4}
+        responses[2].usage_metadata = {"input_tokens": 4, "output_tokens": 1, "total_tokens": 5}
+        expected_call_ids = [responses[1].tool_calls[0]["id"], responses[2].tool_calls[0]["id"]]
         offered = []
         class NativeTransport:
             def bind_tools(self, definitions):
@@ -106,6 +127,16 @@ class DynamicAgentBehavior(unittest.TestCase):
             self.assertEqual(trace.status_code, 200)
             self.assertEqual([item["tool_name"] for item in trace.json()["tool_calls"]],
                              ["load_skill", "get_order"])
+            with Database(self.path) as db:
+                telemetry = json.loads(db.connection.execute(
+                    "SELECT telemetry_json FROM chat_turns WHERE request_id='http-query'").fetchone()[0])
+                calls = [json.loads(row[0]) for row in db.connection.execute(
+                    "SELECT detail_json FROM chat_agent_events WHERE request_id='http-query' AND event_type='model_call'")]
+            self.assertEqual(telemetry["model_calls"], 4)
+            self.assertEqual(telemetry["usage"], {"input_tokens": 14, "output_tokens": 5, "total_tokens": 19})
+            self.assertEqual([call["stage"] for call in calls], ["intent", "tool_loop", "tool_loop", "reply"])
+            self.assertEqual([calls[1]["tool_call_ids"], calls[2]["tool_call_ids"]],
+                             [[expected_call_ids[0]], [expected_call_ids[1]]])
         self.assertEqual(offered[0], {"load_skill"})
         self.assertEqual(offered[1], {"load_skill", "get_order", "ask_user"})
 
@@ -209,11 +240,11 @@ class DynamicAgentBehavior(unittest.TestCase):
             models=(ModelSpec("native", "openai", "test-model", "dummy"),))
         registry = ModelRegistry(settings, factory=lambda spec: NativeModel())
         registry.initialize()
-        result = registry.invoke_tools("llm", "native", [], [LOAD_SKILL])
+        result = registry.get_model("llm", "native").bind_tools([LOAD_SKILL]).invoke([])
         self.assertEqual(result.tool_calls[0]["name"], "load_skill")
         self.assertEqual(calls[0], ["load_skill"])
 
-    def test_configured_provider_adapters_accept_native_tool_schemas(self):
+    def test_installed_provider_models_accept_native_bindings(self):
         for provider, model_id in (("openai", "gpt-4o-mini"),
                                    ("claude", "claude-sonnet-4-5"),
                                    ("gemini", "gemini-2.5-flash"),
@@ -221,6 +252,11 @@ class DynamicAgentBehavior(unittest.TestCase):
             with self.subTest(provider=provider):
                 model = build_model(ModelSpec(provider, provider, model_id, "dummy", output_method="prompt"))
                 self.assertIsNotNone(model.bind_tools([LOAD_SKILL]))
+                method = "function_calling" if provider == "claude" else "json_schema"
+                self.assertIsNotNone(model.with_structured_output(
+                    {"title": "AgentIntent", **INTENT_SCHEMA}, method=method, include_raw=True))
+                self.assertIsNotNone(model.with_structured_output(
+                    TurnInterpretation, method=method, include_raw=True))
 
     def test_skill_reload_changes_prompt_without_python_or_guard_change(self):
         root = Path(self.temp.name) / "skills"
@@ -262,6 +298,18 @@ class DynamicAgentBehavior(unittest.TestCase):
             "SELECT result_json FROM chat_agent_tool_calls WHERE request_id='policy-second' AND tool_name='get_order' ORDER BY rowid")]
         self.assertEqual([item["error"]["code"] for item in results], ["TOOL_NOT_ALLOWED", "TOOL_NOT_ALLOWED"])
 
+    def test_same_base_model_rebinds_tools_for_each_turn(self):
+        model = ScriptedNativeModel(tool("load_skill", name="order-inquiry"),
+            AIMessage(content="Ready."), tool("get_order", order_id="ORD-045"),
+            AIMessage(content="The order tool was unavailable to this turn."))
+        self.run_turn("I have an order question.", model, "first")
+        self.run_turn("Check ORD-045 again.", model, "second", 1)
+        self.assertEqual(model.offered[0], {"load_skill"})
+        self.assertIn("get_order", model.offered[1])
+        self.assertEqual(model.offered[2], {"load_skill"})
+        rejected = self.rows("SELECT result_json FROM chat_agent_tool_calls WHERE request_id='second' AND tool_name='get_order'")
+        self.assertEqual(json.loads(rejected[0][0])["error"]["code"], "TOOL_NOT_ALLOWED")
+
     def test_waiting_question_resumes_same_session(self):
         waiting = ScriptedNativeModel(tool("load_skill", name="allocation-recommendation"),
                                       tool("ask_user", question="Which order should I allocate?"))
@@ -290,9 +338,10 @@ class DynamicAgentBehavior(unittest.TestCase):
                      "2026-04-01T00:00:00Z"))
             connection.execute("UPDATE chat_sessions SET version=1 WHERE session_id=?", (self.sid,))
         class CaptureModel(ScriptedNativeModel):
-            def invoke_tools(self, mode, key, messages, schemas):
-                self.first_history = [item.content for item in messages[1:]] if not hasattr(self, "first_history") else self.first_history
-                return super().invoke_tools(mode, key, messages, schemas)
+            def invoke(self, messages):
+                if not isinstance(messages[0], dict) and not hasattr(self, "first_history"):
+                    self.first_history = [item.content for item in messages[1:]]
+                return super().invoke(messages)
         model = CaptureModel(tool("load_skill", name="workshop-inquiry"),
                              AIMessage(content="I can compare W3 now."))
         self.run_turn("Compare W3 now.", model, "legacy-followup", 1)
@@ -492,14 +541,35 @@ class DynamicAgentBehavior(unittest.TestCase):
         interrupted = ScriptedNativeModel(tool("load_skill", name="allocation-recommendation"),
             tool("update_constraints", field="order_id", value="ORD-045"),
             tool("check_requirements"), tool("compute_plan"), tool("save_recommendation"))
-        with self.assertRaises(IndexError):
+        with self.assertRaises(chat.ChatError) as unavailable:
             self.run_turn("Allocate ORD-045.", interrupted, "restart")
+        self.assertEqual(unavailable.exception.code, "MODEL_UNAVAILABLE")
         self.assertEqual(len(self.rows("SELECT * FROM chat_recommendations")), 1)
         recovered = ScriptedNativeModel(AIMessage(content="The saved plan is ready for confirmation."))
         result = self.run_turn("Allocate ORD-045.", recovered, "restart")
         self.assertEqual(result["task_state"], "RECOMMENDED")
         self.assertEqual(len(self.rows("SELECT * FROM chat_recommendations")), 1)
         self.assertEqual(len(self.rows("SELECT * FROM chat_agent_runs WHERE status='finished'")), 1)
+
+    def test_legacy_checkpoint_restores_native_tool_id_without_repeating_save(self):
+        interrupted = ScriptedNativeModel(tool("load_skill", name="allocation-recommendation"),
+            tool("update_constraints", field="order_id", value="ORD-045"),
+            tool("check_requirements"), tool("compute_plan"), tool("save_recommendation"))
+        with patch("app.agent.runtime.build_main_graph", side_effect=dynamic.build_graph):
+            with self.assertRaises(chat.ChatError) as unavailable:
+                self.run_turn("Allocate ORD-045.", interrupted, "legacy-restart")
+        self.assertEqual(unavailable.exception.code, "MODEL_UNAVAILABLE")
+        self.assertEqual(len(self.rows("SELECT * FROM chat_recommendations")), 1)
+        with closing(sqlite3.connect(self.path, check_same_thread=False)) as connection:
+            state = dynamic.build_graph(SqliteSaver(connection)).get_state({
+                "configurable": {"thread_id": f"chat-agent:{self.sid}"}})
+        self.assertTrue(state.next)
+        self.assertTrue(any(isinstance(message, ToolMessage) and message.tool_call_id
+                            for message in state.values["messages"]))
+        recovered = ScriptedNativeModel(AIMessage(content="The saved recommendation is ready."))
+        response = self.run_turn("Allocate ORD-045.", recovered, "legacy-restart")
+        self.assertEqual(response["task_state"], "RECOMMENDED")
+        self.assertEqual(len(self.rows("SELECT * FROM chat_recommendations")), 1)
 
     def test_production_event_uses_authenticated_actor_and_event_idempotency(self):
         model = ScriptedNativeModel(tool("load_skill", name="allocation-recommendation"),

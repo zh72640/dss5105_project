@@ -1,5 +1,7 @@
 """Format business feedback from verified results and saved facts."""
 from app.prompts import get_registry
+from app.llm.errors import check_response, text_content, translate_error
+from app.llm.registry import selection_metadata
 
 OBJECTIVES = {"min_delay": "earliest completion", "min_cost": "lowest cost",
               "min_defects": "lowest defect rate", "hybrid": "weighted time and quality"}
@@ -46,8 +48,14 @@ def explain(session, message):
 def conversational_reply(message, context, registry, mode, model_key):
     if mode == "llm":
         bundle = get_registry().render("conversation.reply", variables={"context": context}, user_message=message)
-        result, execution = registry.invoke_task(mode, model_key, bundle)
-        content = result["text"]
+        spec = registry.resolve(mode, model_key)
+        try:
+            raw = registry.get_model(mode, model_key).invoke(bundle.as_messages())
+        except Exception as error:
+            raise translate_error(error, spec.provider) from error
+        content = text_content(check_response(raw))
+        execution = {**selection_metadata(mode, spec, bundle.metadata['content_hash']),
+                     'usage': getattr(raw, 'usage_metadata', None), 'prompt': bundle.metadata}
         if any(word in content.lower() for word in ("allocation committed", "successfully allocated")):
             content = "Check the saved commitment result for allocation status. This reply did not commit an allocation."
         return content, execution

@@ -3,7 +3,37 @@ import json
 import math
 import os
 import re
-from app.llm.specs import ModelSettings, ModelSpec
+from dataclasses import dataclass, field
+
+
+@dataclass(frozen=True)
+class ModelSpec:
+    key: str
+    provider: str
+    api_model_id: str
+    credential: str = field(repr=False)
+    timeout: float = 30
+    output_method: str = "prompt"
+    options_json: str = "{}"
+
+    @property
+    def options(self):
+        return json.loads(self.options_json)
+
+    @property
+    def configured(self):
+        return bool(self.credential)
+
+    def public(self):
+        return {"model_key": self.key, "provider": self.provider,
+                "model": self.api_model_id, "configured": self.configured}
+
+
+@dataclass(frozen=True)
+class ModelSettings:
+    default_mode: str = "llm"
+    default_model: str | None = None
+    models: tuple[ModelSpec, ...] = ()
 
 PROVIDERS = (
     ("openai", "OPENAI", "OPENAI_API_KEY", None),
@@ -74,12 +104,18 @@ def load_model_settings(env=None, *, mode=None, legacy_backend=None):
         output = snapshot.get(prefix + "_STRUCTURED_OUTPUT", "prompt").strip()
         if output not in ("prompt", "json_schema", "json_mode", "function_calling"):
             raise ValueError(prefix + "_STRUCTURED_OUTPUT has an unsupported method.")
+        if provider in ("claude", "gemini") and output == "json_mode":
+            raise ValueError(prefix + "_STRUCTURED_OUTPUT does not support json_mode.")
+        if provider == "claude" and output == "json_schema":
+            raise ValueError("ANTHROPIC_STRUCTURED_OUTPUT json_schema is incompatible with the current extraction schema; use prompt or function_calling.")
         for alias, model in entries.items():
             if (not isinstance(alias, str) or not re.fullmatch(r"[A-Za-z0-9_-]{1,128}", alias)
                     or not isinstance(model, str) or not model.strip() or len(model) > 200):
                 raise ValueError(prefix + "_MODELS needs valid aliases and API model IDs.")
             if alias in keys:
                 raise ValueError("Model aliases must be unique across providers.")
+            if provider == "deepseek" and model.strip() == "deepseek-reasoner" and output != "prompt":
+                raise ValueError("DEEPSEEK_STRUCTURED_OUTPUT is unsupported for deepseek-reasoner.")
             keys.add(alias)
             models.append(ModelSpec(alias, provider, model.strip(), credential, timeout,
                                     output, json.dumps(options, sort_keys=True, allow_nan=False)))
