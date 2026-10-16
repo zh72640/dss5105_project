@@ -1,6 +1,6 @@
 """Explicit field changes with reversible, source-linked events."""
 from copy import deepcopy
-from app.services.allocation_preflight import issue
+from app.services.allocation.preflight import issue
 
 
 def apply_interpretation(task, interpretation, sequence):

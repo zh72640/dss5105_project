@@ -1,1 +1,1 @@
-"""Application use cases shared by FastAPI, CLI and LangGraph callers."""
+"""Business services grouped by allocation, chat, production and desk domains."""

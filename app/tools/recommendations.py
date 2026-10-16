@@ -1,8 +1,8 @@
-"""Category 4: recommendation Tools → app.services.agent_operations."""
+"""Category 4: recommendation Tools → app.services.chat.operations."""
 from langchain_core.runnables import RunnableConfig
 from langchain_core.tools import tool
 
-from app.services import agent_operations
+from app.services.chat import operations as agent_operations
 
 
 @tool
@@ -20,11 +20,13 @@ def save_recommendation(config: RunnableConfig) -> dict:
         dict: recommendation_id, task_version, status, result.
 
     Errors:
-        INVALID_TASK_STATE, PLAN_REQUIRED, STALE_PLAN.
+        INVALID_TASK_STATE, PLAN_REQUIRED, STALE_PLAN, SKILL_INPUT_INCOMPLETE,
+        SKILL_INPUT_STALE, INVALID_ALLOCATION_INPUT, MULTI_WORKSHOP_UNSUPPORTED.
     """
     cfg = config["configurable"]
     return agent_operations.save_recommendation(
-        cfg["connection"], cfg["session"], cfg["as_of"], cfg.get("plan"))
+        cfg["connection"], cfg["session"], cfg["as_of"], cfg.get("plan"),
+        allocation_input=cfg.get("allocation_input"))
 
 
 @tool

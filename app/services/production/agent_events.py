@@ -67,7 +67,7 @@ def record_production_event(
                 "EVENT_NOT_AUTHORIZED",
                 "The deadline requirement must be stated by the user.")
 
-    from app.services.lifecycle import process_event
+    from app.services.production.lifecycle import process_event
     response = process_event(
         action, order_id, actor=owner, reason=reason,
         expected_version=expected_version,

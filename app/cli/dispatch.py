@@ -2,7 +2,7 @@ import argparse
 import json
 from datetime import date
 from pathlib import Path
-from app.services.dispatch import seed_allocation
+from app.services.allocation.dispatch import seed_allocation
 
 ROOT = Path(__file__).resolve().parents[2]
 DATA = ROOT / "data/dispatch_requests.txt"

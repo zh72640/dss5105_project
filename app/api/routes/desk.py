@@ -4,7 +4,7 @@ from fastapi.responses import Response
 from app.api.dependencies import Context, require_user
 from app.api.errors import ApiError, ERROR_RESPONSES
 from app.schemas.api import ItemsOutput
-from app.services import desk
+from app.services.desk import service as desk
 
 router = APIRouter(tags=["Desk and audit"], responses=ERROR_RESPONSES)
 

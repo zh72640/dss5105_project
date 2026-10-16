@@ -91,6 +91,27 @@ class RegistryBehavior(unittest.TestCase):
         with self.assertRaises(BackendError):
             check_structured({"raw": message, "parsed": None, "parsing_error": ValueError("bad")})
 
+    def test_missing_model_content_is_an_input_error_even_when_wrapped(self):
+        for text in ('contents are required.', 'content is required.', 'content parts are required.'):
+            for wrapped in (False, True):
+                with self.subTest(text=text, wrapped=wrapped):
+                    source = ValueError(text)
+                    if wrapped:
+                        wrapper = RuntimeError('private outer exception')
+                        wrapper.__cause__ = source
+                        source = wrapper
+                    error = translate_error(source, 'gemini')
+                    self.assertEqual(str(error), 'gemini_invalid_input')
+                    self.assertFalse(error.retryable)
+                    self.assertIsNone(error.upstream_status)
+                    self.assertIn('required message content', error.user_message())
+                    self.assertNotIn('configuration', error.user_message())
+                    self.assertNotIn('End this request', error.user_message())
+                    self.assertNotIn('private', str(error.details()))
+        self.assertEqual(str(translate_error(ValueError('other error'), 'gemini')), 'gemini_invalid_response')
+        generic = BackendError('gemini_invalid_response', retryable=False)
+        self.assertNotIn('End this request', generic.user_message())
+
     def test_selection_and_provider_errors_keep_codes(self):
         registry = ModelRegistry(load_model_settings({"OPENAI_MODELS": '{"openai":"gpt-test"}'}))
         with self.assertRaises(ModelSelectionError) as missing:

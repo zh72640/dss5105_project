@@ -24,8 +24,8 @@ from app.llm.registry import ModelRegistry, build_model
 from app.config.model_settings import ModelSettings, ModelSpec
 from app.config.settings import Settings
 from app.main import create_app
-from app.services import chat
-from app.services import lifecycle
+from app.services.chat import service as chat
+from app.services.production import lifecycle
 
 
 def tool(tool_name, **args):
@@ -146,8 +146,9 @@ class DynamicAgentBehavior(unittest.TestCase):
 
     def test_recommendation_scores_and_commits_once(self):
         model = ScriptedNativeModel(
-            tool("load_skill", name="allocation-recommendation"),
+            tool("load_skill", name="constraint-revision"),
             tool("update_constraints", field="order_id", value="ORD-045"),
+            tool("load_skill", name="workshop-inquiry"),
             tool("score_workshop", workshop_id="W1", order_id="ORD-045"),
             tool("check_requirements"), tool("compute_plan"), tool("save_recommendation"),
             AIMessage(content="The recommendation is ready for explicit confirmation."))
@@ -204,7 +205,7 @@ class DynamicAgentBehavior(unittest.TestCase):
         self.assertIsNotNone(data["eligibility_rejection"])
 
     def test_illegal_save_is_rejected_and_model_can_ask(self):
-        model = ScriptedNativeModel(tool("load_skill", name="allocation-recommendation"),
+        model = ScriptedNativeModel(tool("load_skill", name="constraint-revision"),
                                     tool("save_recommendation"),
                                     tool("ask_user", question="Which order should I allocate?"))
         response = self.run_turn("Please allocate an order.", model, "missing")
@@ -316,7 +317,7 @@ class DynamicAgentBehavior(unittest.TestCase):
         self.assertEqual(json.loads(rejected[0][0])["error"]["code"], "TOOL_NOT_ALLOWED")
 
     def test_waiting_question_resumes_same_session(self):
-        waiting = ScriptedNativeModel(tool("load_skill", name="allocation-recommendation"),
+        waiting = ScriptedNativeModel(tool("load_skill", name="constraint-revision"),
                                       tool("ask_user", question="Which order should I allocate?"))
         first = self.run_turn("Please allocate an order.", waiting, "wait")
         self.assertEqual(first["pending_question"], "Which order should I allocate?")
@@ -357,13 +358,13 @@ class DynamicAgentBehavior(unittest.TestCase):
         root = Path(self.temp.name) / "skills"
         shutil.copytree(skills.SKILL_ROOT, root)
         with patch.object(skills, "SKILL_ROOT", root):
-            waiting = ScriptedNativeModel(tool("load_skill", name="allocation-recommendation"),
+            waiting = ScriptedNativeModel(tool("load_skill", name="constraint-revision"),
                 tool("ask_user", question="Which order should I allocate?"))
             self.run_turn("Allocate an order.", waiting, "pin-wait")
             original = self.rows("SELECT skill_hash FROM chat_agent_tool_calls WHERE request_id='pin-wait' AND tool_name='load_skill'")[0][0]
-            source = root / "allocation-recommendation" / "SKILL.md"
+            source = root / "constraint-revision" / "SKILL.md"
             source.write_text(source.read_text(encoding="utf-8") + "\nUse a newly revised policy.\n", encoding="utf-8")
-            resumed = ScriptedNativeModel(tool("load_skill", name="allocation-recommendation"),
+            resumed = ScriptedNativeModel(tool("load_skill", name="constraint-revision"),
                 AIMessage(content="Please provide the order ID."))
             self.run_turn("I still need to find the order ID.", resumed, "pin-resume", 1)
         pinned = self.rows("SELECT skill_hash FROM chat_agent_tool_calls WHERE request_id='pin-resume' AND tool_name='load_skill'")[0][0]
@@ -371,7 +372,7 @@ class DynamicAgentBehavior(unittest.TestCase):
         self.assertNotIn("newly revised policy", resumed.prompts[-1])
 
     def test_ungrounded_text_change_is_refused_and_traced(self):
-        model = ScriptedNativeModel(tool("load_skill", name="allocation-recommendation"),
+        model = ScriptedNativeModel(tool("load_skill", name="constraint-revision"),
             tool("update_constraints", field="product", value="Invented product"),
             tool("ask_user", question="Which product do you mean?"))
         response = self.run_turn("Allocate ORD-045.", model, "invented")
@@ -434,7 +435,7 @@ class DynamicAgentBehavior(unittest.TestCase):
         self.assertEqual(results[1]["error"]["code"], "EXECUTION_LIMIT")
 
     def test_changed_queue_supersedes_saved_recommendation_on_fresh_check(self):
-        initial = ScriptedNativeModel(tool("load_skill", name="allocation-recommendation"),
+        initial = ScriptedNativeModel(tool("load_skill", name="constraint-revision"),
             tool("update_constraints", field="order_id", value="ORD-045"),
             tool("check_requirements"), tool("compute_plan"), tool("save_recommendation"),
             AIMessage(content="Plan ready."))
@@ -447,7 +448,7 @@ class DynamicAgentBehavior(unittest.TestCase):
         self.assertEqual(response["session"]["recommendation"]["status"], "superseded")
 
     def test_explicit_confirmation_rechecks_facts_and_traces_stale_refusal(self):
-        model = ScriptedNativeModel(tool("load_skill", name="allocation-recommendation"),
+        model = ScriptedNativeModel(tool("load_skill", name="constraint-revision"),
             tool("update_constraints", field="order_id", value="ORD-045"),
             tool("check_requirements"), tool("compute_plan"), tool("save_recommendation"),
             AIMessage(content="Review this recommendation."))
@@ -467,7 +468,7 @@ class DynamicAgentBehavior(unittest.TestCase):
         self.assertEqual(refused[0]["detail"]["recommendation_id"], rec["recommendation_id"])
 
     def test_confirmation_trace_failure_rolls_back_allocation_and_can_retry(self):
-        model = ScriptedNativeModel(tool("load_skill", name="allocation-recommendation"),
+        model = ScriptedNativeModel(tool("load_skill", name="constraint-revision"),
             tool("update_constraints", field="order_id", value="ORD-045"),
             tool("check_requirements"), tool("compute_plan"), tool("save_recommendation"),
             AIMessage(content="Review this recommendation."))
@@ -491,7 +492,7 @@ class DynamicAgentBehavior(unittest.TestCase):
         self.assertTrue(recovered["committed"])
 
     def test_inspection_reconciles_stale_recommendation_without_model_preflight(self):
-        initial = ScriptedNativeModel(tool("load_skill", name="allocation-recommendation"),
+        initial = ScriptedNativeModel(tool("load_skill", name="constraint-revision"),
             tool("update_constraints", field="order_id", value="ORD-045"),
             tool("check_requirements"), tool("compute_plan"), tool("save_recommendation"),
             AIMessage(content="Plan ready."))
@@ -506,7 +507,7 @@ class DynamicAgentBehavior(unittest.TestCase):
         self.assertEqual(self.rows("SELECT status FROM chat_recommendations")[0][0], "superseded")
 
     def test_revision_invalidates_old_plan_even_when_message_says_confirm(self):
-        first = ScriptedNativeModel(tool("load_skill", name="allocation-recommendation"),
+        first = ScriptedNativeModel(tool("load_skill", name="constraint-revision"),
             tool("update_constraints", field="order_id", value="ORD-045"),
             tool("check_requirements"), tool("compute_plan"), tool("save_recommendation"),
             AIMessage(content="Ready for confirmation."))
@@ -523,7 +524,7 @@ class DynamicAgentBehavior(unittest.TestCase):
                       action="confirm", recommendation_id=rec["recommendation_id"], db_path=self.path)
 
     def test_valid_revision_supersedes_old_card_and_saves_new_preview(self):
-        initial = ScriptedNativeModel(tool("load_skill", name="allocation-recommendation"),
+        initial = ScriptedNativeModel(tool("load_skill", name="constraint-revision"),
             tool("update_constraints", field="order_id", value="ORD-045"),
             tool("check_requirements"), tool("compute_plan"), tool("save_recommendation"),
             AIMessage(content="Review the first recommendation."))
@@ -543,12 +544,12 @@ class DynamicAgentBehavior(unittest.TestCase):
         self.assertFalse(self.rows("SELECT * FROM working_order"))
 
     def test_restart_resumes_after_saved_recommendation_without_duplicate(self):
-        interrupted = ScriptedNativeModel(tool("load_skill", name="allocation-recommendation"),
+        interrupted = ScriptedNativeModel(tool("load_skill", name="constraint-revision"),
             tool("update_constraints", field="order_id", value="ORD-045"),
             tool("check_requirements"), tool("compute_plan"), tool("save_recommendation"))
         with self.assertRaises(chat.ChatError) as unavailable:
             self.run_turn("Allocate ORD-045.", interrupted, "restart")
-        self.assertEqual(unavailable.exception.code, "MODEL_UNAVAILABLE")
+        self.assertEqual(unavailable.exception.code, "MODEL_REQUEST_FAILED")
         self.assertEqual(len(self.rows("SELECT * FROM chat_recommendations")), 1)
         recovered = ScriptedNativeModel(AIMessage(content="The saved plan is ready for confirmation."))
         result = self.run_turn("Allocate ORD-045.", recovered, "restart")
@@ -557,13 +558,13 @@ class DynamicAgentBehavior(unittest.TestCase):
         self.assertEqual(len(self.rows("SELECT * FROM chat_agent_runs WHERE status='finished'")), 1)
 
     def test_legacy_checkpoint_restores_native_tool_id_without_repeating_save(self):
-        interrupted = ScriptedNativeModel(tool("load_skill", name="allocation-recommendation"),
+        interrupted = ScriptedNativeModel(tool("load_skill", name="constraint-revision"),
             tool("update_constraints", field="order_id", value="ORD-045"),
             tool("check_requirements"), tool("compute_plan"), tool("save_recommendation"))
         with patch("app.agent.runtime.build_main_graph", side_effect=dynamic.build_graph):
             with self.assertRaises(chat.ChatError) as unavailable:
                 self.run_turn("Allocate ORD-045.", interrupted, "legacy-restart")
-        self.assertEqual(unavailable.exception.code, "MODEL_UNAVAILABLE")
+        self.assertEqual(unavailable.exception.code, "MODEL_REQUEST_FAILED")
         self.assertEqual(len(self.rows("SELECT * FROM chat_recommendations")), 1)
         with closing(sqlite3.connect(self.path, check_same_thread=False)) as connection:
             state = dynamic.build_graph(SqliteSaver(connection)).get_state({
@@ -577,7 +578,7 @@ class DynamicAgentBehavior(unittest.TestCase):
         self.assertEqual(len(self.rows("SELECT * FROM chat_recommendations")), 1)
 
     def test_production_event_uses_authenticated_actor_and_event_idempotency(self):
-        model = ScriptedNativeModel(tool("load_skill", name="allocation-recommendation"),
+        model = ScriptedNativeModel(tool("load_skill", name="constraint-revision"),
             tool("update_constraints", field="order_id", value="ORD-045"),
             tool("check_requirements"), tool("compute_plan"), tool("save_recommendation"),
             AIMessage(content="Confirm the card to commit."))
@@ -602,7 +603,7 @@ class DynamicAgentBehavior(unittest.TestCase):
         self.assertEqual(len(self.rows("SELECT * FROM lifecycle_events WHERE action='complete'")), count)
 
     def test_restart_after_production_transaction_does_not_repeat_event_or_queue_write(self):
-        planning = ScriptedNativeModel(tool("load_skill", name="allocation-recommendation"),
+        planning = ScriptedNativeModel(tool("load_skill", name="constraint-revision"),
             tool("update_constraints", field="order_id", value="ORD-045"),
             tool("check_requirements"), tool("compute_plan"), tool("save_recommendation"),
             AIMessage(content="Confirm the card to commit."))

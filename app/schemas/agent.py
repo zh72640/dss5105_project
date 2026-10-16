@@ -10,3 +10,14 @@ class TaskResult(TypedDict):
     status: TaskStatus
     result: dict[str, Any] | None
     issues: list[dict[str, Any]]
+
+
+class ExplanationInput(TypedDict):
+    """Runtime-owned business provenance and the verified result to explain."""
+    source_node: str
+    task_result: TaskResult
+
+
+class ExplanationResult(TypedDict):
+    """Presentation text; it never replaces the business result."""
+    text: str

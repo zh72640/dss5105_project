@@ -3,15 +3,15 @@ import json
 import tempfile
 from pathlib import Path
 from app.db.database import Database
-from app.services.lifecycle import inspect_order, process_event
-from app.services.dispatch import process_request
+from app.services.production.lifecycle import inspect_order, process_event
+from app.services.allocation.dispatch import seed_allocation
 
 
 def run():
     with tempfile.TemporaryDirectory(prefix="sweaterco-lifecycle-") as directory:
         path = Path(directory) / "lifecycle.sqlite3"
         steps = []
-        steps.append(process_request("Allocate ORD-045 to Nimble Needle.", db_path=path, backend="offline", request_id="allocate-1"))
+        steps.append(seed_allocation("Allocate ORD-045 to Nimble Needle.", db_path=path, request_id="allocate-1"))
 
         def event(action, event_id, **kwargs):
             order = inspect_order("ORD-045", db_path=path)
@@ -24,7 +24,7 @@ def run():
 
         event("complete", "complete-50", workshop_id="W6", pieces=50)
         event("cancel", "cancel-remaining")
-        steps.append(process_request("Allocate ORD-045 to Nimble Needle.", db_path=path, backend="offline", request_id="allocate-remaining"))
+        steps.append(seed_allocation("Allocate ORD-045 to Nimble Needle.", db_path=path, request_id="allocate-remaining"))
         reassigned = event("reassign", "reassign-100", preferred_workshop="W8")
         replay = process_event("reassign", "ORD-045", actor="demo-operator", reason="Lifecycle acceptance demo",
                                expected_version=reassigned["event"]["expected_version"], event_id="reassign-100", db_path=path,

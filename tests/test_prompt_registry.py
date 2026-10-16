@@ -36,9 +36,12 @@ class PromptCatalogTests(unittest.TestCase):
 
     def test_active_catalog_and_no_parser_v1(self):
         entries = self.registry.list()
-        self.assertEqual(len(entries), 6)
-        self.assertEqual(len(self.registry.list(kind="prompt")), 5)
-        self.assertTrue(all(item["active"] and len(item["content_hash"]) == 64 for item in entries))
+        self.assertEqual(len(entries), 13)
+        self.assertEqual(len(self.registry.list(kind="prompt")), 11)
+        self.assertTrue(all(len(item["content_hash"]) == 64 for item in entries))
+        self.assertEqual({(item['id'], item['version']) for item in entries if not item['active']},
+                         {('allocation.extract', 'v1'), ('allocation.extract', 'v2'),
+                          ('allocation.extract_retry', 'v1'), ('allocation.explain', 'v1')})
         self.assertFalse(any(item["id"].startswith("parsing.") for item in entries))
 
     def test_render_is_immutable_and_single_pass(self):
@@ -91,7 +94,7 @@ class PromptCatalogTests(unittest.TestCase):
         registry = PromptRegistry(self.root)
         self.assertEqual(registry.get("conversation.intent").version, "chat_v3")
         self.assertEqual(registry.snapshot("conversation.interpret").additions[0].version, "chat_v2")
-        self.assertEqual(len(registry.list(active_only=True)), 6)
+        self.assertEqual(len(registry.list(active_only=True)), 9)
 
     def test_retry_fragment_is_pinned_to_snapshot(self):
         self.write("agent/retry_v1.yaml", {"id": "agent.retry", "version": "v1", "kind": "fragment",

@@ -18,8 +18,9 @@ def business_responses(model):
 
 
 class ApiError(Exception):
-    def __init__(self, status, error, message=None):
+    def __init__(self, status, error, message=None, *, details=None):
         self.status, self.error, self.message = status, error, message
+        self.details = details
 
 
 def install_handlers(app):
@@ -32,6 +33,8 @@ def install_handlers(app):
         body = {"error": exc.error}
         if exc.message:
             body["message"] = exc.message
+        if exc.details is not None:
+            body["details"] = exc.details
         return JSONResponse(body, status_code=exc.status)
 
     @app.exception_handler(RequestValidationError)

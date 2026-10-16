@@ -21,7 +21,7 @@ from demos.lifecycle_demo import run as run_lifecycle
 from evaluation.compare_simulator import compare, markdown
 from app import APP_VERSION
 from app.db.database import DB_VERSION
-from app.services.dispatch import PIPELINE_VERSION
+from app.services.allocation.dispatch import PIPELINE_VERSION
 def main():
     out = ROOT / "evaluation/results"
     out.mkdir(parents=True, exist_ok=True)
@@ -29,7 +29,7 @@ def main():
     suite = unittest.defaultTestLoader.discover(str(ROOT / "tests"))
     result = unittest.TextTestRunner(stream=stream, verbosity=2).run(suite)
     (out / "test_results.txt").write_text(stream.getvalue())
-    demo = run("offline")
+    demo = run()
     (out / "week6_demo.json").write_text(json.dumps(demo, indent=2, ensure_ascii=False) + "\n")
     lifecycle = run_lifecycle()
     (out / "lifecycle_demo.json").write_text(json.dumps(lifecycle, indent=2, ensure_ascii=False) + "\n")

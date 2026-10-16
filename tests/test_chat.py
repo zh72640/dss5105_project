@@ -11,8 +11,8 @@ from unittest.mock import patch
 from fastapi.testclient import TestClient
 from langchain_core.messages import AIMessage
 from app.db.database import Database, DB_VERSION
-from app.services import chat
-from app.services.interpretation import rule_interpret, validate_interpretation
+from app.services.chat import service as chat
+from app.services.chat.interpretation import rule_interpret, validate_interpretation
 from app.llm.registry import ModelRegistry
 from app.config.model_settings import ModelSettings, ModelSpec
 from app.llm.errors import ModelSelectionError
@@ -50,7 +50,7 @@ class ChatBehavior(unittest.TestCase):
             return db.connection.execute(sql).fetchone()[0]
 
     def test_missing_information_never_calls_planner(self):
-        with patch('app.services.allocation.allocate',side_effect=AssertionError('planner must not run')):
+        with patch('app.services.allocation.service.allocate',side_effect=AssertionError('planner must not run')):
             first=self.turn('帮我分配，成本越低越好')
             self.assertFalse(first['validation_report']['ready_for_planning'])
         final=self.turn('ORD-045')
@@ -69,7 +69,7 @@ class ChatBehavior(unittest.TestCase):
         self.assertEqual(self.inspect()['task']['draft']['exclusion'],['W6'])
 
     def test_conflicting_order_fields_collected_and_explicit_resolution(self):
-        with patch('app.services.allocation.allocate',side_effect=AssertionError('planner must not run')):
+        with patch('app.services.allocation.service.allocate',side_effect=AssertionError('planner must not run')):
             result=self.turn('Allocate ORD-045 cheapest, 999 pieces, due 2027-01-01.')
         fields={p['field'] for p in result['validation_report']['blocking_issues']}
         self.assertTrue({'pieces','due_date'}.issubset(fields))
@@ -78,7 +78,7 @@ class ChatBehavior(unittest.TestCase):
 
     def test_budget_survives_unrelated_updates_and_blocks_confirmation(self):
         self.recommend()
-        with patch('app.services.allocation.allocate',side_effect=AssertionError('planner must not run')):
+        with patch('app.services.allocation.service.allocate',side_effect=AssertionError('planner must not run')):
             self.turn('不要 W6，预算 100 元')
             result=self.turn('改成两个工坊')
         self.assertTrue(result['validation_report']['blocking_issues'])
@@ -96,7 +96,7 @@ class ChatBehavior(unittest.TestCase):
 
     def test_unknown_preferred_and_excluded_workshops_block_planner(self):
         for expression in ('Allocate ORD-045 to W99.','Allocate ORD-045; exclude W99.'):
-            with self.subTest(expression=expression),patch('app.services.allocation.allocate',side_effect=AssertionError('planner must not run')):
+            with self.subTest(expression=expression),patch('app.services.allocation.service.allocate',side_effect=AssertionError('planner must not run')):
                 result=self.turn(expression)
                 self.assertFalse(result['validation_report']['ready_for_planning'])
 
@@ -118,7 +118,7 @@ class ChatBehavior(unittest.TestCase):
 
     def test_order_id_answer_to_query_does_not_become_allocation_request(self):
         self.turn('订单状态怎么样？')
-        with patch('app.services.allocation.allocate',side_effect=AssertionError('read-only query must not plan')):
+        with patch('app.services.allocation.service.allocate',side_effect=AssertionError('read-only query must not plan')):
             result=self.turn('ORD-045')
         self.assertEqual(result['intent'],'query_order')
         self.assertIsNone(result['session']['task']['draft']['order_id'])
@@ -226,7 +226,7 @@ class ChatBehavior(unittest.TestCase):
     def test_missing_queue_data_never_calls_planner(self):
         with Database(self.path) as db:
             db.connection.execute("DELETE FROM workshop_queue WHERE workshop_id='W3'")
-        with patch('app.services.allocation.allocate',side_effect=AssertionError('planner must not run')):
+        with patch('app.services.allocation.service.allocate',side_effect=AssertionError('planner must not run')):
             result=self.recommend()
         self.assertIn('RESOURCE_DATA_ERROR',{p['code'] for p in result['validation_report']['blocking_issues']})
 
@@ -263,7 +263,7 @@ class ChatBehavior(unittest.TestCase):
 
     def test_zero_pieces_and_excessive_limit_are_clarification_not_service_errors(self):
         for message in ('分配 ORD-045，0件','Allocate ORD-045; at most nine workshops.'):
-            with patch('app.services.allocation.allocate',side_effect=AssertionError('planner must not run')):
+            with patch('app.services.allocation.service.allocate',side_effect=AssertionError('planner must not run')):
                 result=self.turn(message)
             self.assertEqual(result['http_status'],200)
             self.assertFalse(result['validation_report']['ready_for_planning'])
@@ -303,18 +303,18 @@ class ChatBehavior(unittest.TestCase):
 
     def test_query_with_new_budget_is_not_misclassified_as_read_only(self):
         self.recommend()
-        with patch('app.services.allocation.allocate',side_effect=AssertionError('planner must not run')):
+        with patch('app.services.allocation.service.allocate',side_effect=AssertionError('planner must not run')):
             result=self.turn('方案多少钱，预算100元')
         self.assertEqual(result['task_state'],'BLOCKED')
         self.assertTrue(result['session']['task']['issues'])
 
     def test_currency_cap_cannot_be_silently_dropped(self):
-        with patch('app.services.allocation.allocate',side_effect=AssertionError('planner must not run')):
+        with patch('app.services.allocation.service.allocate',side_effect=AssertionError('planner must not run')):
             result=self.turn('分配 ORD-045，成本最低，但不超过100元')
         self.assertEqual(result['task_state'],'BLOCKED')
 
     def test_time_window_requires_explicit_supported_constraint(self):
-        with patch('app.services.allocation.allocate',side_effect=AssertionError('planner must not run')):
+        with patch('app.services.allocation.service.allocate',side_effect=AssertionError('planner must not run')):
             result=self.turn('Allocate ORD-045 within two days.')
         self.assertFalse(result['validation_report']['ready_for_planning'])
 

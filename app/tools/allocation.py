@@ -2,7 +2,7 @@
 from langchain_core.runnables import RunnableConfig
 from langchain_core.tools import tool
 
-from app.services import agent_operations
+from app.services.chat import operations as agent_operations
 
 
 @tool
@@ -21,7 +21,9 @@ def compute_plan(config: RunnableConfig) -> dict:
         dict: result, report, facts_hash, plan_hash, and task_version.
 
     Errors:
-        INVALID_TASK_STATE, PLAN_BLOCKED.
+        INVALID_TASK_STATE, PLAN_BLOCKED, SKILL_INPUT_INCOMPLETE, SKILL_INPUT_STALE,
+        INVALID_ALLOCATION_INPUT, MULTI_WORKSHOP_UNSUPPORTED.
     """
     cfg = config["configurable"]
-    return agent_operations.compute_plan(cfg["connection"], cfg["session"], cfg["as_of"])
+    return agent_operations.compute_plan(
+        cfg["connection"], cfg["session"], cfg["as_of"], allocation_input=cfg.get("allocation_input"))

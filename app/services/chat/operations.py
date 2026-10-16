@@ -5,13 +5,14 @@ Do not import from HTTP routes; Agent Tools call these functions.
 """
 from app.db import chat_repository
 from app.db.order_repository import get_order
-from app.services import allocation
-from app.services.allocation_preflight import preflight
-from app.services.conversation_context import build_context
-from app.services.interpretation import validate_interpretation
-from app.services.constraint_patches import apply_interpretation
+from app.services.allocation import service as allocation
+from app.services.allocation.preflight import preflight
+from app.services.chat.context import build_context
+from app.services.chat.interpretation import validate_interpretation
+from app.services.chat.constraint_patches import apply_interpretation
 from app.schemas.chat import TurnInterpretation
 from app.schemas.tool import ToolFailure
+from app.services.allocation.contracts import inspect_input, single_workshop_issues, FIELDS
 
 ALLOWED_TASK_STATES = {
     "update_constraints": frozenset({"COLLECTING", "BLOCKED", "READY", "RECOMMENDED"}),
@@ -70,10 +71,27 @@ def update_constraints(connection, session, *, field, value, operation, user_mes
             "state": revised["state"], "previous_recommendation_invalidated": True}
 
 
-def check_requirements(connection, session, as_of):
+def _validate_skill_input(connection, session, allocation_input):
+    if allocation_input is None:
+        return None
+    checked, issues = inspect_input(allocation_input, skill=True)
+    canonical, canonical_issues = inspect_input(session["task"]["draft"], skill=True)
+    issues += canonical_issues + single_workshop_issues(session["task"]["draft"])
+    if not issues and any(checked[key] != canonical[key] for key in FIELDS):
+        issues.append({"code": "SKILL_INPUT_STALE", "field": "allocation",
+                       "severity": "blocking", "question": "The prepared allocation input changed. Submit a fresh request."})
+    if issues:
+        report = {**session["task"].get("report", {}), "blocking_issues": issues,
+                  "ready_for_planning": False, "ready_for_recommendation": False}
+        block_plan(connection, session, report, issues[0]["code"], issues[0]["question"])
+    return checked
+
+
+def check_requirements(connection, session, as_of, *, allocation_input=None):
     """Run preflight and update task readiness state."""
     task = session["task"]
     _require_task_state("check_requirements", task["state"])
+    checked = _validate_skill_input(connection, session, allocation_input)
     report, _, _, facts_hash = preflight(connection, task["draft"], as_of, task["issues"], task["sources"])
     _retain_preparation_provenance(task, report)
     task["report"] = report
@@ -87,7 +105,10 @@ def check_requirements(connection, session, as_of):
     if not recommendation_current:
         chat_repository.supersede_current(connection, session["session_id"])
     chat_repository.save_task(connection, task)
-    return {"state": task["state"], "report": report, "facts_hash": facts_hash}
+    if allocation_input is not None and not report["ready_for_planning"]:
+        raise ToolFailure("PLAN_BLOCKED", report["blocking_issues"][0]["question"])
+    return {"state": task["state"], "report": report, "facts_hash": facts_hash,
+            **({"skill_input": checked} if allocation_input is not None else {})}
 
 
 def block_plan(connection, session, report, code, message):
@@ -100,9 +121,10 @@ def block_plan(connection, session, report, code, message):
     raise ToolFailure(code, message)
 
 
-def prepare_compute_plan(connection, session, as_of):
+def prepare_compute_plan(connection, session, as_of, *, allocation_input=None):
     """Validate task state and prepare an AllocationRequest for compute_plan."""
     task = session["task"]
+    _validate_skill_input(connection, session, allocation_input)
     _require_task_state("compute_plan", task["state"])
     if task["state"] not in ("READY", "RECOMMENDED"):
         raise ToolFailure("INVALID_TASK_STATE",
@@ -127,10 +149,10 @@ def finish_compute_plan(connection, session, prepared, result, as_of):
             "task_version": task["task_version"]}
 
 
-def compute_plan(connection, session, as_of):
+def compute_plan(connection, session, as_of, *, allocation_input=None):
     """Prepare inputs, call allocator.allocate, then finish/check the plan."""
     from app.allocator import allocate
-    prepared = prepare_compute_plan(connection, session, as_of)
+    prepared = prepare_compute_plan(connection, session, as_of, allocation_input=allocation_input)
     if prepared["request"] is None:
         block_plan(
             connection, session, prepared["report"], "PLAN_BLOCKED",
@@ -140,9 +162,10 @@ def compute_plan(connection, session, as_of):
     return finish_compute_plan(connection, session, prepared, result, as_of)
 
 
-def save_recommendation(connection, session, as_of, plan):
+def save_recommendation(connection, session, as_of, plan, *, allocation_input=None):
     """Recompute under a write transaction and save a recommendation preview."""
     task = session["task"]
+    _validate_skill_input(connection, session, allocation_input)
     _require_task_state("save_recommendation", task["state"])
     if task["state"] not in ("READY", "RECOMMENDED") or not plan:
         raise ToolFailure("PLAN_REQUIRED",
@@ -164,7 +187,7 @@ def save_recommendation(connection, session, as_of, plan):
 
 def inspect_recommendation(connection, session):
     """Reconcile and return the latest saved recommendation for the session."""
-    from app.services.chat import reconcile_recommendation
+    from app.services.chat.service import reconcile_recommendation
     reconcile_recommendation(connection, session)
     rec = chat_repository.latest_recommendation(connection, session["session_id"])
     if rec is None:

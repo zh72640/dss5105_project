@@ -2,14 +2,21 @@
 import json
 import re
 from datetime import date, timedelta
-from app.schemas.chat import TurnInterpretation
+from typing import get_args
+from app.schemas.chat import TurnInterpretation, PatchField
 from app.schemas.parser_schema import OBJECTIVES
 from app.services.intake.rule_parser import extract
 from app.services.intake.normalization import order_ids, workshop_mentions, number
-from app.services.allocation_preflight import issue
+from app.services.allocation.preflight import issue
 
-FIELDS = {'order_id','customer','product','category','pieces','order_date','due_date','objective',
-    'exclusion','num_workshop_allowed','preferred_workshop','deadline_required'}
+FIELDS = set(get_args(PatchField))
+
+
+class InterpretationValidationError(ValueError):
+    def __init__(self, reason, **detail):
+        super().__init__(reason)
+        self.detail = {'reason': reason, **detail}
+
 
 
 def rule_interpret(message, context):
@@ -178,73 +185,88 @@ def validate_interpretation(value, message, context):
         raise ValueError('UNGROUNDED_WITHDRAWAL')
     if 'soft_workshop_preference' in value.answered_question_ids and not re.search(r'取消工坊(?:软)?偏好|remove workshop preference',message,re.I):
         raise ValueError('UNGROUNDED_WITHDRAWAL')
-    for operation in value.patch_operations:
+    for index, operation in enumerate(value.patch_operations):
         evidence = operation.evidence
         source = message if evidence.message_sequence == context['current_sequence'] else next(
-            (m['content'] for m in context['history'] if m['role']=='user' and m['sequence']==evidence.message_sequence), None)
-        if source is None or evidence.quote not in source or operation.field not in FIELDS:
-            raise ValueError('UNSUPPORTED_EVIDENCE')
-        if evidence.message_sequence != context['current_sequence'] and not re.search(r'之前|刚才|一样|same|previous|原来',message,re.I):
-            raise ValueError('STALE_EVIDENCE')
-        field, val = operation.field, operation.value
-        if operation.op=='undo':
-            if not re.search(r'撤销|撤回|取消刚才|\bundo\b',evidence.quote,re.I):
-                raise ValueError('UNGROUNDED_UNDO')
-            continue
-        if operation.op=='unset':
-            if not re.search(r'取消|清除|移除|登记|clear|remove|registered|unset',evidence.quote,re.I):
-                raise ValueError('UNGROUNDED_CLEAR')
-            labels={'deadline_required':r'交期|deadline|准时|late','preferred_workshop':r'指定|工坊|workshop|preferred',
-                'exclusion':r'排除|exclusion','pieces':r'数量|件|pieces|quantity','customer':r'客户|customer',
-                'product':r'产品|product','category':r'品类|category','order_date':r'日期|date','due_date':r'交期|日期|due|date',
-                'objective':r'目标|objective','num_workshop_allowed':r'工坊|workshop','order_id':r'订单|order'}
-            registered=operation.field in ('customer','product','category','pieces','order_date','due_date') and re.search(r'登记|registered',evidence.quote,re.I)
-            if not registered and not re.search(labels[field],evidence.quote,re.I):
-                raise ValueError('UNGROUNDED_CLEAR_FIELD')
-            continue
-        if field == 'exclusion':
-            vals=val if isinstance(val,list) else [val]
-            if any(not isinstance(w,str) or not re.fullmatch(r'W[1-9]\d*',w) for w in vals):
-                raise ValueError('INVALID_EXCLUSION')
-        elif field in ('pieces','num_workshop_allowed'):
-            if type(val) is not int or val<=0 or (field=='num_workshop_allowed' and val>8):
-                raise ValueError('INVALID_QUANTITY')
-            numerals={int(n) for n in re.findall(r'(?<![A-Za-z\d.-])\d+(?![A-Za-z\d]|\.\d)',evidence.quote)}
-            words={'one':1,'two':2,'three':3,'four':4,'five':5,'six':6,'seven':7,'eight':8,'一':1,'二':2,'两':2,'三':3,'四':4,'五':5,'六':6,'七':7,'八':8}
-            numerals.update(n for word,n in words.items() if re.search(r'\b'+word+r'\b',evidence.quote,re.I) if word.isascii())
-            numerals.update(n for word,n in words.items() if not word.isascii() and word in evidence.quote)
-            if val not in numerals:
-                raise ValueError('UNGROUNDED_QUANTITY')
-        elif field=='deadline_required':
-            if type(val) is not bool:
-                raise ValueError('INVALID_DEADLINE')
-            stated={p.value for p in rule_interpret(evidence.quote,context).patch_operations if p.field==field}
-            if val not in stated:
-                raise ValueError('UNGROUNDED_DEADLINE')
-        elif not isinstance(val,str) or not val.strip():
-            raise ValueError('INVALID_VALUE')
-        if field=='objective' and val not in OBJECTIVES:
-            raise ValueError('INVALID_OBJECTIVE')
-        if field=='objective':
-            stated={p.value for p in rule_interpret(evidence.quote,context).patch_operations if p.field=='objective'}
-            if val not in stated:
-                raise ValueError('UNGROUNDED_OBJECTIVE')
-        if field in ('order_date','due_date'):
-            date.fromisoformat(val)
-            if val not in evidence.quote:
-                normalized={p.value for p in rule_interpret(evidence.quote,context).patch_operations if p.field==field}
-                if val not in normalized:
-                    raise ValueError('UNGROUNDED_DATE')
-        if field=='order_id' and val not in order_ids(evidence.quote):
-            raise ValueError('UNGROUNDED_ORDER')
-        if field in ('preferred_workshop','exclusion'):
-            vals = val if isinstance(val,list) else [val]
-            mentions={w[2] for w in workshop_mentions(evidence.quote)}
-            rec=context['recommendation']
-            if rec and re.search(r'它|这个工坊|that workshop',evidence.quote,re.I) and len(rec['result']['allocation'])==1:
-                mentions.add(rec['result']['allocation'][0]['workshop_id'])
-            if not set(vals).issubset(mentions) and vals:
-                raise ValueError('UNGROUNDED_WORKSHOP')
+            (m['content'] for m in context['history'] if m['role']=='user' and
+             m['sequence']==evidence.message_sequence), None)
+        try:
+            _validate_operation(operation, message, context, source)
+        except (ValueError, KeyError, TypeError) as error:
+            raise InterpretationValidationError(str(error), error_type=type(error).__name__, field=operation.field,
+                operation_index=index, operation=operation.model_dump(),
+                expected_message_sequence=context['current_sequence'],
+                actual_message_sequence=evidence.message_sequence,
+                quote=evidence.quote, source_message=source, current_message=message) from error
     return value
 
 
+def _validate_operation(operation, message, context, source):
+    evidence = operation.evidence
+    if operation.field not in FIELDS:
+        raise ValueError('UNKNOWN_FIELD')
+    if source is None:
+        raise ValueError('EVIDENCE_SOURCE_NOT_FOUND')
+    if evidence.quote not in source:
+        raise ValueError('EVIDENCE_QUOTE_MISMATCH')
+    if evidence.message_sequence != context['current_sequence'] and not re.search(r'之前|刚才|一样|same|previous|原来',message,re.I):
+        raise ValueError('STALE_EVIDENCE')
+    field, val = operation.field, operation.value
+    if operation.op=='undo':
+        if not re.search(r'撤销|撤回|取消刚才|\bundo\b',evidence.quote,re.I):
+            raise ValueError('UNGROUNDED_UNDO')
+        return
+    if operation.op=='unset':
+        if not re.search(r'取消|清除|移除|登记|clear|remove|registered|unset',evidence.quote,re.I):
+            raise ValueError('UNGROUNDED_CLEAR')
+        labels={'deadline_required':r'交期|deadline|准时|late','preferred_workshop':r'指定|工坊|workshop|preferred',
+            'exclusion':r'排除|exclusion','pieces':r'数量|件|pieces|quantity','customer':r'客户|customer',
+            'product':r'产品|product','category':r'品类|category','order_date':r'日期|date','due_date':r'交期|日期|due|date',
+            'objective':r'目标|objective','num_workshop_allowed':r'工坊|workshop','order_id':r'订单|order'}
+        registered=operation.field in ('customer','product','category','pieces','order_date','due_date') and re.search(r'登记|registered',evidence.quote,re.I)
+        if not registered and not re.search(labels[field],evidence.quote,re.I):
+            raise ValueError('UNGROUNDED_CLEAR_FIELD')
+        return
+    if field == 'exclusion':
+        vals=val if isinstance(val,list) else [val]
+        if any(not isinstance(w,str) or not re.fullmatch(r'W[1-9]\d*',w) for w in vals):
+            raise ValueError('INVALID_EXCLUSION')
+    elif field in ('pieces','num_workshop_allowed'):
+        if type(val) is not int or val<=0 or (field=='num_workshop_allowed' and val>8):
+            raise ValueError('INVALID_QUANTITY')
+        numerals={int(n) for n in re.findall(r'(?<![A-Za-z\d.-])\d+(?![A-Za-z\d]|\.\d)',evidence.quote)}
+        words={'one':1,'two':2,'three':3,'four':4,'five':5,'six':6,'seven':7,'eight':8,'一':1,'二':2,'两':2,'三':3,'四':4,'五':5,'六':6,'七':7,'八':8}
+        numerals.update(n for word,n in words.items() if re.search(r'\b'+word+r'\b',evidence.quote,re.I) if word.isascii())
+        numerals.update(n for word,n in words.items() if not word.isascii() and word in evidence.quote)
+        if val not in numerals:
+            raise ValueError('UNGROUNDED_QUANTITY')
+    elif field=='deadline_required':
+        if type(val) is not bool:
+            raise ValueError('INVALID_DEADLINE')
+        stated={p.value for p in rule_interpret(evidence.quote,context).patch_operations if p.field==field}
+        if val not in stated:
+            raise ValueError('UNGROUNDED_DEADLINE')
+    elif not isinstance(val,str) or not val.strip():
+        raise ValueError('INVALID_VALUE')
+    if field=='objective' and val not in OBJECTIVES:
+        raise ValueError('INVALID_OBJECTIVE')
+    if field=='objective':
+        stated={p.value for p in rule_interpret(evidence.quote,context).patch_operations if p.field=='objective'}
+        if val not in stated:
+            raise ValueError('UNGROUNDED_OBJECTIVE')
+    if field in ('order_date','due_date'):
+        date.fromisoformat(val)
+        if val not in evidence.quote:
+            normalized={p.value for p in rule_interpret(evidence.quote,context).patch_operations if p.field==field}
+            if val not in normalized:
+                raise ValueError('UNGROUNDED_DATE')
+    if field=='order_id' and val not in order_ids(evidence.quote, allow_short=True):
+        raise ValueError('UNGROUNDED_ORDER')
+    if field in ('preferred_workshop','exclusion'):
+        vals = val if isinstance(val,list) else [val]
+        mentions={w[2] for w in workshop_mentions(evidence.quote)}
+        rec=context['recommendation']
+        if rec and re.search(r'它|这个工坊|that workshop',evidence.quote,re.I) and len(rec['result']['allocation'])==1:
+            mentions.add(rec['result']['allocation'][0]['workshop_id'])
+        if not set(vals).issubset(mentions) and vals:
+            raise ValueError('UNGROUNDED_WORKSHOP')

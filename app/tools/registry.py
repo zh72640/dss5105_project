@@ -2,7 +2,7 @@
 from pydantic import ValidationError
 
 from app.schemas.tool import ToolFailure
-from app.services.agent_operations import ALLOWED_TASK_STATES
+from app.services.chat.operations import ALLOWED_TASK_STATES
 from app.tools.allocation import compute_plan
 from app.tools.conversation import ask_user, load_skill
 from app.tools.orders import get_order
@@ -47,6 +47,8 @@ ALLOCATION_TOOLS = frozenset({
     "update_constraints", "check_requirements", "compute_plan",
     "save_recommendation", "inspect_recommendation", "ask_user",
 })
+
+BASIC_ALLOCATION_TOOLS = frozenset({"check_requirements", "compute_plan", "save_recommendation"})
 
 
 def allowed_for_task(name: str, task_type: str) -> bool:

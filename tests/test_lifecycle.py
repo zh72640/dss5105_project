@@ -10,8 +10,8 @@ from pathlib import Path
 from uuid import uuid4
 
 from app.db.database import Database, ROOT, DB_VERSION
-from app.services.lifecycle import inspect_order, process_event, snapshot
-from app.services.dispatch import process_request
+from app.services.production.lifecycle import inspect_order, process_event, snapshot
+from app.services.allocation.dispatch import seed_allocation
 
 
 class LifecycleTests(unittest.TestCase):
@@ -20,7 +20,7 @@ class LifecycleTests(unittest.TestCase):
         self.addCleanup(self.db.close)
 
     def allocate(self, message="Allocate ORD-045 to Nimble Needle.", **kwargs):
-        return process_request(message, database=self.db, backend="offline", **kwargs)
+        return seed_allocation(message, database=self.db, **kwargs)
 
     def state(self, order_id="ORD-045"):
         return snapshot(self.db.connection, order_id)
@@ -261,7 +261,7 @@ class LifecycleTests(unittest.TestCase):
     def test_concurrent_completions_same_key_and_stale_versions(self):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "concurrent.sqlite3"
-            process_request("Allocate ORD-045 to Nimble Needle.", db_path=path, backend="offline")
+            seed_allocation("Allocate ORD-045 to Nimble Needle.", db_path=path)
             def submit(key):
                 return process_event("complete", "ORD-045", actor="operator", reason="Batch arrived", expected_version=1,
                                      event_id=key, db_path=path, workshop_id="W6", pieces=30)
@@ -274,7 +274,7 @@ class LifecycleTests(unittest.TestCase):
     def test_concurrent_different_events_cannot_both_apply_same_version(self):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "competing.sqlite3"
-            process_request("Allocate ORD-045 to Nimble Needle.", db_path=path, backend="offline")
+            seed_allocation("Allocate ORD-045 to Nimble Needle.", db_path=path)
             def submit(action):
                 return process_event(action, "ORD-045", actor="operator", reason="Competing update", expected_version=1,
                                      event_id=action, db_path=path)

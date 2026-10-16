@@ -4,8 +4,9 @@ from copy import deepcopy
 from app.db import chat_repository, preparation_repository
 from app.db.database import Database
 from app.db.order_repository import get_order
-from app.services.allocation_preflight import preflight
-from app.services.constraint_patches import apply_interpretation
+from app.services.allocation.preflight import preflight
+from app.services.chat.constraint_patches import apply_interpretation
+from app.services.allocation.contracts import inspect_input, single_workshop_issues
 
 FACT_FIELDS = ("customer", "product", "category", "pieces", "order_date", "due_date")
 
@@ -41,6 +42,10 @@ def prepare(*, db_path, session_id, owner, request_id, interpretation, as_of, se
                     task["draft"][field] = recorded
             report, _, _, facts_hash = preflight(connection, task["draft"], as_of,
                                                 task["issues"], task["sources"])
+            skill_input, input_issues = inspect_input(task["draft"])
+            input_issues += single_workshop_issues(task["draft"])
+            report["blocking_issues"] = input_issues + report["blocking_issues"]
+            report["ready_for_planning"] = not report["blocking_issues"]
             report["resolved_differences"] = differences
             task["report"] = report
             current = chat_repository.latest_recommendation(connection, session_id)
@@ -51,6 +56,6 @@ def prepare(*, db_path, session_id, owner, request_id, interpretation, as_of, se
             chat_repository.save_task(connection, task)
             result = {"ready": report["ready_for_planning"], "task": task,
                       "issues": report["blocking_issues"], "facts_hash": facts_hash,
-                      "resolved_differences": differences}
+                      "resolved_differences": differences, "skill_input": skill_input}
             preparation_repository.record(connection, session_id, request_id, result)
             return result

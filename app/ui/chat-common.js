@@ -10,7 +10,7 @@
   async function request(url,body){
     const response=await fetch(url,body?{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}:{});
     const data=await response.json();
-    if(!response.ok&&!data.assistant_message){const error=new Error(data.message||data.error||'Request failed');error.status=response.status;error.code=data.error;throw error;}
+    if(!response.ok&&!data.assistant_message){const error=new Error(data.message||data.error||'Request failed');error.status=response.status;error.code=data.error;error.details=data.details;throw error;}
     return data;
   }
   function card(recommendation,onConfirm){

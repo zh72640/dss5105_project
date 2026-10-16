@@ -3,7 +3,7 @@ from app.allocator import AllocationRequest, allocate
 from app.db import allocation_repository as repo
 from app.db.order_repository import retrieve
 from app.db.workshop_repository import get_all
-from app.services.queue import advance
+from app.services.production.queue import advance
 
 
 def terminal(status, code, message):
@@ -19,7 +19,7 @@ def _planning_max_workshops(limit, sources=None):
 
 def prepare_recommendation(connection, draft, as_of, pending=(), sources=None):
     """Preflight and build AllocationRequest. request is None when not ready to plan."""
-    from app.services.allocation_preflight import preflight
+    from app.services.allocation.preflight import preflight
     report, order, workshops, facts_hash = preflight(connection, draft, as_of, pending, sources)
     if not report["ready_for_planning"]:
         return {"report": report, "order": order, "workshops": workshops,
@@ -39,9 +39,11 @@ def prepare_recommendation(connection, draft, as_of, pending=(), sources=None):
 
 def finish_recommendation(prepared, result, draft, as_of):
     """Validate a computed plan and build hashes/trace."""
-    from app.services.allocation_preflight import check_solution, digest
+    from app.services.allocation.preflight import check_solution, digest
     report, order, workshops = prepared["report"], prepared["order"], prepared["workshops"]
     check_solution(result, order, workshops, draft, report, as_of)
+    from app.services.allocation.contracts import add_order_snapshot
+    result = add_order_snapshot(order, result)
     trace = {"db_changes": [], "order": order,
              "queue": {w.workshop_id: w.queue_days for w in workshops},
              "eligible_workshops": result.get("eligible_workshops", []),

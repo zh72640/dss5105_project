@@ -74,12 +74,12 @@ class IntegerPlanner(unittest.TestCase):
 
 class PlanningMaxWorkshops(unittest.TestCase):
     def test_unsourced_limit_stays_single(self):
-        from app.services.allocation import _planning_max_workshops
+        from app.services.allocation.service import _planning_max_workshops
         self.assertEqual(_planning_max_workshops(3, sources=None), 1)
         self.assertEqual(_planning_max_workshops(3, sources={}), 1)
         self.assertEqual(_planning_max_workshops(3, sources={'objective': {}}), 1)
 
     def test_sourced_limit_enables_split(self):
-        from app.services.allocation import _planning_max_workshops
+        from app.services.allocation.service import _planning_max_workshops
         self.assertEqual(_planning_max_workshops(3, sources={'num_workshop_allowed': {}}), 3)
         self.assertEqual(_planning_max_workshops(1, sources={'num_workshop_allowed': {}}), 1)

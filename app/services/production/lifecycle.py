@@ -6,9 +6,9 @@ from datetime import date
 
 from app.db.database import Database, utc_now
 from app.db import lifecycle_repository as repo
-from app.services.allocation import apply as _apply, decide as _decide
-from app.services.dispatch import PIPELINE_VERSION, _cached, terminal
-from app.services.queue import advance, release
+from app.services.allocation.service import apply as _apply, decide as _decide
+from app.services.allocation.dispatch import PIPELINE_VERSION, _cached, terminal
+from app.services.production.queue import advance, release
 from app.schemas.parser_schema import OBJECTIVES, ParseResult
 
 ACTIONS = ("complete", "cancel", "lapse", "reassign")
@@ -180,11 +180,3 @@ def process_event(action, order_id, *, actor, reason, expected_version, event_id
     finally:
         if owned and db:
             db.close()
-
-
-def inspect(order_id, *, db_path=None, database=None):
-    return inspect_order(order_id, db_path=db_path, database=database)
-
-
-def event(**kwargs):
-    return process_event(**kwargs)

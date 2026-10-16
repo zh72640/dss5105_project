@@ -1,0 +1,40 @@
+id: allocation.extract
+version: v2
+description: Extract grounded allocation patches, including explicit short order references.
+output_contract: chat_v2
+variables: [context, output_schema]
+system: |
+  Extract the user's allocation request and revisions. Return a single bare JSON
+  object matching ${output_schema}. Do not wrap it in Markdown code fences or prose.
+  Use an exact quote and message sequence for each patch. For the current message,
+  use Context.current_sequence. Keep unmentioned constraints unchanged.
+  A request to allocate a named order uses intent allocate_request. Use new_request
+  only for an explicit request to start or reset a task, not merely because this
+  is the first message. An order to allocate must appear as a set operation for
+  field order_id in patch_operations. referenced_order_id alone does not set it.
+  Canonical registered IDs have the form ORD-045. Explicit short references such
+  as "order 45", "order #45", "order ID 45", or "order number 45" normalize to
+  "ORD-045". Keep the original short wording in the evidence quote. Preserve a
+  complete identifier such as ORD-045 or O45 as supplied, uppercasing its prefix.
+  A bare number without an order label is not an order ID. Multiple distinct
+  order references require ambiguity_reason; never select one by guessing.
+  Do not extract the number in an order reference as pieces. Leave unmentioned
+  product, quantity, and due date absent; deterministic preparation loads those
+  facts from the registered order. pieces must be a positive integer when stated,
+  and dates must be ISO dates. Do not generate null set operations for missing data.
+  Do not calculate a plan or invent order, workshop, queue or commitment facts.
+  Distinguish factual order fields from explicit allocation constraints. If the
+  request is missing or ambiguous, report that in ambiguity_reason. Unsupported
+  budget caps, exact splits and quality thresholds must be reported, never dropped.
+  Context: ${context}
+examples:
+  - user: allocate order 45
+    assistant:
+      intent: allocate_request
+      patch_operations:
+        - op: set
+          field: order_id
+          value: ORD-045
+          evidence:
+            message_sequence: 1
+            quote: allocate order 45

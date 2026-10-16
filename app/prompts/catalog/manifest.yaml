@@ -4,5 +4,8 @@ active:
   conversation.interpret: chat_v2
   conversation.reply: chat_v2
   agent.intent: v1
-  allocation.extract: v1
+  allocation.extract: v3
   agent.reply: v1
+  allocation.execute: v1
+  agent.response: v1
+  allocation.explain: v2

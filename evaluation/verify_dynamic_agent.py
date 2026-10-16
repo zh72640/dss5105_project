@@ -7,15 +7,16 @@ import tempfile
 from langchain_core.messages import AIMessage
 
 from app.db.database import Database
-from app.services import chat
+from app.services.chat import service as chat
 from app.config.model_settings import ModelSpec
 
 
 class ScriptedNativeModel:
     """Supply native tool calls while exercising the real graph, tools, and services."""
 
-    def __init__(self, *responses):
+    def __init__(self, *responses, allocation=False):
         self.responses = list(responses)
+        self.allocation = allocation
         self.offered_tools = []
 
     def resolve(self, mode, key):
@@ -25,13 +26,17 @@ class ScriptedNativeModel:
         return self
 
     def bind_tools(self, schemas):
-        self.offered_tools.append([tool["function"]["name"] for tool in schemas])
+        self.offered_tools.append([tool["function"]["name"] if isinstance(tool, dict) else tool.name
+                                   for tool in schemas])
         return self
 
     def invoke(self, messages):
         first = messages[0]["content"] if isinstance(messages[0], dict) else messages[0].content
         if "Classify the current user message" in first:
-            return AIMessage(content='{"task_type":"compat"}')
+            return AIMessage(content=json.dumps({"task_type": "allocation" if self.allocation else "compat"}))
+        if "Extract the user's allocation request" in first:
+            return AIMessage(content=json.dumps({"intent": "allocate_request", "patch_operations": [{
+                "op": "set", "field": "order_id", "value": "ORD-045", "quote": messages[-1]["content"]}]}))
         return self.responses.pop(0)
 
 def call(tool_name, **arguments):
@@ -65,15 +70,12 @@ def run(output_path=Path("evaluation/results/dynamic_agent_acceptance.json")):
             request_id="accept-allocation-create", db_path=db_path, as_of=business_date,
             mode="llm")["session_id"]
         allocation_model = ScriptedNativeModel(
-            call("load_skill", name="allocation-recommendation"),
-            call("update_constraints", field="order_id", value="ORD-045"),
-            call("score_workshop", workshop_id="W1", order_id="ORD-045"),
             call("check_requirements"),
             call("compute_plan"),
             call("save_recommendation"),
-            AIMessage(content="A checked recommendation is ready for your confirmation."))
+            AIMessage(content="A checked recommendation is ready for your confirmation."), allocation=True)
         recommendation = turn(allocation_session, db_path, "accept-allocation", 0,
-            "Allocate ORD-045; compare W1 first.", allocation_model)
+            "Allocate ORD-045.", allocation_model)
         with Database(db_path) as db:
             preview_production_rows = db.connection.execute(
                 "SELECT COUNT(*) FROM working_order").fetchone()[0]
@@ -116,7 +118,7 @@ def run(output_path=Path("evaluation/results/dynamic_agent_acceptance.json")):
         wait_session = chat.create(owner="acceptance", request_id="accept-wait-create",
             db_path=db_path, as_of=business_date, mode="llm")["session_id"]
         waiting_model = ScriptedNativeModel(
-            call("load_skill", name="allocation-recommendation"),
+            call("load_skill", name="order-inquiry"),
             call("ask_user", question="Which order should I check?"))
         waiting = turn(wait_session, db_path, "accept-wait", 0,
             "Please check an order.", waiting_model)
@@ -149,6 +151,9 @@ def run(output_path=Path("evaluation/results/dynamic_agent_acceptance.json")):
                 "trace": chat.execution_trace(query_session, owner="acceptance", db_path=db_path),
             },
             "allocation": {
+                "response_type": recommendation["type"],
+                "explanation": recommendation["explanation"],
+                "result": recommendation["allocation"],
                 "task_state_after_recommendation": recommendation["task_state"],
                 "old_recommendation_id": old_card["recommendation_id"],
                 "old_recommendation_status_after_revision": old_card_status,
@@ -183,6 +188,15 @@ def run(output_path=Path("evaluation/results/dynamic_agent_acceptance.json")):
                 or old_card["recommendation_id"] == card["recommendation_id"]
                 or old_card_status != "superseded"):
             raise AssertionError("Revision did not replace the recommendation under the state guard.")
+        if (recommendation["type"] != "allocation" or not recommendation["explanation"] or
+                recommendation["explanation"] != recommendation["assistant_message"]["content"] or
+                recommendation["allocation"]["recommendation_id"] != old_card["recommendation_id"]):
+            raise AssertionError("The response did not package the explanation with its saved allocation.")
+        allocation_model_calls = [event["detail"] for event in report["allocation"]["trace"]["events"]
+            if event["request_id"] == "accept-allocation" and event["event_type"] == "model_call"]
+        if ([item["stage"] for item in allocation_model_calls].count("explanation") != 1 or
+                any(item["stage"] == "response" for item in allocation_model_calls)):
+            raise AssertionError("Explanation and deterministic response stages were not separated.")
         if preview_production_rows != 0 or revised_preview_production_rows != 0:
             raise AssertionError("A recommendation wrote production allocation before confirmation.")
         if not confirmation["committed"] or not replay["replayed"] or len(allocation_rows) != 1:

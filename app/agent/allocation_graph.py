@@ -1,22 +1,29 @@
 """Allocation-specific fixed preparation, Skill loading and guarded tool execution."""
+import json
 from typing import TypedDict
 
 from langgraph.graph import START, END, StateGraph
 from langgraph.runtime import Runtime
-from pydantic import ValidationError
 
 from app.agent import skills
-from app.services.conversation_context import build_context
-from app.services.interpretation import validate_interpretation
-from app.agent.dynamic import AgentContext, final_text, record_model_response
+from app.services.chat.context import build_context
+from app.services.chat import extraction
+from app.agent.dynamic import AgentContext, record_model_response, record_model_start
 from app.llm.errors import check_response, check_structured, text_content, translate_error
+from app.llm.json_output import json_text
 from app.agent.executor import run as run_executor, waiting_skill_snapshots
 from app.db.database import Database
 from app.db.chat_repository import snapshot
+from app.db import agent_repository
 from app.prompts import get_registry
-from app.schemas.chat import TurnInterpretation
-from app.services import allocation_preparation
+from app.schemas.chat import TurnInterpretation, AllocationExtraction
+from app.services.allocation.contracts import inspect_input, single_workshop_issues
+from app.services.chat.completion import BASIC_ALLOCATION_POLICY
+from app.services.chat import allocation_preparation
 from app.tools.registry import TOOLS, allowed_for_task
+
+
+MAX_EXTRACTION_ATTEMPTS = 2
 
 
 class AllocationState(TypedDict, total=False):
@@ -26,9 +33,9 @@ class AllocationState(TypedDict, total=False):
     preparation: dict
     loaded_skills: dict
     task_result: dict
-    reply: str
     tool_results: list
     pending_question: str | None
+    skill_input: dict
 
 
 def _failed(code, message, task_id=""):
@@ -44,33 +51,113 @@ def extract_fields(state: AllocationState, runtime: Runtime[AgentContext]):
         if session is None:
             return {"task_result": _failed("SESSION_NOT_FOUND", "The session is unavailable.")}
         conversation = build_context(db.connection, session)
-    bundle = get_registry().render("allocation.extract",
-        variables={"context": conversation,
-                   "output_schema": TurnInterpretation.model_json_schema()},
-        user_message=context.user_message)
+        saved = agent_repository.latest_extraction(db.connection, context.request_id)
+    prompt = get_registry().snapshot("allocation.extract",
+        version=saved.get('prompt_version') if saved else None)
+    variables = {"context": {"business_date": conversation['business_date']},
+                 "output_schema": AllocationExtraction.model_json_schema()}
     spec = context.registry.resolve("llm", context.model_key)
     model = context.registry.get_model("llm", context.model_key)
+    attempt = saved['attempt'] if saved else 1
+    feedback = None
+    while attempt <= MAX_EXTRACTION_ATTEMPTS:
+        cached = saved is not None
+        result = saved or _extract_once(context, model, spec, prompt, variables, attempt,
+                                        feedback, conversation['current_sequence'])
+        saved = None
+        try:
+            if result.get('parsing_error'):
+                raise extraction.ExtractionValidationError('format', {
+                    **extraction.format_details(ValueError('INVALID_EXTRACTION_FORMAT'),
+                        result.get('extracted'), context.user_message, conversation['current_sequence']),
+                    **result['parsing_error']})
+            interpretation = extraction.validate_candidate(result.get('extracted'),
+                message=context.user_message, conversation=conversation)
+        except extraction.ExtractionValidationError as error:
+            detail = {'attempt': attempt, 'stage': error.stage, **error.detail}
+            if not cached or not result.get('validation_recorded'):
+                _record_extraction_event(context, 'extraction_validation_failed', detail)
+            if attempt == MAX_EXTRACTION_ATTEMPTS:
+                failure = _failed('EXTRACTION_FORMAT_INVALID' if error.stage == 'format' else
+                    'EXTRACTION_EVIDENCE_INVALID', extraction.failure_message(error.stage, detail),
+                    session['task']['task_id'])
+                failure['issues'][0].update(field=detail.get('field') or 'workflow',
+                                           reason=detail['reason'], attempts=attempt)
+                return {'task_result': failure}
+            feedback = {'validation': detail, 'previous_output': result.get('raw_text'),
+                        'previous_extraction': result.get('extracted')}
+            attempt += 1
+            continue
+        return {"interpretation": interpretation.model_dump(),
+                "sequence": conversation["current_sequence"]}
+
+
+def _extract_once(context, model, spec, prompt, variables, attempt, feedback, sequence):
+    bundle = prompt.render(variables=variables, user_message=context.user_message,
+                           retry_feedback=json.dumps(feedback, ensure_ascii=False) if feedback else None)
+    record_model_start(context, "extract")
     try:
         if spec.output_method == "prompt":
             raw = model.invoke(bundle.as_messages())
+            response = None
         else:
-            result = model.with_structured_output(TurnInterpretation, method=spec.output_method,
+            response = model.with_structured_output(AllocationExtraction, method=spec.output_method,
                 include_raw=True).invoke(bundle.as_messages())
-            raw = result.get("raw") if isinstance(result, dict) else None
+            raw = response.get("raw") if isinstance(response, dict) else None
     except Exception as error:
         raise translate_error(error, spec.provider) from error
-    if raw is not None:
-        record_model_response(context, "extract", raw, bundle.metadata)
-    try:
-        interpretation = (TurnInterpretation.model_validate_json(text_content(check_response(raw)))
-            if spec.output_method == "prompt" else TurnInterpretation.model_validate(check_structured(result)[0]))
-        validate_interpretation(interpretation, context.user_message, conversation)
-    except (ValidationError, ValueError, KeyError, TypeError):
-        return {"task_result": _failed("EXTRACTION_FAILED",
-            "The request could not be interpreted reliably. Retry or clarify the allocation.",
-            session["task"]["task_id"])}
-    return {"interpretation": interpretation.model_dump(),
-            "sequence": conversation["current_sequence"]}
+    if raw is None:
+        # Missing transport envelopes remain model errors, not extraction repairs.
+        check_structured(response)
+    record_model_response(context, "extract", raw, bundle.metadata)
+    check_response(raw, require_text=spec.output_method == 'prompt')
+    text = text_content(raw)
+    raw_calls = getattr(raw, 'tool_calls', []) or []
+    invalid_calls = getattr(raw, 'invalid_tool_calls', []) or []
+    parsing_error = None
+    if spec.output_method == 'prompt':
+        try:
+            candidate = json.loads(json_text(text))
+        except (ValueError, TypeError):
+            candidate = None
+            parsing_error = {'reason': 'INVALID_JSON',
+                             'errors': [{'location': [], 'type': 'json_invalid'}]}
+    else:
+        candidate = response.get('parsed')
+        structured_error = response.get('parsing_error')
+        if hasattr(candidate, 'model_dump'):
+            candidate = candidate.model_dump(mode='json')
+        missing_parsed = candidate is None
+        if candidate is None and text:
+            # Recover output for diagnostics only; an SDK parse failure remains a failure.
+            try:
+                candidate = json.loads(json_text(text))
+            except (ValueError, TypeError):
+                pass
+        if candidate is None and len(raw_calls) == 1:
+            candidate = raw_calls[0].get('args')
+        if candidate is None and len(invalid_calls) == 1:
+            try:
+                candidate = json.loads(invalid_calls[0].get('args', ''))
+            except (ValueError, TypeError):
+                pass
+        if structured_error or missing_parsed:
+            error = structured_error or ValueError('INVALID_EXTRACTION_FORMAT')
+            parsing_error = extraction.format_details(error, candidate, context.user_message, sequence)
+    result = {'contract': 'allocation_extraction_v1', 'attempt': attempt,
+              'runtime_message_sequence': sequence, 'raw_tool_calls': raw_calls,
+              'invalid_tool_calls': invalid_calls,
+              'prompt_version': prompt.definition.version, 'raw_text': text,
+              'extracted': candidate, 'parsing_error': parsing_error}
+    _record_extraction_event(context, 'allocation_extraction', result)
+    return result
+
+
+def _record_extraction_event(context, kind, detail):
+    """Persist extraction attempts and diagnostics in the existing owner-scoped trace."""
+    with Database(context.db_path) as db, db.transaction() as connection:
+        agent_repository.record_event(connection, session_id=context.session_id,
+            request_id=context.request_id, event_type=kind, detail=detail)
 
 
 def prepare(state: AllocationState, runtime: Runtime[AgentContext]):
@@ -80,11 +167,15 @@ def prepare(state: AllocationState, runtime: Runtime[AgentContext]):
         db_path=context.db_path, session_id=context.session_id, owner=context.owner,
         request_id=context.request_id, interpretation=interpretation, as_of=context.as_of,
         sequence=state["sequence"])
+    skill_input, issues = inspect_input(prepared.get("skill_input") or prepared["task"]["draft"])
+    issues += single_workshop_issues(prepared["task"]["draft"])
+    if issues and prepared["ready"]:
+        prepared = {**prepared, "ready": False, "issues": issues}
     if not prepared["ready"]:
         return {"preparation": prepared, "task_result": {
             "task_id": prepared["task"]["task_id"], "task_type": "allocation",
             "status": "blocked", "result": None, "issues": prepared["issues"]}}
-    return {"preparation": prepared}
+    return {"preparation": prepared, "skill_input": skill_input}
 
 
 def load_allocation_skill(state: AllocationState, runtime: Runtime[AgentContext]):
@@ -102,14 +193,11 @@ def execute_allocation(state: AllocationState, runtime: Runtime[AgentContext]):
     history = state.get("messages", [])
     result = run_executor(runtime.context, task_type="allocation",
                           loaded_skills=state["loaded_skills"],
-                          seed_history=history[:-1] if history else ())
+                          seed_history=history[:-1] if history else (),
+                          execution_policy=BASIC_ALLOCATION_POLICY, skill_input=state["skill_input"])
     task_result = result.get("task_result") or _failed("INCOMPLETE_RECOMMENDATION",
         "No verified recommendation was saved.", state["preparation"]["task"]["task_id"])
-    reply = final_text(result).strip()
-    if task_result["status"] in ("blocked", "failed"):
-        issues = task_result.get("issues") or []
-        reply = issues[0].get("question", "The allocation could not be completed.") if issues else "The allocation could not be completed."
-    return {"task_result": task_result, "reply": reply,
+    return {"task_result": task_result,
             "tool_results": result.get("tool_results", []),
             "pending_question": result.get("pending_question"),
             "loaded_skills": result.get("loaded_skills", state["loaded_skills"])}

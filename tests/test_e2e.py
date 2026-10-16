@@ -6,7 +6,7 @@ from concurrent.futures import ThreadPoolExecutor
 from datetime import date
 from pathlib import Path
 from app.db.database import Database
-from app.services.dispatch import process_request
+from app.services.allocation.dispatch import seed_allocation
 
 
 class EndToEnd(unittest.TestCase):
@@ -17,7 +17,7 @@ class EndToEnd(unittest.TestCase):
         self.db.close()
 
     def run_request(self,text='Allocate ORD-045.',**kwargs):
-        return process_request(text,database=self.db,backend=kwargs.pop('backend','offline'),**kwargs)
+        return seed_allocation(text,database=self.db,**kwargs)
 
     def count(self,table):
         return self.db.connection.execute('SELECT COUNT(*) FROM '+table).fetchone()[0]
@@ -35,8 +35,8 @@ class EndToEnd(unittest.TestCase):
 
     def test_02_multiple_workshops_conserve_pieces(self):
         from uuid import uuid4
-        from app.services.lifecycle import process_event
-        # Seed / offline process_request always max_workshops=1 (product rule).
+        from app.services.production.lifecycle import process_event
+        # Seed / offline seed_allocation always max_workshops=1 (product rule).
         seeded=self.run_request('Allocate ORD-093 fastest; at most two workshops.')
         self.assertEqual(len(seeded['result']['allocation']),1)
         self.assertEqual(seeded['result']['allocation'][0]['pieces'],100)
@@ -154,7 +154,7 @@ class EndToEnd(unittest.TestCase):
             path=Path(directory)/'concurrent.sqlite3'
             with Database(path): pass
             def submit(key):
-                return process_request('Allocate ORD-045.',db_path=path,request_id=key,backend='offline')
+                return seed_allocation('Allocate ORD-045.',db_path=path,request_id=key)
             with ThreadPoolExecutor(max_workers=2) as executor:
                 results=list(executor.map(submit,['same','same']))
             self.assertEqual(sum(r['replayed'] for r in results),1)
@@ -168,5 +168,5 @@ class EndToEnd(unittest.TestCase):
 
     def test_full_db_unavailable_returns_error(self):
         with tempfile.TemporaryDirectory() as path:
-            r=process_request('Allocate ORD-045.',db_path=path,backend='offline')
+            r=seed_allocation('Allocate ORD-045.',db_path=path)
         self.assertEqual(r['result']['reason_codes'],['DB_ERROR']); self.assertFalse(r['error_logged'])

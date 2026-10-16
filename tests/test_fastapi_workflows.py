@@ -8,8 +8,8 @@ from fastapi.testclient import TestClient
 
 from app.config.settings import Settings
 from app.main import create_app
-from app.services.lifecycle import inspect_order
-from app.services.dispatch import seed_allocation
+from app.services.production.lifecycle import inspect_order
+from app.services.allocation.dispatch import seed_allocation
 
 
 class FastAPIContracts(unittest.TestCase):

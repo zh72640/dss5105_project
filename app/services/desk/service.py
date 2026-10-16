@@ -1,7 +1,7 @@
 """Read-model facade for dashboard, workshops, audit and history."""
-import json
-from app.services import read_models as desk_mod
+from app.services.desk import queries as desk_mod
 from app.db.database import Database
+from app.services.desk.queries import history
 
 
 def dashboard(db_path, as_of):
@@ -22,13 +22,3 @@ def audit(db_path, **kwargs):
 
 def audit_csv(records):
     return desk_mod.audit_csv(records)
-
-
-def history(db_path, *, limit=30):
-    with Database(db_path) as db:
-        rows = db.connection.execute(
-            "SELECT request_id,request_date_time,status,response_json FROM requests "
-            "ORDER BY request_date_time DESC LIMIT ?", (limit,)).fetchall()
-        return [{"request_id": r["request_id"], "time": r["request_date_time"], "status": r["status"],
-                 "order_id": (json.loads(r["response_json"]).get("parsed") or
-                              json.loads(r["response_json"]).get("event") or {}).get("order_id")} for r in rows]

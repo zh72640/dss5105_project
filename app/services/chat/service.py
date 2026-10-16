@@ -1,6 +1,6 @@
 """Chat v2 session facade: create/inspect, offline turns, and explicit confirm.
 
-LLM ``action=message`` turns delegate to ``app.services.agent_chat`` then
+LLM ``action=message`` turns delegate to ``app.services.chat.agent_turns`` then
 ``app.agent.runtime``. Offline mode uses ``app.offline.graph``.
 Do not merge those paths; they keep separate graphs and completion rules.
 """
@@ -12,22 +12,23 @@ from copy import deepcopy
 from app.db.database import Database, utc_now
 from app.schemas.parser_schema import ParseResult
 from app.schemas.chat import TurnInterpretation
-from app.services.conversation_context import build_context
-from app.services.constraint_patches import apply_interpretation
+from app.services.chat.context import build_context
+from app.services.chat.constraint_patches import apply_interpretation
 from app.offline.reply import solution_reply, clarification_reply, explain, conversational_reply
 from app.offline.graph import GRAPH
 from app.llm.errors import BackendError
 from app.llm.errors import ModelSelectionError
 from pydantic import ValidationError
 from app.db import chat_repository as repository
-from app.services import allocation
-from app.services.allocation_preflight import digest, issue, preflight
+from app.services.allocation import service as allocation
+from app.services.allocation.preflight import digest, issue, preflight
 
 
 class ChatError(ValueError):
-    def __init__(self, code, message, status=409):
+    def __init__(self, code, message, status=409, *, details=None):
         super().__init__(message)
         self.code, self.status = code, status
+        self.details = details
 
 
 def encoded(value):
@@ -189,7 +190,7 @@ def turn(sid, *, owner, request_id, expected_version, db_path, action='message',
         selected = require_session(check_db.connection, sid, owner)
         if selected['mode'] == 'llm':
             if action == 'message':
-                from app.services.agent_chat import turn as agent_turn
+                from app.services.chat.agent_turns import turn as agent_turn
                 return agent_turn(sid, owner=owner, request_id=request_id,
                     expected_version=expected_version, db_path=db_path, message=message, registry=registry)
             active = repository.has_running_agent(check_db.connection,sid)

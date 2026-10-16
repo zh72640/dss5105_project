@@ -23,6 +23,9 @@ from app.db.database import Database
 from app.db.chat_repository import snapshot
 from app.llm.errors import ModelSelectionError, check_response, translate_error
 from app.llm.registry import selection_metadata
+from app.services.chat.completion import (
+    BASIC_ALLOCATION_POLICY, allocation_call_error, allocation_execution_outcome,
+)
 
 
 MAX_MODEL_STEPS = 12
@@ -41,6 +44,8 @@ class AgentState(TypedDict, total=False):
     pinned_skills: list[str]
     task_type: str
     task_result: dict
+    execution_policy: str | None
+    skill_input: dict | None
 
 
 @dataclass(frozen=True)
@@ -54,10 +59,18 @@ class AgentContext:
     user_message: str
     as_of: date
     skill_root: Path = skills.SKILL_ROOT
+    execution_scope: str | None = None
+
+    def checkpoint_thread(self, prefix):
+        base = f"{prefix}:{self.session_id}"
+        return f"{base}:after:{self.execution_scope}" if self.execution_scope else base
 
 
-def available_tools(loaded, task_type="compat", task_state=None):
+def available_tools(loaded, task_type="compat", task_state=None, execution_policy=None):
     names = {name for item in loaded.values() for name in item["tools"]}
+    if execution_policy == BASIC_ALLOCATION_POLICY:
+        from app.tools.registry import BASIC_ALLOCATION_TOOLS
+        names &= BASIC_ALLOCATION_TOOLS
     visible = [name for name in sorted(names) if allowed_for_task(name, task_type) and
                (task_type != "allocation" or name not in ALLOWED_TASK_STATES or
                 task_state in ALLOWED_TASK_STATES[name])]
@@ -67,7 +80,7 @@ def available_tools(loaded, task_type="compat", task_state=None):
     return tools
 
 
-def system_message(context, loaded):
+def system_message(context, loaded, *, execution_policy=None, skill_input=None):
     from app.prompts import get_registry
     with Database(context.db_path) as db:
         current = snapshot(db.connection, context.session_id, context.owner)
@@ -79,9 +92,22 @@ def system_message(context, loaded):
                     for name, item in loaded.items()}
     facts = {"task": current["task"], "recommendation": current["recommendation"],
              "business_date": current["business_date"], "session_version": current["version"]}
-    bundle = get_registry().render("agent.reply",
-        variables={"skills": overview, "loaded": instructions, "facts": facts})
+    if execution_policy == BASIC_ALLOCATION_POLICY:
+        bundle = get_registry().render("allocation.execute",
+            variables={"loaded": instructions, "facts": facts, "skill_input": skill_input})
+    else:
+        bundle = get_registry().render("agent.reply",
+            variables={"skills": overview, "loaded": instructions, "facts": facts})
     return SystemMessage(content=bundle.as_messages()[0]["content"]), bundle.metadata
+
+
+def record_model_start(context, stage):
+    """Persist the attempted stage even when the provider returns no response."""
+    from app.db import agent_repository
+    with Database(context.db_path) as db:
+        with db.transaction() as connection:
+            agent_repository.record_event(connection, session_id=context.session_id,
+                request_id=context.request_id, event_type="model_call_started", detail={"stage": stage})
 
 
 def record_model_response(context, stage, message, prompt=None):
@@ -116,16 +142,19 @@ def model_node(state: AgentState, runtime: Runtime[AgentContext]):
     model = context.registry.get_model("llm", context.model_key)
     if not callable(getattr(model, "bind_tools", None)):
         raise ModelSelectionError("TOOLS_UNSUPPORTED", "The selected model cannot use native tools.", 503)
-    system, prompt = system_message(context, loaded)
+    system, prompt = system_message(context, loaded, execution_policy=state.get("execution_policy"),
+                                    skill_input=state.get("skill_input"))
+    record_model_start(context, "tool_loop")
     try:
         answer = model.bind_tools(available_tools(loaded, state.get("task_type", "compat"),
-            current["task"]["state"])).invoke([system, *history])
+            current["task"]["state"], state.get("execution_policy"))).invoke([system, *history])
     except Exception as error:
         raise translate_error(error, spec.provider) from error
     if not isinstance(answer, AIMessage) or not hasattr(answer, "tool_calls"):
         raise ModelSelectionError("TOOLS_UNSUPPORTED", "The selected model cannot use native tools.", 503)
-    record_model_response(context, "tool_loop" if answer.tool_calls else "reply", answer, prompt)
-    check_response(answer, require_text=not bool(answer.tool_calls))
+    stage = "allocation_stop" if state.get("execution_policy") == BASIC_ALLOCATION_POLICY else "reply"
+    record_model_response(context, "tool_loop" if answer.tool_calls else stage, answer, prompt)
+    check_response(answer, require_text=not bool(answer.tool_calls) and stage != "allocation_stop")
     return {"messages": [answer], "step_count": count + 1}
 
 
@@ -143,6 +172,10 @@ def _tool_result(context, state, call, loaded, plan):
     if not call_id:
         raise ToolFailure("TOOL_CALL_ID_REQUIRED", "A native tool call ID is required for replay safety.")
     invocation_key = f"{context.request_id}:{call_id}"
+    if state.get("execution_policy") == BASIC_ALLOCATION_POLICY:
+        error = allocation_call_error(state.get("tool_results", []), name)
+        if error:
+            raise ToolFailure(*error)
     if name == "record_production_event":
         return _production_result(context, invocation_key, args, loaded)
     with Database(context.db_path) as db:
@@ -189,7 +222,9 @@ def _tool_result(context, state, call, loaded, plan):
                         raise ToolFailure("TOOL_NOT_ALLOWED", "Load a Skill that permits this tool in the current session.")
                     data = invoke_tool(
                         name, args, connection=connection, session=current,
-                        as_of=context.as_of, user_message=context.user_message, plan=plan)
+                        as_of=context.as_of, user_message=context.user_message, plan=plan,
+                        allocation_input=(state.get("skill_input") or {})
+                            if state.get("execution_policy") == BASIC_ALLOCATION_POLICY else None)
                     if name == "compute_plan":
                         next_plan = data
                     if name == "ask_user":
@@ -285,7 +320,13 @@ def tool_node(state: AgentState, runtime: Runtime[AgentContext]):
     results = list(state.get("tool_results", []))
     call_count = state.get("tool_call_count", 0)
     for call in state["messages"][-1].tool_calls:
-        if pending:
+        if (state.get("execution_policy") == BASIC_ALLOCATION_POLICY and
+                allocation_execution_outcome(results)[0]):
+            result, skill, next_plan, question = ({"ok": False, "error": {
+                "code": "TASK_EXECUTION_FINISHED", "message": "The allocation execution has already ended."}},
+                None, None, None)
+            _record_rejection(runtime.context, call, result, loaded)
+        elif pending:
             result, skill, next_plan, question = ({"ok": False, "error": {
                 "code": "USER_INPUT_REQUIRED", "message": "Answer the pending question before another action."}},
                 None, None, None)
@@ -297,7 +338,8 @@ def tool_node(state: AgentState, runtime: Runtime[AgentContext]):
             _record_rejection(runtime.context, call, result, loaded)
         else:
             try:
-                result, skill, next_plan, question = _tool_result(runtime.context, state, call, loaded, plan)
+                result, skill, next_plan, question = _tool_result(
+                    runtime.context, {**state, "tool_results": results}, call, loaded, plan)
             except ToolFailure as error:
                 result, skill, next_plan, question = ({"ok": False, "error": {"code": error.code,
                     "message": str(error)}}, None, None, None)
@@ -306,6 +348,8 @@ def tool_node(state: AgentState, runtime: Runtime[AgentContext]):
         if skill and result["ok"]:
             loaded[skill["name"]] = skill
         if call["name"] == "update_constraints" and result["ok"]:
+            plan = None
+        if result.get("error", {}).get("code") == "STALE_PLAN":
             plan = None
         if next_plan is not None and result["ok"]:
             plan = next_plan
@@ -320,18 +364,22 @@ def tool_node(state: AgentState, runtime: Runtime[AgentContext]):
 
 
 def after_tools(state):
+    if (state.get("execution_policy") == BASIC_ALLOCATION_POLICY and
+            allocation_execution_outcome(state.get("tool_results", []))[0]):
+        return "guard"
     return "guard" if state.get("pending_question") else "model"
 
 
 def completion_guard(state: AgentState, runtime: Runtime[AgentContext]):
-    from app.services import chat
-    from app.services.completion import evaluate_allocation, evaluate_compat
+    from app.services.chat import service as chat
+    from app.services.chat.completion import evaluate_allocation, evaluate_compat
     session = chat.inspect(runtime.context.session_id, owner=runtime.context.owner,
                            db_path=runtime.context.db_path)
     if state.get("task_type") == "allocation":
         result = evaluate_allocation(session, state.get("tool_results", []),
             state.get("pending_question"), state.get("step_count", 0) > MAX_MODEL_STEPS or
-            state.get("tool_call_count", 0) > MAX_TOOL_CALLS)
+            state.get("tool_call_count", 0) > MAX_TOOL_CALLS,
+            execution_policy=state.get("execution_policy"))
     else:
         result = evaluate_compat(session, state.get("tool_results", []), state.get("pending_question"))
     return {"task_result": result}

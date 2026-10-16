@@ -98,3 +98,37 @@ def record_message_pair(connection, *, session_id, turn_id, sequence, user_messa
 def finalize_turn(connection, turn_id, response_json, request_id):
     connection.execute("UPDATE chat_turns SET response_json=? WHERE turn_id=?", (response_json, turn_id))
     set_run_status(connection, request_id, "finished")
+
+
+def ended_request(connection, request_id):
+    row = connection.execute("""SELECT detail_json FROM chat_agent_events
+        WHERE request_id=? AND event_type='request_ended' ORDER BY event_id DESC LIMIT 1""",
+        (request_id,)).fetchone()
+    return json.loads(row["detail_json"]) if row else None
+
+
+def execution_scope(connection, session_id):
+    row = connection.execute("""SELECT request_id FROM chat_agent_events
+        WHERE session_id=? AND event_type='request_ended' ORDER BY event_id DESC LIMIT 1""",
+        (session_id,)).fetchone()
+    return row["request_id"] if row else None
+
+
+def latest_model_stage(connection, request_id):
+    row = connection.execute("""SELECT detail_json FROM chat_agent_events
+        WHERE request_id=? AND event_type IN ('model_call_started','model_call')
+        ORDER BY event_id DESC LIMIT 1""", (request_id,)).fetchone()
+    return json.loads(row["detail_json"]).get("stage") if row else None
+
+
+def latest_extraction(connection, request_id):
+    row = connection.execute("""SELECT event_id,detail_json FROM chat_agent_events
+        WHERE request_id=? AND event_type='allocation_extraction'
+        ORDER BY event_id DESC LIMIT 1""", (request_id,)).fetchone()
+    if row is None:
+        return None
+    result = json.loads(row['detail_json'])
+    result['validation_recorded'] = connection.execute("""SELECT 1 FROM chat_agent_events
+        WHERE request_id=? AND event_type='extraction_validation_failed' AND event_id>?
+        LIMIT 1""", (request_id, row['event_id'])).fetchone() is not None
+    return result

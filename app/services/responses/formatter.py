@@ -1,38 +1,5 @@
-"""Format saved business facts and blockers into deterministic user replies."""
-from .templates import GUIDANCE, OBJECTIVES, SERVICE_ERRORS, TEXT
-
-
-def guidance(blockers, draft, result, trace=None, parser_error=None):
-    items = []
-    for code in dict.fromkeys(blockers):
-        if code == "PARSER_ERROR":
-            if parser_error and "api_key_missing" in parser_error:
-                detail = SERVICE_ERRORS["missing_key"]
-            elif parser_error and ("401" in parser_error or "403" in parser_error):
-                detail = SERVICE_ERRORS["credentials"]
-            elif parser_error and "402" in parser_error:
-                detail = SERVICE_ERRORS["balance"]
-            else:
-                detail = SERVICE_ERRORS["unavailable"]
-            field, question = "service", TEXT["service_question"]
-        elif code.startswith("ORDER_FIELD_CONFLICT:"):
-            field = code.split(":", 1)[1]
-            registered = (trace or {}).get("order", {}).get(field)
-            question = TEXT["field_conflict_question"].format(field=field.replace("_", " "))
-            detail = TEXT["field_conflict_help"].format(value=registered)
-        elif code.startswith("ORDER_ALREADY_"):
-            field, question, detail = "order_id", TEXT["already_allocated_question"], TEXT["already_allocated_help"]
-        elif code == "UNKNOWN_WORKSHOP" or code.startswith(("STATUS_", "CANNOT_MAKE_", "EXCEEDS_")) or code == "EXCLUDED_BY_USER":
-            field = "preferred_workshop"
-            question = TEXT["workshop_question"].format(workshop=draft.get("preferred_workshop") or "",
-                                                       reason=code.replace("_", " ").lower())
-            detail = TEXT["workshop_help"]
-        else:
-            field, question, detail = GUIDANCE.get(code, (
-                "request", TEXT["fallback_question"].format(reason=code.replace("_", " ").lower()),
-                TEXT["fallback_help"]))
-        items.append({"code": code, "field": field, "question": question, "help": detail})
-    return items
+"""Format saved allocation results for deterministic desk and audit summaries."""
+from .templates import OBJECTIVES, TEXT
 
 
 def allocation_reply(result, order_id=None, *, committed=False):

@@ -6,7 +6,7 @@ from pathlib import Path
 from urllib.error import HTTPError
 from urllib.request import Request, urlopen
 from app.server import make_server
-from app.services.dispatch import seed_allocation
+from app.services.allocation.dispatch import seed_allocation
 
 
 class LocalAPI(unittest.TestCase):

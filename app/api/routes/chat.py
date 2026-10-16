@@ -2,8 +2,9 @@ from typing import Literal
 from fastapi import APIRouter, Depends, Response, Query
 from app.api.dependencies import require_user, get_model_registry, Context
 from app.api.errors import ApiError
-from app.schemas.chat import ChatCreateInput, ChatTurnInput, ChatOutput
-from app.services import chat
+from app.schemas.chat import ChatCreateInput, ChatTurnInput, ChatOutput, ChatEndRequestInput
+from app.services.chat import service as chat
+from app.services.chat.request_runs import end_request
 
 router=APIRouter(prefix='/chat',tags=['Chat v2'])
 
@@ -12,7 +13,7 @@ def call(function, *args, **kwargs):
     try:
         return function(*args,**kwargs)
     except chat.ChatError as error:
-        raise ApiError(error.status,error.code,str(error)) from None
+        raise ApiError(error.status,error.code,str(error),details=error.details) from None
 
 
 @router.post('/sessions',response_model=ChatOutput)
@@ -53,3 +54,9 @@ def turn(session_id:str,body:ChatTurnInput,response:Response,ctx:Context=Depends
     payload=call(chat.turn,session_id,**body.model_dump(),owner=ctx.username,db_path=ctx.settings.db_path,registry=registry)
     response.status_code=payload.get('http_status',200)
     return payload
+
+
+@router.post('/sessions/{session_id}/requests/{request_id}/end')
+def end(session_id:str,request_id:str,body:ChatEndRequestInput,ctx:Context=Depends(require_user)):
+    return call(end_request,session_id,request_id=request_id,expected_version=body.expected_version,
+                owner=ctx.username,db_path=ctx.settings.db_path)

@@ -91,6 +91,7 @@ class JobCreateInput(Input):
 class ErrorOutput(Output):
     error: str
     message: str | None = None
+    details: dict[str, Any] | list[dict[str, Any]] | None = None
 
 
 class Decision(Output):

@@ -1,11 +1,11 @@
-"""Category 4: production-event Tool → app.services.agent_production."""
+"""Category 4: production-event Tool → app.services.production.agent_events."""
 from typing import Annotated, Literal
 
 from langchain_core.runnables import RunnableConfig
 from langchain_core.tools import tool
 from pydantic import Field
 
-from app.services import agent_production
+from app.services.production import agent_events as agent_production
 
 
 @tool

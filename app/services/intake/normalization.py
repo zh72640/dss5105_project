@@ -24,5 +24,11 @@ def workshop_mentions(text):
     return sorted(found)
 
 
-def order_ids(text):
-    return list(dict.fromkeys(m.group().upper() for m in re.finditer(r"\b(?:ORD-\d{3}|O\d+)\b", text, re.I)))
+def order_ids(text, *, allow_short=False):
+    identifiers = [m.group().upper() for m in re.finditer(r"\b(?:ORD-\d{3}|O\d+)\b", text, re.I)]
+    if allow_short:
+        # Evidence normalization only: never infer an order from a bare quantity.
+        references = re.finditer(
+            r"\border(?:\s+(?:id|number|no\.?))?\s*#?\s*(\d{1,3})(?!\w|\.\d|-\d)", text, re.I)
+        identifiers.extend(f"ORD-{int(match.group(1)):03d}" for match in references)
+    return list(dict.fromkeys(identifiers))

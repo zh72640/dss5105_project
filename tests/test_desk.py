@@ -12,8 +12,8 @@ from urllib.request import HTTPCookieProcessor, Request, build_opener
 
 from app.core import security as auth
 from app.db.database import Database
-from app.services.dispatch import seed_allocation
-from app.services.lifecycle import process_event
+from app.services.allocation.dispatch import seed_allocation
+from app.services.production.lifecycle import process_event
 from app.server import make_server
 
 PASSWORD = "A-test-only-password-2026"

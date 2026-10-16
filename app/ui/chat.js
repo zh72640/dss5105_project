@@ -7,12 +7,29 @@
   const key=()=>`sweaterco.chat.v2.${user?.username||''}`;
   function persist(){localStorage.setItem(key(),JSON.stringify({session_id:session?.session_id,pending}));}
   function status(value){$('chat-status').textContent=value||'';}
+  function endTarget(){
+    if(!pending)return null;
+    const isMessage=pending.body.action==='message'||(pending.url==='/api/chat/sessions'&&pending.body.message);
+    if(!isMessage)return null;
+    if(pending.run?.can_end)return pending.run;
+    if(session?.mode==='llm'&&pending.url===`/api/chat/sessions/${session.session_id}/turns`)
+      return {session_id:session.session_id,request_id:pending.body.request_id,expected_version:pending.body.expected_version};
+    return null;
+  }
+  function pendingNotice(){
+    if(pending?.run?.retryable===false){
+      const message=pending.error_message||'This request cannot be retried.';
+      return message+(endTarget()&&!/\bend this request\b/i.test(message)?' End this request to send a new message.':'');
+    }
+    return (pending?.error_message||'The last action has no confirmed result.')+' Retry uses the same request ID to prevent duplicate submission.';
+  }
   function controls(){
     $('chat-send').disabled=busy||!!pending||session?.status==='ARCHIVED';
     $('chat-new').disabled=busy||!!pending;
     $('chat-input').disabled=busy||!!pending||session?.status==='ARCHIVED';
     $('chat-archive').disabled=busy||!!pending||!session||session.status==='ARCHIVED';
-    $('chat-retry').hidden=!pending;$('chat-retry').disabled=busy;$('chat-working').hidden=!busy;
+    $('chat-retry').hidden=!pending;$('chat-retry').disabled=busy||pending?.run?.retryable===false;
+    $('chat-end-request').hidden=!endTarget();$('chat-end-request').disabled=busy;$('chat-working').hidden=!busy;
     document.querySelectorAll('.chat-recommendation button').forEach(n=>n.disabled=busy||!!pending||!C.canConfirm(session?.recommendation));
   }
   async function allPages(url){let out=[],cursor=0;do{const data=await C.request(`${url}${url.includes('?')?'&':'?'}after=${cursor}&limit=100`);out.push(...data.items);cursor=data.next_cursor;}while(cursor!=null);return out;}
@@ -44,15 +61,33 @@
     persist();controls();if(followLatest||nearBottom||oldId!==sid)scroll.scrollTop=scroll.scrollHeight;
   }
   async function deliver(){
-    if(!pending||busy)return;busy=true;controls();status('');const operation=pending;
+    if(!pending||busy||pending.run?.retryable===false)return;busy=true;controls();status('');const operation=pending;
     try{
       const data=await C.request(operation.url,operation.body);pending=null;persist();
       await load(data.session_id,true);await sessionList();status(data.http_status>=400?'The issue is shown in the conversation.':data.assistant_message?'':'Session created. Enter your request.');
       const url=new URL(location.href);url.searchParams.set('session',data.session_id);history.replaceState(null,'',url);
     }catch(e){
-      if(e.status&&e.status<500){pending=null;persist();if(session)await load(session.session_id);}
-      status(e.message+(pending?' Retry uses the same request ID to prevent duplicate submission.':''));
+      if(e.details?.can_end){
+        operation.run=e.details;
+        const phases={intent:'Understanding the request',extract:'Extracting order details',tool_loop:'Preparing the recommendation',explanation:'Explaining the recommendation',response:'Preparing the response'};
+        operation.error_message=(phases[e.details.phase]?phases[e.details.phase]+': ':'')+e.message;
+      }else operation.error_message=e.message;
+      if(e.status&&e.status<500&&!e.details?.can_end&&e.code!=='REQUEST_EXECUTING'&&e.code!=='AGENT_RUN_IN_PROGRESS')pending=null;
+      persist();
+      if(session)try{await load(session.session_id);}catch{}
+      status(pending?pendingNotice():e.message);
     }finally{busy=false;controls();}
+  }
+  async function endRequest(){
+    const target=endTarget();if(!target||busy)return;
+    busy=true;controls();status('Ending the request…');let result=null;
+    try{
+      const data=await C.request(`/api/chat/sessions/${encodeURIComponent(target.session_id)}/requests/${encodeURIComponent(target.request_id)}/end`,{expected_version:target.expected_version});
+      result=data;pending=null;if(session?.session_id===data.session_id)session.version=data.session_version;persist();
+      const url=new URL(location.href);url.searchParams.set('session',data.session_id);history.replaceState(null,'',url);
+      await load(data.session_id,true);await sessionList();status(data.message);
+    }catch(e){status(result?result.message+' Refresh the page to load the latest session.':e.message+' The request has not been confirmed as ended.');}
+    finally{busy=false;controls();}
   }
   function selection(){return {mode:$('chat-mode').value,...($('chat-mode').value==='llm'?{model_key:$('chat-model').value}:{})};}
   async function newSession(message=''){
@@ -71,11 +106,11 @@
     $('chat-model-label').hidden=$('chat-mode').value==='offline';
     let saved={};try{saved=JSON.parse(localStorage.getItem(key())||'{}');}catch{}pending=saved.pending||null;
     await sessionList();const sid=new URL(location.href).searchParams.get('session')||saved.session_id;if(sid)try{await load(sid);}catch(e){status(e.message);}
-    if(pending)status('The last action has no confirmed result. Retry to resume it.');controls();
+    if(pending)status(pendingNotice());controls();
   }
   $('chat-composer').addEventListener('submit',async event=>{event.preventDefault();const msg=$('chat-input').value.trim();if(msg){$('chat-input').value='';await send('message',msg);}});
   $('chat-input').addEventListener('keydown',event=>{if(event.key==='Enter'&&!event.shiftKey&&!event.isComposing){event.preventDefault();$('chat-composer').requestSubmit();}});
-  $('chat-new').addEventListener('click',()=>newSession());$('chat-retry').addEventListener('click',deliver);
+  $('chat-new').addEventListener('click',()=>newSession());$('chat-retry').addEventListener('click',deliver);$('chat-end-request').addEventListener('click',endRequest);
   $('chat-archive').addEventListener('click',()=>send('archive'));
   $('chat-more-sessions').addEventListener('click',()=>sessionList(true));
   $('chat-menu').addEventListener('click',()=>document.body.classList.toggle('show-chat-sidebar'));

@@ -9,7 +9,7 @@ import shutil
 from langchain_core.messages import AIMessage
 
 from app.db.database import Database
-from app.services import chat
+from app.services.chat import service as chat
 from app.config.model_settings import ModelSpec
 
 
@@ -74,10 +74,10 @@ class NativeScript:
         patches = []
         if self.order_id:
             patches.append({"op": "set", "field": "order_id", "value": self.order_id,
-                            "evidence": {"message_sequence": self.sequence, "quote": message}})
+                            "quote": message})
         if self.pieces is not None:
             patches.append({"op": "set", "field": "pieces", "value": self.pieces,
-                            "evidence": {"message_sequence": self.sequence, "quote": message}})
+                            "quote": message})
         import json
         return {"text": json.dumps({"intent": "allocate_request", "patch_operations": patches})}, {}
 
@@ -108,7 +108,7 @@ class AlignmentBehavior(unittest.TestCase):
                          message=text, registry=model)
 
     def test_preparation_and_saved_preview(self):
-        model = NativeScript(actions=[call("compute_plan", "plan"),
+        model = NativeScript(actions=[call("check_requirements", "requirements"), call("compute_plan", "plan"),
                                       call("save_recommendation", "save"),
                                       AIMessage(content="The recommendation is ready for confirmation.")])
         result = self.turn("Allocate ORD-045.", model)
@@ -122,7 +122,7 @@ class AlignmentBehavior(unittest.TestCase):
                 "SELECT metadata_json FROM chat_messages WHERE session_id=? AND role='assistant'",
                 (self.sid,)).fetchone()[0]
             import json
-            self.assertEqual(json.loads(metadata)["workflow"], "main_v1")
+            self.assertEqual(json.loads(metadata)["workflow"], "main_v2")
 
     def test_each_provider_binds_task_schema_for_current_call(self):
         for provider in ("deepseek", "claude", "openai", "gemini"):
@@ -130,7 +130,7 @@ class AlignmentBehavior(unittest.TestCase):
                 self.sid = chat.create(owner="alice", request_id="create-" + provider,
                     db_path=self.path, as_of=date(2026, 4, 1), mode="llm")["session_id"]
                 model = NativeScript(provider=provider, output_method="json_schema",
-                    actions=[call("compute_plan", "plan-" + provider),
+                    actions=[call("check_requirements", "requirements"), call("compute_plan", "plan-" + provider),
                              call("save_recommendation", "save-" + provider),
                              AIMessage(content="Review the saved recommendation.")])
                 result = chat.turn(self.sid, owner="alice", request_id="allocate-" + provider,
@@ -148,7 +148,7 @@ class AlignmentBehavior(unittest.TestCase):
                                            "total_tokens": 3}
                 return response
 
-        model = Metered(actions=[call("compute_plan", "meter-plan"),
+        model = Metered(actions=[call("check_requirements", "requirements"), call("compute_plan", "meter-plan"),
                                  call("save_recommendation", "meter-save"),
                                  AIMessage(content="Review the recommendation.")])
         self.turn("Allocate ORD-045.", model)
@@ -158,10 +158,10 @@ class AlignmentBehavior(unittest.TestCase):
                 "SELECT telemetry_json FROM chat_turns WHERE request_id='allocate'").fetchone()[0])
             stages = [json.loads(row[0])["stage"] for row in db.connection.execute(
                 "SELECT detail_json FROM chat_agent_events WHERE request_id='allocate' AND event_type='model_call'")]
-        self.assertEqual(stages, ["intent", "extract", "tool_loop", "tool_loop", "reply"])
-        self.assertEqual(telemetry["model_calls"], 5)
-        self.assertEqual(telemetry["usage"], {"input_tokens": 10, "output_tokens": 5,
-                                               "total_tokens": 15})
+        self.assertEqual(stages, ["intent", "extract", "tool_loop", "tool_loop", "tool_loop", "explanation"])
+        self.assertEqual(telemetry["model_calls"], 6)
+        self.assertEqual(telemetry["usage"], {"input_tokens": 12, "output_tokens": 6,
+                                               "total_tokens": 18})
 
     def test_missing_order_blocks_before_tools(self):
         model = NativeScript(order_id=None)
@@ -171,7 +171,7 @@ class AlignmentBehavior(unittest.TestCase):
         self.assertIsNone(result["recommendation_id"])
 
     def test_registered_order_fact_overrides_description(self):
-        model = NativeScript(pieces=999, actions=[call("compute_plan", "plan"),
+        model = NativeScript(pieces=999, actions=[call("check_requirements", "requirements"), call("compute_plan", "plan"),
                                                   call("save_recommendation", "save"),
                                                   AIMessage(content="Review the recommendation.")])
         result = self.turn("Allocate ORD-045, 999 pieces.", model)
@@ -186,7 +186,7 @@ class AlignmentBehavior(unittest.TestCase):
         self.assertIsNone(result["recommendation_id"])
         self.assertIn("No verified recommendation", result["assistant_message"]["content"])
     def test_explicit_confirmation_and_replay(self):
-        model = NativeScript(actions=[call("compute_plan", "plan"),
+        model = NativeScript(actions=[call("check_requirements", "requirements"), call("compute_plan", "plan"),
                                       call("save_recommendation", "save"),
                                       AIMessage(content="Review the saved recommendation.")])
         preview = self.turn("Allocate ORD-045.", model)
@@ -210,26 +210,24 @@ class AlignmentBehavior(unittest.TestCase):
         self.assertFalse(model.offered)
         self.assertIn("classified reliably", result["assistant_message"]["content"])
 
-    def test_waiting_skill_snapshot_survives_file_update(self):
+    def test_interrupted_skill_snapshot_survives_file_update(self):
         from app.agent import skills
         root = Path(self.temp.name) / "skills"
         root.mkdir()
         source = Path(skills.SKILL_ROOT) / "allocation-recommendation"
         shutil.copytree(source, root / "allocation-recommendation")
-        first = NativeScript(actions=[AIMessage(content="", tool_calls=[{
-            "name": "ask_user", "args": {"question": "Which objective should I use?"},
-            "id": "question"}])])
+        first = NativeScript(actions=[call("check_requirements", "requirements")])
         with patch.object(skills, "SKILL_ROOT", root):
-            waiting = self.turn("Allocate ORD-045.", first)
-            self.assertEqual(waiting["pending_question"], "Which objective should I use?")
+            with self.assertRaises(chat.ChatError):
+                self.turn("Allocate ORD-045.", first)
             skill_path = root / "allocation-recommendation" / "SKILL.md"
             skill_path.write_text(skill_path.read_text(encoding="utf-8") + "\nUpdated instructions.\n", encoding="utf-8")
-            second = NativeScript(order_id=None, sequence=3, actions=[call("compute_plan", "plan"),
+            second = NativeScript(actions=[call("compute_plan", "plan"),
                 call("save_recommendation", "save"), AIMessage(content="Review this recommendation.")])
-            resumed = chat.turn(self.sid, owner="alice", request_id="resume",
-                expected_version=1, db_path=self.path, message="Use the current objective.", registry=second)
+            resumed = self.turn("Allocate ORD-045.", second)
         self.assertIsNotNone(resumed["recommendation_id"])
         self.assertNotIn("Updated instructions.", second.agent_messages[0][0].content)
+
     def test_retry_same_request_after_intent_backend_failure(self):
         from app.llm.errors import BackendError
 
@@ -243,7 +241,7 @@ class AlignmentBehavior(unittest.TestCase):
                     raise BackendError("temporary_failure")
                 return super().invoke(messages)
 
-        model = FlakyIntent(actions=[call("compute_plan", "plan"),
+        model = FlakyIntent(actions=[call("check_requirements", "requirements"), call("compute_plan", "plan"),
                                     call("save_recommendation", "save"),
                                     AIMessage(content="Review the recommendation.")])
         with self.assertRaises(chat.ChatError) as failed:

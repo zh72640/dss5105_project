@@ -5,7 +5,7 @@ from app.schemas.chat import TurnInterpretation
 from app.prompts import get_registry
 from app.llm.errors import check_response, check_structured, text_content, translate_error
 from app.llm.registry import selection_metadata
-from app.services.interpretation import rule_interpret, validate_interpretation, FIELDS
+from app.services.chat.interpretation import rule_interpret, validate_interpretation, FIELDS
 
 def interpret(message, context, registry=None, mode='offline', model_key=None):
     baseline=rule_interpret(message,context)

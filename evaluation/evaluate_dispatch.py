@@ -6,14 +6,14 @@ from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:sys.path.insert(0,str(ROOT))
 from app.cli.dispatch import request_text
-from app.services.dispatch import process_request
+from app.services.allocation.dispatch import seed_allocation
 
 
 def evaluate():
     with (ROOT/'evaluation/language_ground_truth.csv').open() as handle: labels=list(csv.DictReader(handle))
     records=[]
     for row in labels:
-        result=process_request(request_text(row['request_id']),backend='offline',request_id='dispatch-'+row['request_id'])
+        result=seed_allocation(request_text(row['request_id']),request_id='dispatch-'+row['request_id'])
         actual=result['result']['decision_status']
         records.append({'dataset_request_id':row['request_id'],'expected_behavior':row['expected_behavior'],
                         'actual_behavior':actual,'match':actual==row['expected_behavior'],'payload':result})

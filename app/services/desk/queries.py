@@ -131,3 +131,13 @@ def audit_csv(records):
             output[field] = "'" + text if text.lstrip().startswith(("=", "+", "-", "@")) or text.startswith(("\t", "\r", "\n")) else text
         writer.writerow(output)
     return ("\ufeff" + stream.getvalue()).encode("utf-8")
+
+
+def history(db_path, *, limit=30):
+    with Database(db_path) as db:
+        rows = db.connection.execute(
+            "SELECT request_id,request_date_time,status,response_json FROM requests "
+            "ORDER BY request_date_time DESC LIMIT ?", (limit,)).fetchall()
+        return [{"request_id": r["request_id"], "time": r["request_date_time"], "status": r["status"],
+                 "order_id": (json.loads(r["response_json"]).get("parsed") or
+                              json.loads(r["response_json"]).get("event") or {}).get("order_id")} for r in rows]

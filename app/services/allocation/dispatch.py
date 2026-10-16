@@ -11,7 +11,7 @@ from datetime import date
 
 from app.db.database import Database
 from app.schemas.parser_schema import OBJECTIVES, ParseResult
-from app.services.allocation import apply as _apply, decide as _decide, record as _record
+from app.services.allocation.service import apply as _apply, decide as _decide, record as _record
 from app.services.intake.rule_parser import extract
 
 PIPELINE_VERSION = "mvp_v0.2"
@@ -99,12 +99,3 @@ def seed_allocation(text: str, objective="min_delay", *, db_path=None, database=
     finally:
         if owned and db:
             db.close()
-
-
-# Compatibility alias for demos/tests that still call the old name with offline rules.
-def process_request(text, objective="min_delay", *, db_path=None, database=None,
-                    request_id=None, backend=None, as_of=date(2026, 4, 1), actor=None):
-    if backend not in (None, "offline", "rules_v1"):
-        raise ValueError("Parser v1 LLM backends were retired; use Chat v2 or seed_allocation (offline).")
-    return seed_allocation(text, objective, db_path=db_path, database=database,
-                           request_id=request_id, as_of=as_of, actor=actor)

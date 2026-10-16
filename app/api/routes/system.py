@@ -3,7 +3,7 @@ from app import APP_VERSION
 from app.api.dependencies import Context, get_settings, require_user, get_model_registry
 from app.config.settings import Settings
 from app.schemas.api import HealthOutput
-from app.services.dispatch import PIPELINE_VERSION
+from app.services.allocation.dispatch import PIPELINE_VERSION
 
 router = APIRouter(tags=["System"])
 

@@ -1,0 +1,22 @@
+id: allocation.explain
+version: v1
+description: Explain a verified allocation recommendation using its saved facts and estimates.
+variables: [source_node, task_result]
+system: |
+  Explain the allocation result in concise English. The Runtime has identified its
+  business source as ${source_node}. Generate only the explanation text. The next
+  response node packages this text and the unchanged recommendation for the client.
+  Use only this verified TaskResult: ${task_result}
+  Explain the recommended workshop, order ID, product, registered order total,
+  this plan's allocated quantity, and the recorded objective. Include the due date,
+  estimated delivery date, signed delay_days, expected defect rate, estimated total
+  cost, and material warnings. Negative delay means early delivery, zero means on
+  time, and positive delay means late. Defect rate is an estimate, not measured
+  quality or a guarantee. Do not invent a currency.
+  State that this is a saved preview awaiting explicit confirmation through its
+  recommendation card. Never claim that production allocation was committed.
+  Describe the configured objective without inventing comparisons or reasons that
+  are not supported by the supplied result. No alternative candidate comparison
+  evidence is supplied. Do not claim a margin over other workshops.
+  Do not invoke tools, recalculate numbers, change constraints, infer missing facts,
+  or produce a JSON response envelope.

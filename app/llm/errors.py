@@ -8,9 +8,41 @@ class ModelSelectionError(ValueError):
 
 
 class BackendError(RuntimeError):
-    def __init__(self, code, retryable=True):
+    def __init__(self, code, retryable=True, *, provider=None, upstream_status=None,
+                 original_type=None, cause_types=()):
         super().__init__(code)
         self.retryable = retryable
+        self.provider = provider
+        self.upstream_status = upstream_status
+        self.original_type = original_type
+        self.cause_types = list(cause_types)
+
+    def details(self):
+        """Safe diagnostics: never expose provider response bodies or credentials."""
+        return {"code": str(self), "retryable": self.retryable, "provider": self.provider,
+                "upstream_status": self.upstream_status, "original_type": self.original_type,
+                "cause_types": self.cause_types}
+
+    def user_message(self):
+        provider = {"gemini": "Gemini", "openai": "OpenAI", "claude": "Claude",
+                    "deepseek": "DeepSeek"}.get(self.provider, "The model service")
+        status = self.upstream_status
+        suffix = f" (HTTP {status})" if status else ""
+        if status in (401, 403):
+            return f"{provider} rejected authentication or access{suffix}. Check the model credentials and permissions."
+        if status == 429:
+            return f"{provider} reached a rate or quota limit{suffix}. Wait before retrying this request."
+        if status and (status >= 500 or status == 408):
+            return f"{provider} is temporarily unavailable{suffix}. Retry this request to resume."
+        if status:
+            return f"{provider} rejected the model request{suffix}. Check the model configuration before starting a new request."
+        if str(self).endswith("_connection_error"):
+            return f"The connection to {provider} timed out or failed. Retry this request to resume."
+        if str(self).endswith('_invalid_input'):
+            return "The model request is missing required message content."
+        if self.retryable:
+            return "The model returned an incomplete or unusable response. Retry this request to resume."
+        return "The model request could not be completed. Check the model configuration or input."
 
 
 def text_content(message):
@@ -58,10 +90,26 @@ def check_structured(response):
 def translate_error(error, provider):
     if isinstance(error, (BackendError, ModelSelectionError)):
         return error
-    status = getattr(error, "status_code", None)
-    if isinstance(status, int):
-        return BackendError(f"{provider}_http_{status}", retryable=status in (408, 429) or status >= 500)
-    name = type(error).__name__.lower()
-    if isinstance(error, (TimeoutError, OSError)) or any(x in name for x in ("timeout", "connection", "transport")):
-        return BackendError(provider + "_connection_error")
-    return BackendError(provider + "_invalid_response", retryable=False)
+    chain, seen = [], set()
+    current = error
+    while current is not None and id(current) not in seen:
+        seen.add(id(current))
+        chain.append(current)
+        current = current.__cause__ or current.__context__
+    details = {"provider": provider, "original_type": type(error).__name__,
+               "cause_types": [type(item).__name__ for item in chain[1:]]}
+    for item in chain:
+        # Gemini exposes `code`; OpenAI and Anthropic expose `status_code`.
+        for status in (getattr(item, "status_code", None), getattr(item, "code", None),
+                       getattr(getattr(item, "response", None), "status_code", None)):
+            if isinstance(status, int) and not isinstance(status, bool) and 400 <= status <= 599:
+                return BackendError(f"{provider}_http_{status}",
+                    retryable=status in (408, 429) or status >= 500, upstream_status=status, **details)
+    missing_content_errors = {'contents are required.', 'content is required.', 'content parts are required.'}
+    if any(isinstance(item, ValueError) and str(item).strip() in missing_content_errors for item in chain):
+        return BackendError(provider + '_invalid_input', retryable=False, **details)
+    if any(isinstance(item, (TimeoutError, OSError)) or any(
+            name in type(item).__name__.lower() for name in ("timeout", "connection", "transport"))
+            for item in chain):
+        return BackendError(provider + "_connection_error", **details)
+    return BackendError(provider + "_invalid_response", retryable=False, **details)

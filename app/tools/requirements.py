@@ -1,11 +1,11 @@
-"""Category 4: requirement Tools → app.services.agent_operations."""
+"""Category 4: requirement Tools → app.services.chat.operations."""
 from typing import Annotated, Any, Literal
 
 from langchain_core.runnables import RunnableConfig
 from langchain_core.tools import tool
 from pydantic import Field
 
-from app.services import agent_operations
+from app.services.chat import operations as agent_operations
 
 
 @tool
@@ -50,10 +50,12 @@ def check_requirements(config: RunnableConfig) -> dict:
         config: Trusted runtime config (connection, session, as_of).
 
     Returns:
-        dict: state, report, facts_hash.
+        dict: state, report, facts_hash; skill_input for a prepared allocation.
 
     Errors:
-        INVALID_TASK_STATE.
+        INVALID_TASK_STATE, SKILL_INPUT_INCOMPLETE, SKILL_INPUT_STALE,
+        INVALID_ALLOCATION_INPUT, MULTI_WORKSHOP_UNSUPPORTED, PLAN_BLOCKED.
     """
     cfg = config["configurable"]
-    return agent_operations.check_requirements(cfg["connection"], cfg["session"], cfg["as_of"])
+    return agent_operations.check_requirements(
+        cfg["connection"], cfg["session"], cfg["as_of"], allocation_input=cfg.get("allocation_input"))

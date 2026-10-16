@@ -1,55 +1,53 @@
 ---
 name: allocation-recommendation
-description: Build an auditable allocation recommendation for an existing order.
-triggers: A request to allocate, dispatch, compare allocation options, or recalculate a recommendation.
-tools: [get_order, list_workshops, get_queue, score_workshop, get_estimated_completion_time, get_lateness_score, get_defect_score, get_hybrid_score, update_constraints, check_requirements, compute_plan, save_recommendation, ask_user]
+description: Check prepared order facts and save one verified single-workshop recommendation.
+triggers: An allocation task after LLM field extraction and deterministic database preparation.
+tools: [check_requirements, compute_plan, save_recommendation]
 ---
 # Allocation recommendation
 
 ## Scope and prerequisites
-Use this Skill only after the Allocation preparation stage has extracted and checked
-the order reference and current constraints. It guides recommendation and revision,
-not allocation commitment or production events. Tools must be registered and
-authorized by the runtime; this document grants no permission. The registered
-order and current business database are authoritative.
+Use inside the Allocation node after fixed preparation. The database provides
+authoritative order facts. Preparation may leave the task READY or RECOMMENDED.
+This workflow supports one workshop. Tools remain subject to Runtime permissions
+and Service validation; Skill text grants no permission.
 
 ## Inputs
-Required: one exact order ID in the saved task and a business date supplied by the
-runtime. Optional: objective, exclusions, a hard preferred workshop, workshop
-limit, and hard deadline requirement. Keep saved constraints unless the user
-explicitly revises them. Never silently relax a hard constraint.
+The Runtime supplies skill_input containing order_id, product, pieces (registered
+order total), and due_date. It also supplies the business date, objective, and
+effective constraints. Preserve registered facts and saved constraints.
+order_id and product must be nonempty strings, pieces a positive integer, and
+due_date an ISO date (YYYY-MM-DD). Missing and invalid fields are separate errors.
 
 ## Workflow
-1. **Check context → use saved task and get_order when needed → identify the
-   registered order and any user constraints.** Use update_constraints only for a
-   change grounded in the current user message. A revision invalidates the prior
-   recommendation and requires fresh confirmation.
-2. **Check feasibility → call check_requirements → read the authoritative report.**
-   If it is blocked, ask one precise question with ask_user or report the
-   blocking issue. Do not call the planner while blocked.
-3. **Find a plan → call compute_plan → inspect the verified integer allocation,
-   rejected workshops, cost, delivery date, and warnings.** Use list_workshops,
-   get_queue, or score_workshop when a comparison needs supporting evidence.
-   score_workshop's deadline-gated hybrid score differs from the planner's
-   weighted hybrid objective.
-4. **Handle alternatives → use the reported rejection and constraint evidence
-   to compare eligible candidates or request a revised constraint.** Do not
-   invent a workshop or widen a user limit. If no plan satisfies the constraints,
-   report the specific issue.
-5. **Save preview → call save_recommendation only after a successful compute_plan
-   in this run → use its saved recommendation ID, task version and result.**
-   Explain the split quantities, expected delivery, cost, objective and limits.
-   Invite the user to confirm that exact card through the explicit UI action.
+1. **Verify delivered inputs → call check_requirements → inspect skill_input and
+   the validation report.** Check order ID, product, total pieces, and due date
+   again. A missing field ends the workflow with
+   `Missing required field(s): {fields}.` Do not invent a value, ask a follow-up
+   question, or proceed while blocked.
+2. **Calculate → call compute_plan → inspect the verified allocation result.**
+   Accept only one eligible workshop covering the remaining pieces. Do not
+   replace a failed plan with a relaxed constraint or multiple workshops.
+3. **Save → call save_recommendation → inspect the saved ID, version, status,
+   and result.** A calculation alone is insufficient. The save checks fresh facts
+   and must succeed in this run. Stop after success; the Runtime assembles the
+   typed return from saved business records.
 
 ## Output and completion
-A successful output cites the saved recommendation ID and version and explains
-only fields present in verified Tool results. The result is a preview awaiting
-confirmation; no production allocation or queue update occurs. Model wording
-alone cannot establish completion.
+Return order_id, product, pieces (registered total), due_date, workshop_id,
+workshop_name, allocated_pieces (this plan's quantity), estimated_delivery_date,
+delay_days, expected_defect_rate, estimated_cost, objective, warnings,
+recommendation_id, and task_version.
+The Service supplies these values. Negative delay_days means early delivery,
+zero means on time, and positive means late. Quality is expected defect rate;
+price is estimated total cost. Do not calculate or fabricate these fields.
+The Runtime checks completion from a valid current-version saved recommendation.
+This is a preview awaiting explicit confirmation. Explanation, user response
+generation, and allocation submission are downstream responsibilities.
 
 ## Failure handling
-For missing or ambiguous order information, ask for the exact ID. For stale facts,
-version changes, or an invalidated plan, rerun the checks and calculation before
-saving. For unavailable or unauthorized Tools, model errors, or execution limits,
-stop and report the failure without claiming a recommendation exists. A partial
-comparison is not a saved recommendation.
+Missing or invalid inputs, infeasibility, unsupported multi-workshop requests,
+denied tools, and execution limits end this workflow with the specific issue.
+On STALE_PLAN, repeat check_requirements, compute_plan, and save_recommendation
+once. If the retry fails, stop; never reuse the old plan. Model/provider failures
+retain the server's request recovery behavior. Never claim an unsaved recommendation.
