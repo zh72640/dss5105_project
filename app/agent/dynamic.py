@@ -11,23 +11,20 @@ import re
 from pathlib import Path
 from typing import Annotated, TypedDict
 
-from langchain_core.messages import AIMessage, HumanMessage, SystemMessage, ToolMessage
+from langchain_core.messages import AIMessage, SystemMessage, ToolMessage
 from langgraph.graph import START, END, StateGraph
 from langgraph.graph.message import add_messages
 from langgraph.runtime import Runtime
 
 from app.agent import skills
 from app.schemas.tool import ToolFailure
-from app.tools.registry import TOOLS, allowed_for_task, schema, validate_arguments
-from app.tools.operations import execute
+from app.tools.registry import TOOLS, ALLOWED_TASK_STATES, allowed_for_task, invoke_tool
 from app.db.database import Database
 from app.db.chat_repository import snapshot
 from app.llm.errors import ModelSelectionError, check_response, translate_error
 from app.llm.registry import selection_metadata
 
 
-LOAD_SKILL = schema("load_skill", "Load one named application Skill. Returns its exact instructions and enables its registered tools for this session.",
-                    {"name": {"type": "string"}}, ("name",))
 MAX_MODEL_STEPS = 12
 MAX_TOOL_CALLS = 32
 
@@ -60,12 +57,14 @@ class AgentContext:
 
 
 def available_tools(loaded, task_type="compat", task_state=None):
-    from app.tools.registry import ALLOWED_TASK_STATES
     names = {name for item in loaded.values() for name in item["tools"]}
     visible = [name for name in sorted(names) if allowed_for_task(name, task_type) and
                (task_type != "allocation" or name not in ALLOWED_TASK_STATES or
                 task_state in ALLOWED_TASK_STATES[name])]
-    return ([LOAD_SKILL] if task_type != "allocation" else []) + [TOOLS[name] for name in visible]
+    tools = [TOOLS[name] for name in visible]
+    if task_type != "allocation":
+        tools = [TOOLS["load_skill"], *tools]
+    return tools
 
 
 def system_message(context, loaded):
@@ -137,7 +136,6 @@ def after_model(state):
 
 def _tool_result(context, state, call, loaded, plan):
     from app.db import agent_repository
-    from app.tools.production import execute as execute_production
 
     name = call["name"]
     args = call.get("args") or {}
@@ -169,29 +167,33 @@ def _tool_result(context, state, call, loaded, plan):
             pending = None
             try:
                 if name == "load_skill":
-                    if set(args) != {"name"} or not isinstance(args["name"], str):
-                        raise ToolFailure("INVALID_ARGUMENTS", "load_skill requires one Skill name.")
-                    if state.get("task_type") == "allocation" and args["name"] != "allocation-recommendation":
+                    if state.get("task_type") == "allocation" and args.get("name") != "allocation-recommendation":
                         raise ToolFailure("SKILL_NOT_ALLOWED", "This Skill is not available for the allocation task.")
-                    if args["name"] in state.get("pinned_skills", ()) and args["name"] in loaded:
+                    if args.get("name") in state.get("pinned_skills", ()) and args.get("name") in loaded:
                         item = loaded[args["name"]]
+                        data = item
                     else:
-                        try:
-                            item = skills.load(args["name"], context.skill_root)
-                        except ValueError:
-                            raise ToolFailure("SKILL_NOT_FOUND", "No application Skill has that name.") from None
-                    if set(item["tools"]) - set(TOOLS):
+                        data = invoke_tool(
+                            "load_skill", args, connection=connection, session=current,
+                            as_of=context.as_of, user_message=context.user_message,
+                            skill_root=context.skill_root)
+                        item = data
+                    if set(data["tools"]) - set(TOOLS):
                         raise ToolFailure("UNREGISTERED_TOOL", "The Skill names an unregistered tool.")
-                    selected = item["name"]
-                    data = item
+                    selected = data["name"]
                 else:
                     if not allowed_for_task(name, state.get("task_type", "compat")):
                         raise ToolFailure("TOOL_NOT_ALLOWED", "This tool is not allowed for the current task.")
                     selected = next((skill for skill in loaded.values() if name in skill["tools"]), None)
                     if selected is None:
                         raise ToolFailure("TOOL_NOT_ALLOWED", "Load a Skill that permits this tool in the current session.")
-                    data, next_plan, pending = execute(name, args, connection=connection, session=current,
+                    data = invoke_tool(
+                        name, args, connection=connection, session=current,
                         as_of=context.as_of, user_message=context.user_message, plan=plan)
+                    if name == "compute_plan":
+                        next_plan = data
+                    if name == "ask_user":
+                        pending = data.get("question")
                 result = {"ok": True, "data": data}
             except ToolFailure as error:
                 result = {"ok": False, "error": {"code": error.code, "message": str(error)}}
@@ -212,7 +214,6 @@ def _tool_result(context, state, call, loaded, plan):
 
 def _production_result(context, invocation_key, args, loaded):
     from app.db import agent_repository
-    from app.tools.production import execute as execute_production
 
     selected = next((skill for skill in loaded.values()
                      if "record_production_event" in skill["tools"]), None)
@@ -228,7 +229,11 @@ def _production_result(context, invocation_key, args, loaded):
         if current is None or current["status"] != "OPEN":
             raise ToolFailure("SESSION_NOT_FOUND", "The session is unavailable to this account.")
         before = current["task"]["state"]
-    result = execute_production(context, invocation_key, args)
+    result = invoke_tool(
+        "record_production_event", args,
+        connection=None, session=current, as_of=context.as_of,
+        user_message=context.user_message, owner=context.owner,
+        db_path=context.db_path, invocation_key=invocation_key)
     with Database(context.db_path) as db:
         with db.transaction() as connection:
             cached = agent_repository.tool_call(connection, invocation_key)

@@ -8,7 +8,7 @@
 | `app.offline.graph` and offline interpreter | Offline demo interpretation. They are not evidence of native model tool calls. |
 | `app.agent.dynamic` | LangGraph model/tool loop, Skill snapshots, durable checkpoints, execution cap, wait state, and restart recovery for `llm` chat sessions. |
 | `app.agent.skills` and `app/skills/*/SKILL.md` | Runtime Skill discovery and complete instructions loaded on model request. Business operation advice lives here. |
-| `app.tools.registry` / `app.tools.operations` | Named, schema-described tools; validation and binding. Business handlers live in `app.services.agent_operations`. |
+| `app.tools.registry` and domain tool modules | Explicit `@tool` objects; Registry invoke with trusted config. Complex handlers call named functions in `app.services.agent_operations`. |
 | `app.services.allocation_preflight`, `app.services.allocation`, `app.allocator` | Authoritative input checks; `allocate()` planning (`max_workshops`); solution validation; transactional allocation writes. |
 | `app.allocator.scoring` | Original single-workshop timing and score formulas, called by `score_workshop`. |
 | `app.services.lifecycle` | Audited, idempotent production event transaction, reused by the Agent production tool and `/events`. |
@@ -30,7 +30,7 @@ Each `SKILL.md` has `name`, `description`, `triggers`, and `tools` front matter 
 | `constraint-revision` | `update_constraints`, `check_requirements`, `compute_plan`, `save_recommendation`, `ask_user` |
 | `commit-and-production` | `inspect_recommendation`, `get_order`, `record_production_event`, `ask_user` |
 
-Each call uses the schema in `app.tools.registry.TOOLS` (or `LOAD_SKILL`) and returns `{ok: true, data: ...}` or `{ok: false, error: {code, message}}`. The result payloads and principal refusal codes are:
+Each call uses a registered `@tool` in `app.tools.registry.TOOLS` (including `load_skill`) and returns `{ok: true, data: ...}` or `{ok: false, error: {code, message}}`. The result payloads and principal refusal codes are:
 
 | Tool | Inputs | Verified `data` | Principal refusal codes |
 | --- | --- | --- | --- |
@@ -53,7 +53,7 @@ Tool schemas are defined in `app.tools.registry.TOOLS`. The generic return envel
 
 An authenticated owner can review these records at `GET /api/chat/sessions/{session_id}/trace?limit=100`. The endpoint returns tool calls and events in execution order. For example, the tested recommendation path is `load_skill → update_constraints(order_id) → score_workshop → check_requirements(COLLECTING→READY) → compute_plan → save_recommendation(READY→RECOMMENDED)`. The confirmation button then moves the task to `CONFIRMED` in the existing chat transaction; a plain recommendation turn never does.
 
-`score_workshop` is a thin adapter around the four restored functions in `app/allocator/scoring.py`. It loads a real `Workshop`, uses the aged queue returned by `workshop_repository.get_all`, uses a positive integer batch, converts the registered due date to a `date`, and uses the session business date as `sent_date`. The original formulas are unchanged:
+The Agent `score_workshop` Tool loads workshop/order rows, then calls `app.allocator.scoring.score_workshop`, which builds the batch and runs the four restored formulas. It uses the aged queue from `workshop_repository.get_all`, a positive integer batch, the registered due date as a `date`, and the session business date as `sent_date`. The original formulas are unchanged:
 
 - `get_estimated_completion_time`: `pieces / capacity + lead_days + queue_days`, in days.
 - `get_lateness_score`: estimated days minus `(due_date - sent_date).days` for an active workshop; `10000` otherwise. Negative values indicate time before the deadline.

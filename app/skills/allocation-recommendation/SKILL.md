@@ -2,7 +2,7 @@
 name: allocation-recommendation
 description: Build an auditable allocation recommendation for an existing order.
 triggers: A request to allocate, dispatch, compare allocation options, or recalculate a recommendation.
-tools: [get_order, list_workshops, get_queue, score_workshop, update_constraints, check_requirements, compute_plan, save_recommendation, ask_user]
+tools: [get_order, list_workshops, get_queue, score_workshop, get_estimated_completion_time, get_lateness_score, get_defect_score, get_hybrid_score, update_constraints, check_requirements, compute_plan, save_recommendation, ask_user]
 ---
 # Allocation recommendation
 

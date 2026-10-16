@@ -2,7 +2,7 @@
 name: recommendation-explanation
 description: Explain an existing recommendation using its saved result and current validity.
 triggers: The user asks why a recommendation was made or asks about a previously shown plan.
-tools: [inspect_recommendation, get_order, list_workshops, score_workshop, ask_user]
+tools: [inspect_recommendation, get_order, list_workshops, score_workshop, get_estimated_completion_time, get_lateness_score, get_defect_score, get_hybrid_score, ask_user]
 ---
 # Recommendation Explanation
 

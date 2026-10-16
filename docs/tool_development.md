@@ -2,6 +2,8 @@
 
 Follow `AGENTS.md`, the existing project architecture, and the installed LangChain/LangGraph versions. This document applies to **agent-callable tools**, not ordinary helper or Service functions.
 
+Classify each Tool as category **1 Allocator**, **2 DB**, **3 Simple**, or **4 Service** — see [tool_categories.md](tool_categories.md). Put purpose/Args/Returns/Errors on the `@tool`. Categories 1/2/4 thin-forward to one lower function; category 3 implements inline.
+
 ## 1. Core Principles
 
 Every tool MUST follow four principles:

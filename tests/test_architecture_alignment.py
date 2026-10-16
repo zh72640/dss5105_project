@@ -34,7 +34,9 @@ class NativeScript:
         return self
 
     def bind_tools(self, schemas):
-        self.offered.append({item["function"]["name"] for item in schemas})
+        self.offered.append({
+            item["function"]["name"] if isinstance(item, dict) else item.name
+            for item in schemas})
         return self
 
     def with_structured_output(self, schema, *, method, include_raw):

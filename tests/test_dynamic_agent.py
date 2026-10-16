@@ -15,7 +15,7 @@ from langchain_core.messages import ToolMessage
 from langgraph.checkpoint.sqlite import SqliteSaver
 
 from app.agent import dynamic, skills
-from app.agent.dynamic import LOAD_SKILL
+from app.tools.registry import TOOLS
 from app.agent.main_graph import INTENT_SCHEMA
 from app.schemas.chat import TurnInterpretation
 from app.allocator import scoring as original_scores
@@ -50,7 +50,10 @@ class ScriptedNativeModel:
         return self
 
     def bind_tools(self, schemas):
-        self.offered.append({item["function"]["name"] for item in schemas})
+        names = set()
+        for item in schemas:
+            names.add(item["function"]["name"] if isinstance(item, dict) else item.name)
+        self.offered.append(names)
         return self
 
     def invoke(self, messages):
@@ -106,7 +109,8 @@ class DynamicAgentBehavior(unittest.TestCase):
         offered = []
         class NativeTransport:
             def bind_tools(self, definitions):
-                offered.append({item["function"]["name"] for item in definitions})
+                offered.append({item["function"]["name"] if isinstance(item, dict) else item.name
+                                for item in definitions})
                 return self
             def invoke(self, messages):
                 return responses.pop(0)
@@ -231,7 +235,8 @@ class DynamicAgentBehavior(unittest.TestCase):
         calls = []
         class NativeModel:
             def bind_tools(self, definitions):
-                calls.append([item["function"]["name"] for item in definitions])
+                calls.append([item["function"]["name"] if isinstance(item, dict) else item.name
+                              for item in definitions])
                 return self
             def invoke(self, messages):
                 calls.append(messages)
@@ -240,7 +245,7 @@ class DynamicAgentBehavior(unittest.TestCase):
             models=(ModelSpec("native", "openai", "test-model", "dummy"),))
         registry = ModelRegistry(settings, factory=lambda spec: NativeModel())
         registry.initialize()
-        result = registry.get_model("llm", "native").bind_tools([LOAD_SKILL]).invoke([])
+        result = registry.get_model("llm", "native").bind_tools([TOOLS["load_skill"]]).invoke([])
         self.assertEqual(result.tool_calls[0]["name"], "load_skill")
         self.assertEqual(calls[0], ["load_skill"])
 
@@ -251,7 +256,7 @@ class DynamicAgentBehavior(unittest.TestCase):
                                    ("deepseek", "deepseek-chat")):
             with self.subTest(provider=provider):
                 model = build_model(ModelSpec(provider, provider, model_id, "dummy", output_method="prompt"))
-                self.assertIsNotNone(model.bind_tools([LOAD_SKILL]))
+                self.assertIsNotNone(model.bind_tools([TOOLS["load_skill"]]))
                 method = "function_calling" if provider == "claude" else "json_schema"
                 self.assertIsNotNone(model.with_structured_output(
                     {"title": "AgentIntent", **INTENT_SCHEMA}, method=method, include_raw=True))

@@ -2,7 +2,7 @@
 name: workshop-inquiry
 description: Inspect workshop eligibility, capacity, queues, and original scoring metrics.
 triggers: A workshop question or a request to compare workshop timing or quality.
-tools: [list_workshops, get_queue, score_workshop, ask_user]
+tools: [list_workshops, get_queue, score_workshop, get_estimated_completion_time, get_lateness_score, get_defect_score, get_hybrid_score, ask_user]
 ---
 # Workshop Inquiry
 

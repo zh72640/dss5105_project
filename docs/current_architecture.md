@@ -15,7 +15,7 @@ flowchart LR
     RUNTIME --> LEGACY[dynamic.py 旧 checkpoint]
     MAIN --> EXECUTOR[executor.py + dynamic.py Tool loop]
     EXECUTOR --> SKILL[app/agent/skills.py + app/skills]
-    EXECUTOR --> TOOL[app/tools/registry.py + operations.py + production.py]
+    EXECUTOR --> TOOL[app/tools/registry.py + domain @tool modules]
     LEGACY --> TOOL
     TOOL --> BIZ[业务 Service / 规划器]
     CHAT -->|显式 confirm| BIZ
@@ -60,7 +60,7 @@ flowchart LR
 
 1. `app/services/chat.py:turn` 将 LLM 模式的普通消息交给 `app/services/agent_chat.py:turn`。后者建立或恢复 `chat_agent_runs`，由 `app/agent/runtime.py` 按 checkpoint 状态选择 Main Graph 或继续旧 Graph，并检查所选模型的原生 Tool 接口；会话图使用 `chat-agent:<session_id>` checkpoint thread。
 2. 选用 Main Graph 时，`app/agent/main_graph.py` 识别业务任务。派单进入 `app/agent/allocation_graph.py`，先按固定节点提取字段、调用 Service 准备事实，再通过 `app/agent/skills.py` 加载 `app/skills/allocation-recommendation/SKILL.md`。其他兼容任务可由模型调用 `load_skill`。Skill 内容及 SHA-256 hash 在需要恢复时随 checkpoint 保存。
-3. `app/agent/executor.py` 使用 `app/agent/dynamic.py` 的有界 Agent–Tool Loop。`app/tools/registry.py` 定义 Tool schema、参数及任务权限；`app/tools/operations.py` 绑定和执行普通 Tool；`app/tools/production.py` 处理生产事件 Tool 的附加授权校验。业务计算和写入主要委托 `app/services/agent_operations.py`、派单与生产 Service；数据读写通过 `app/db/` Repository。
+3. `app/agent/executor.py` 使用 `app/agent/dynamic.py` 的有界 Agent–Tool Loop。`app/tools/` 下显式 `@tool` 函数经 `registry.py` 登记；Runtime 通过 `invoke_tool` 注入可信上下文。复杂业务调用 `app/services/agent_operations.py` 具名函数；分配计算经 Tool 显式调用 `app.allocator.allocate`；生产事件在 `production.py` 做消息授权后委托 lifecycle。
 4. `ask_user` 保存待答问题并结束本轮；下一条用户消息沿对应 executor checkpoint 恢复，并保留等待时的 Skill 快照。普通完成的 Turn 会清除已加载 Tool 权限。Tool Loop 每轮最多 12 次模型步骤和 32 次可执行 Tool 调用；退出时由代码检查完成条件。调用参数、结果、Skill hash 和状态变化记录在 Agent Trace。
 5. `agent_chat.py` 从数据库重读任务及推荐，检查最终答复是否无依据地宣称已确认或已记录生产事件，再保存用户消息、答复和会话版本。界面上的 `committed` 标志与推荐卡来自数据库事实。
 
@@ -98,7 +98,7 @@ Chat v2 任务状态为 `COLLECTING`、`BLOCKED`、`READY`、`RECOMMENDED`、`CO
 
 | 职责 | 当前状态与正式路径 |
 | --- | --- |
-| Tool | 正式 schema、注册与执行在 `app/tools/registry.py`、`operations.py`、`production.py`。`app/services/agent_operations.py` 仍集中按名称分派多个业务能力（有意保留，未为减层而拆分）。 |
+| Tool | 正式 `@tool` 在 `app/tools/{orders,workshops,allocation,requirements,recommendations,conversation,production}.py`；`registry.py` 登记并 `invoke_tool`。`agent_operations` 仅保留具名 Service 函数，无 `execute(name, args)`。 |
 | 业务规则与规划 | 正式资格、评分及规划在 `app/allocator/`（`allocate` / eligibility / scoring / planner）。 |
 | DB Repository | 正式实现与迁移在 `app/db/`。`app/services/auth.py` 的 `auth_me` 已走 `account_repository`；`dispatch.py`、`read_models.py` 与 `core/security.py` 仍有直接 SQL，后续分阶段下沉。 |
 | Prompt | Chat 与 Agent 的正式 YAML、加载器及版本信息在 `app/prompts/`；Parser v1 专用模板已移除。 |

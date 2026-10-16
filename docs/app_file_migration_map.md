@@ -65,7 +65,7 @@ Internal callers, tests, demos, and evaluation scripts use canonical imports. Th
 
 1. **Freeze the map — completed 2026-10-16.**
 2. **Remove import ambiguity — completed.**
-3. **Separate business boundaries — partial.** Offline + responses moved out of `agent/`. **Deferred:** splitting `agent_operations.execute`; remaining SQL in `dispatch` / `read_models` / `core/security`; splitting `chat.py` LLM vs offline files.
+3. **Separate business boundaries — partial.** Offline + responses moved out of `agent/`. Tool 显式化已完成（`@tool` 模块 + 删除 `operations.py` / `execute(name)`）。**Deferred:** remaining SQL in `dispatch` / `read_models` / `core/security`; splitting `chat.py` LLM vs offline files.
 4. **Retire Parser v1 + legacy sessions — completed 2026-10-16.**
 5. **Tidy `app/agent/` layout — completed.** Offline under `app/offline/`; LLM runtime flat under `app/agent/`.
 6. **Split `app/llm/` from core; delete direct providers — completed.** `core/` is lifespan + auth only.

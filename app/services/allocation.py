@@ -17,26 +17,46 @@ def _planning_max_workshops(limit, sources=None):
     return limit if (authorized and type(limit) is int and limit >= 2) else 1
 
 
-def recommend(connection, draft, as_of, pending=(), sources=None):
-    from app.services.allocation_preflight import preflight, check_solution, digest
+def prepare_recommendation(connection, draft, as_of, pending=(), sources=None):
+    """Preflight and build AllocationRequest. request is None when not ready to plan."""
+    from app.services.allocation_preflight import preflight
     report, order, workshops, facts_hash = preflight(connection, draft, as_of, pending, sources)
-    trace = {'db_changes': [], 'order': order}
-    if not report['ready_for_planning']:
-        return report, None, trace, None, None
-    constraints = report['effective_constraints']
-    max_workshops = _planning_max_workshops(constraints['num_workshop_allowed'], sources)
-    report['planning_max_workshops'] = max_workshops
-    remaining = {**order, 'pieces': order['pieces'] - order['completed_pieces']}
-    result = allocate(AllocationRequest(
+    if not report["ready_for_planning"]:
+        return {"report": report, "order": order, "workshops": workshops,
+                "facts_hash": facts_hash, "request": None}
+    constraints = report["effective_constraints"]
+    max_workshops = _planning_max_workshops(constraints["num_workshop_allowed"], sources)
+    report["planning_max_workshops"] = max_workshops
+    remaining = {**order, "pieces": order["pieces"] - order["completed_pieces"]}
+    request = AllocationRequest(
         order=remaining, workshops=workshops, as_of=as_of,
-        objective=constraints['objective'], exclusion=list(constraints['exclusion']),
-        preferred_workshop=constraints['preferred_workshop'],
-        deadline_required=constraints['deadline_required'], max_workshops=max_workshops))
+        objective=constraints["objective"], exclusion=list(constraints["exclusion"]),
+        preferred_workshop=constraints["preferred_workshop"],
+        deadline_required=constraints["deadline_required"], max_workshops=max_workshops)
+    return {"report": report, "order": order, "workshops": workshops,
+            "facts_hash": facts_hash, "request": request}
+
+
+def finish_recommendation(prepared, result, draft, as_of):
+    """Validate a computed plan and build hashes/trace."""
+    from app.services.allocation_preflight import check_solution, digest
+    report, order, workshops = prepared["report"], prepared["order"], prepared["workshops"]
     check_solution(result, order, workshops, draft, report, as_of)
-    trace.update(queue={w.workshop_id: w.queue_days for w in workshops},
-        eligible_workshops=result.get('eligible_workshops', []), rejected_workshops=result.get('rejected', {}))
-    plan_hash = digest({k: result.get(k) for k in ('allocation', 'objective', 'estimated_delivery_date', 'estimated_cost', 'warnings')})
-    return report, result, trace, facts_hash, plan_hash
+    trace = {"db_changes": [], "order": order,
+             "queue": {w.workshop_id: w.queue_days for w in workshops},
+             "eligible_workshops": result.get("eligible_workshops", []),
+             "rejected_workshops": result.get("rejected", {})}
+    plan_hash = digest({k: result.get(k) for k in
+                        ("allocation", "objective", "estimated_delivery_date", "estimated_cost", "warnings")})
+    return report, result, trace, prepared["facts_hash"], plan_hash
+
+
+def recommend(connection, draft, as_of, pending=(), sources=None):
+    prepared = prepare_recommendation(connection, draft, as_of, pending, sources)
+    if prepared["request"] is None:
+        return prepared["report"], None, {"db_changes": [], "order": prepared["order"]}, None, None
+    result = allocate(prepared["request"])
+    return finish_recommendation(prepared, result, draft, as_of)
 
 
 def decide(connection, parsed, objective, as_of, trace, *, max_workshops=1):

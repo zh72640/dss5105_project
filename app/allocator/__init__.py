@@ -6,6 +6,7 @@ from app.allocator.scoring import (
     get_estimated_completion_time,
     get_hybrid_score,
     get_lateness_score,
+    score_workshop,
 )
 
 __all__ = [
@@ -16,4 +17,5 @@ __all__ = [
     "get_estimated_completion_time",
     "get_hybrid_score",
     "get_lateness_score",
+    "score_workshop",
 ]
