@@ -1,0 +1,26 @@
+{
+  "checked_at": "2026-10-02T06:53:29.586656+00:00",
+  "provider": "google_gemini",
+  "model": "gemini-3.5-flash",
+  "api_key_env": "GEMINI_API_KEY",
+  "full_evaluation_requested": true,
+  "status": "ACCEPTANCE_FAILED",
+  "live_llm_validated": false,
+  "smoke_reason_codes": [
+    "ELIGIBLE",
+    "BEST_CONFIGURED_SCORE",
+    "INTEGER_PIECES_CONSERVED"
+  ],
+  "parser_error": null,
+  "replay_is_idempotent": true,
+  "golden_passed": 14,
+  "interval_seconds": 0,
+  "error_counts": {
+    "gemini_http_429": 46
+  },
+  "attempt_error_counts": {
+    "gemini_http_503": 6,
+    "gemini_http_429": 91
+  },
+  "cases_with_model_output": 14
+}

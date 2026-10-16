@@ -5,10 +5,10 @@ from app.pipeline import process_request
 
 class GoldenCases(unittest.TestCase):
     def status(self, rid):
-        return process_request(request_text(rid))["result"]["decision_status"]
+        return process_request(request_text(rid), backend="offline")["result"]["decision_status"]
 
     def test_r09_allocates(self):
-        payload = process_request(request_text("R09"))
+        payload = process_request(request_text("R09"), backend="offline")
         self.assertEqual(payload["result"]["decision_status"], "ALLOCATE")
         self.assertTrue(payload["result"]["recommended_workshop_id"])
 
@@ -16,7 +16,7 @@ class GoldenCases(unittest.TestCase):
         self.assertEqual(self.status("R03"), "CLARIFY")
 
     def test_r08_refuses_trial_limit(self):
-        payload = process_request(request_text("R08"))
+        payload = process_request(request_text("R08"), backend="offline")
         self.assertEqual(payload["result"]["decision_status"], "REFUSE")
         self.assertIn("EXCEEDS_300_PIECE_LIMIT", payload["result"]["reason_codes"])
 
@@ -24,11 +24,10 @@ class GoldenCases(unittest.TestCase):
         self.assertEqual(self.status("R02"), "DECLINE")
 
     def test_r25_honours_exclusion(self):
-        payload = process_request(request_text("R25"))
+        payload = process_request(request_text("R25"), backend="offline")
         names = [x["workshop_name"] for x in payload["result"]["candidate_ranking"]]
         self.assertNotIn("BudgetWorks", names)
 
 
 if __name__ == "__main__":
     unittest.main()
-

@@ -8,7 +8,7 @@ from app.tools.eligibility import exclusion_reason
 
 class ToolTests(unittest.TestCase):
     def test_order_resolution(self):
-        order, issue = resolve_order(parse_request(request_text("R09")))
+        order, issue = resolve_order(parse_request(request_text("R09"), backend="offline"))
         self.assertIsNone(issue)
         self.assertEqual(order.order_id, "ORD-045")
 
@@ -22,4 +22,3 @@ class ToolTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-
