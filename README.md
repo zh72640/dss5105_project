@@ -1,12 +1,14 @@
 # SweaterCo Dispatch Desk — MVP v0.6
 
-**2026-10-15 Agent architecture:** LLM chat sessions use native model tool calls in a durable LangGraph loop. Runtime-loaded Skills guide tool selection; guarded tools and SQLite transactions control business state. Single-workshop scoring is implemented in `app/services/scoring.py`; `app/tools/allocation.py` remains an import compatibility path. See the [current architecture](docs/current_architecture.md) and [Agent, Skill, and state architecture](docs/AGENT_SKILL_ARCHITECTURE.md). Offline rules mode remains a separate demo.
+**2026-10-17 scope review:** Changed approvals expose before/after differences and require renewed confirmation. Offline planning includes complete candidate plans and conditional alternatives; weighted hybrid splits optimize their own objective. Current verification, remaining business decisions and the live-model exclusion are recorded in the [review report](docs/SCOPE_FLOW_REVIEW_RESULTS_2026-10-17.md).
+
+**2026-10-15 Agent architecture:** LLM chat sessions use native model tool calls in a durable LangGraph loop. Runtime-loaded Skills guide tool selection; guarded tools and SQLite transactions control business state. Single-workshop comparison scores live in `app/allocator/scoring.py`; `app/tools/allocation.py` exposes the guarded `compute_plan` tool through the service layer. See the [current architecture](docs/current_architecture.md) and [Agent, Skill, and state architecture](docs/AGENT_SKILL_ARCHITECTURE.md). Offline rules mode remains a separate demo.
 
 **Multi-model support:** startup-only environment configuration, OpenAI / Claude / Gemini / DeepSeek model catalogues, and request-level LLM / Offline and model selection are available. See [setup and data import](docs/UV_SETUP.md) and the [Agent architecture](docs/AGENT_SKILL_ARCHITECTURE.md).
 
 A local subcontracting dispatch system for DSS5105 Track 2: natural-language requests, clarification drafts, workshop eligibility and queue analysis, recommendations with explicit approval, production tracking, and audit history.
 
-**2026-10-15 Chat:** `/chat` uses persistent owner-scoped sessions. AI mode runs the Skill-guided native tool Agent described above; Offline mode remains a rules demo. Recommendations appear in the existing Recommendations page, and either entry point can confirm a specific plan once. Successful confirmation saves factual feedback to the conversation. SQLite schema v9 adds durable Agent run and tool trace tables while preserving v1 APIs. Live provider quality is not established by offline or mocked tests.
+**2026-10-15 Chat:** `/chat` uses persistent owner-scoped sessions. AI mode runs the Skill-guided native tool Agent described above; Offline mode remains a rules demo. Recommendations appear in the existing Recommendations page, and either entry point can confirm a specific plan once. Successful confirmation saves factual feedback to the conversation. SQLite schema v9 adds durable Agent run and tool trace tables. The legacy API retirement is described below. Live provider quality is not established by offline or mocked tests.
 
 **2026-10-13 account update:** regular users and a built-in administrator are supported. SQLite schema v7 preserves existing user accounts and provisions `admin`. Ordinary registration creates regular users; administrator credentials are supplied privately. An authenticated administrator sees an `admin` badge in the upper-left corner.
 
@@ -88,7 +90,7 @@ uv run --locked python -X utf8 evaluation/verify_mvp.py
 uv run --locked python -X utf8 evaluation/verify_ui.py
 
 # Frontend controller tests require Node 18+; running the app does not require Node/npm.
-node --test tests/test_ui_state.cjs
+node --test tests/*.cjs
 uv run --no-sync python -X utf8 -m evaluation.verify_dynamic_agent
 ```
 
@@ -104,4 +106,4 @@ Historical Safari checks covered the homepage, large text, request creation, cla
 
 The server defaults to the latest queue snapshot date in the selected database. Bundled setup suggests `2026-04-01`; personal imports allow another date. Legacy dispatch/session CLIs still require an explicit matching `--as-of` for personal data. Daily approval statistics use the actual UTC date. Application v0.6 uses DB v9, Chat v2 and Session/Parser/Prompt v1, and Pipeline v0.2. The server binds to `127.0.0.1` and runs as one process at low concurrency. Accounts have `user` and `admin` roles and share one business workspace without tenant isolation; chat v2 sessions are owner-scoped.
 
-DeepSeek reads `DEEPSEEK_API_KEY` and defaults to `deepseek-flash`; start with `python -m app.server --backend deepseek`. Without an explicit backend or `PARSER_BACKEND`, a configured DeepSeek key selects DeepSeek; otherwise the parser uses offline rules. Existing conversations retain their original backend. Gemini uses `--backend llm`. No real model calls were made for the architecture, account, or prompt organization updates; the 2026-10-02 Gemini evaluation's HTTP 429 result remains historical. Global model throttling/backoff, workshop capacity editing, automatic expiry, and independent dataset evaluation remain future work.
+Startup configuration is parsed by `app/config/model_settings.py`. Select Offline explicitly with `--backend offline`; an unconfigured LLM request does not silently become an offline request. Configured provider aliases can be selected per session, and existing sessions retain their mode/model. Legacy `--backend deepseek` prefers a configured DeepSeek alias, while `--backend llm` prefers Gemini unless an explicit default overrides it. No real model calls were made for this scope review; the 2026-10-02 Gemini evaluation's HTTP 429 result remains historical. Global model throttling/backoff, workshop capacity editing, automatic expiry, and independent dataset evaluation remain future work.
