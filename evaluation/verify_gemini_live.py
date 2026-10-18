@@ -11,6 +11,8 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 from app.services.chat import service as chat
+from app.config.model_settings import load_model_settings
+from app.llm.registry import ModelRegistry
 
 
 def main():
@@ -31,11 +33,21 @@ def main():
     else:
         with tempfile.TemporaryDirectory(prefix="gemini-live-") as directory:
             path = str(Path(directory) / "live.sqlite3")
-            created = chat.create(
-                owner="live", request_id="live-create", db_path=path,
-                as_of=date(2026, 4, 1), message="Allocate ORD-045 cheapest.", mode="llm")
-            ok = created.get("session", {}).get("recommendation") is not None or created.get("task_state") in {
-                "RECOMMENDED", "BLOCKED", "COLLECTING"}
+            settings = load_model_settings(legacy_backend='llm')
+            model = next(spec for spec in settings.models if spec.provider == 'gemini' and spec.configured)
+            summary['model_key'] = model.key
+            registry = ModelRegistry(settings)
+            try:
+                created = chat.create(
+                    owner="live", request_id="live-create", db_path=path,
+                    as_of=date(2026, 4, 1), message="Allocate ORD-045 cheapest.", mode="llm",
+                    model_key=model.key, registry=registry)
+            except chat.ChatError as error:
+                created = {'error': error.code, 'http_status': error.status, 'committed': False}
+            finally:
+                registry.close()
+            ok = (created.get("session", {}).get("recommendation") is not None and
+                  not created.get('committed') and created.get('http_status', 200) < 400)
             summary.update(
                 status="SMOKE_PASSED" if ok else "SMOKE_FAILED",
                 task_state=created.get("task_state"),
@@ -44,7 +56,7 @@ def main():
                 json.dumps(created, indent=2, ensure_ascii=False, default=str) + "\n")
     (args.output_dir / "gemini_live_summary.json").write_text(json.dumps(summary, indent=2) + "\n")
     print(json.dumps(summary, indent=2))
-    return 0 if summary["status"] in ("SMOKE_PASSED", "NOT_RUN") else 1
+    return 0 if summary["status"] == "SMOKE_PASSED" else 2 if summary["status"] == "NOT_RUN" else 1
 
 
 if __name__ == "__main__":

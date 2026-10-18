@@ -49,6 +49,7 @@ def measure():
             call("login", "/api/auth/login", {"username": "latency-test", "password": password})
             initial = call("dashboard", "/api/dashboard")
             orders = [o["order_id"] for o in initial["orders"] if o["state"] == "READY"][:20]
+            confirmed_ids = set()
             for i, oid in enumerate(orders):
                 preview = call("preview", "/api/chat/sessions", {
                     "request_id": f"preview-{i}", "message": f"Allocate {oid}.", "mode": "offline"})
@@ -59,11 +60,16 @@ def measure():
                         "request_id": f"confirm-{i}", "action": "confirm",
                         "recommendation_id": preview["session"]["recommendation"]["recommendation_id"]})
                     assert result["committed"]
+                    confirmed_ids.add('chat-commit-' + preview['session']['recommendation']['recommendation_id'])
                 call("dashboard", "/api/dashboard")
                 call("workshops", "/api/workshops")
                 call("audit", "/api/audit")
             exported = call("export_json", "/api/audit/export?format=json")
-            assert exported["total"] == 30 and len(exported["items"]) == 30
+            # Chat v2 previews live in chat_turns/recommendations; business audit
+            # exports contain only the explicit confirmations from this run.
+            assert exported["total"] == len(confirmed_ids) == len(exported["items"])
+            assert {item['request_id'] for item in exported['items']} == confirmed_ids
+            assert all(item['approved'] and item['actor'] == 'latency-test' for item in exported['items'])
         finally:
             server.shutdown()
             server.server_close()
@@ -75,7 +81,7 @@ def measure():
             "scope": "Local HTTP, authenticated, offline Chat v2, 120 seeded orders and 8 workshops. "
                      "Not browser paint time, concurrent load or Gemini latency.",
             "metrics": metrics, "all_observed_responses_under_3_seconds": all(max(v) < 3000 for v in samples.values()),
-            "preview_count": 20, "confirmed_count": 10, "exported_decisions": 30,
+            "preview_count": len(orders), "confirmed_count": len(confirmed_ids), "exported_decisions": len(exported['items']),
             "production_database_touched": False}
 
 
