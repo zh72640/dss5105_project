@@ -6,6 +6,8 @@ from datetime import date
 
 from app.db.database import Database, utc_now
 from app.db import lifecycle_repository as repo
+from app.db import tracking_repository
+from app.services.production import tracking
 from app.services.allocation.service import apply as _apply, decide as _decide
 from app.services.allocation.dispatch import PIPELINE_VERSION, _cached, terminal
 from app.services.production.queue import advance, release
@@ -59,6 +61,8 @@ def inspect_order(order_id, *, db_path=None, database=None):
             result = snapshot(db.connection, order_id)
             if result:
                 result["events"] = repo.recent_events(db.connection, order_id)
+                result["tracking"] = tracking.build(result, tracking_repository.records(db.connection, order_id),
+                                                     tracking_repository.completed_at(db.connection, order_id))
             repo.commit_read(db.connection)
             return result
         except BaseException:
