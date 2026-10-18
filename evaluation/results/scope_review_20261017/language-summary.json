@@ -1,0 +1,24 @@
+{
+  "checked_at": "2026-10-17T10:56:08.482005+00:00",
+  "mode": "offline",
+  "model_key": null,
+  "cases": 30,
+  "service_successes": 30,
+  "service_success_rate": 1.0,
+  "behavior_matches": 28,
+  "behavior_accuracy_all_cases": 0.9333333333333333,
+  "field_slots": 0,
+  "field_accuracy_all_labelled_slots": null,
+  "latency_p50_ms": 9.486,
+  "latency_p95_ms": 11.61,
+  "explanation_reviews_completed": 0,
+  "explanation_faithfulness": "NOT_SCORED: independent human review required",
+  "production_rows_written": 0,
+  "notes": [
+    "All service failures remain in the denominator.",
+    "ALLOCATE denotes an uncommitted recommendation.",
+    "Historical 30-case behavior labels predate the owner-scoped Chat v2 workflow."
+  ],
+  "dataset": "original 30 development requests; provisional labels",
+  "independent_holdout_claim": false
+}

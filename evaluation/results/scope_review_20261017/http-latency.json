@@ -1,0 +1,54 @@
+{
+  "checked_at": "2026-10-17T10:56:08.976689+00:00",
+  "python": "3.14.6",
+  "scope": "Local HTTP, authenticated, offline Chat v2, 120 seeded orders and 8 workshops. Not browser paint time, concurrent load or Gemini latency.",
+  "metrics": {
+    "login": {
+      "samples": 1,
+      "p50_ms": 76.37,
+      "p95_ms": 76.37,
+      "max_ms": 76.37
+    },
+    "dashboard": {
+      "samples": 21,
+      "p50_ms": 4.04,
+      "p95_ms": 6.19,
+      "max_ms": 13.52
+    },
+    "preview": {
+      "samples": 20,
+      "p50_ms": 6.54,
+      "p95_ms": 10.3,
+      "max_ms": 16.54
+    },
+    "confirm": {
+      "samples": 10,
+      "p50_ms": 7.17,
+      "p95_ms": 8.79,
+      "max_ms": 8.79
+    },
+    "workshops": {
+      "samples": 20,
+      "p50_ms": 3.06,
+      "p95_ms": 3.73,
+      "max_ms": 4.02
+    },
+    "audit": {
+      "samples": 20,
+      "p50_ms": 4.01,
+      "p95_ms": 4.46,
+      "max_ms": 5.55
+    },
+    "export_json": {
+      "samples": 1,
+      "p50_ms": 4.67,
+      "p95_ms": 4.67,
+      "max_ms": 4.67
+    }
+  },
+  "all_observed_responses_under_3_seconds": true,
+  "preview_count": 20,
+  "confirmed_count": 10,
+  "exported_decisions": 10,
+  "production_database_touched": false
+}

@@ -1,0 +1,181 @@
+{
+  "prepared_at": "2026-10-18T01:58:53.560060+00:00",
+  "review_base": "e12b801df8a0c0d1cb02771917272952b1f8b17d",
+  "target_branch": "ningtao",
+  "previous_target": "6e269de5b39eb6e0f6c2d0f98a7b1d188fb2af53",
+  "python_tests_passed": 281,
+  "frontend_tests_passed": 47,
+  "real_model_acceptance": "NOT_RUN",
+  "source_files": {
+    "app/allocator/planner.py": {
+      "sha256": "8aae44de2397194f047af3b081e441259c87c23c5dfebad7b98a6c43dc93e851",
+      "lf_normalized_sha256": "d1b0bb8c1b6fa8ab59f85b573765f7f5d9e07f1934ff780ead5dd117146ab8da"
+    },
+    "tests/test_allocator.py": {
+      "sha256": "8840e6b7aa6299810806311a8e6aa52f61e4008ed2b586211eb12c7a27e0a0a0",
+      "lf_normalized_sha256": "8840e6b7aa6299810806311a8e6aa52f61e4008ed2b586211eb12c7a27e0a0a0"
+    },
+    "app/services/allocation/alternatives.py": {
+      "sha256": "96356781e4c70241a0ae2fb72a37228744216f47e3d2591ec9827725e9f1582d",
+      "lf_normalized_sha256": "96356781e4c70241a0ae2fb72a37228744216f47e3d2591ec9827725e9f1582d"
+    },
+    "app/services/allocation/preflight.py": {
+      "sha256": "2640669ab5c8fcbe300fc50d2ab5856993cd6720f44e49e52f54c7d75354e903",
+      "lf_normalized_sha256": "72b1bc6335a8eae7ceca388f626bd2f38db238c7da2cd425d6b083cc191c94a5"
+    },
+    "app/offline/reply.py": {
+      "sha256": "ff500f708a7ecf6615ecdd7eeaaf537157cc2aff00d15dc5a1f57869ebdc0599",
+      "lf_normalized_sha256": "fb3ff51b38e22890775f3ee7df6be8d66b24a388fdc6eb25d67489f89a82d899"
+    },
+    "app/services/chat/presentation.py": {
+      "sha256": "d06ccb9d7d019e2fe9c7e44a4fb52498012d9ef1348cfb2ddb5c079f4fb8cc2a",
+      "lf_normalized_sha256": "d06ccb9d7d019e2fe9c7e44a4fb52498012d9ef1348cfb2ddb5c079f4fb8cc2a"
+    },
+    "app/schemas/parser_schema.py": {
+      "sha256": "c6565d2f7f6e6a8065a2a79ceb1940abfdf4a603fb7dfbe64bd38b6df5b85dd9",
+      "lf_normalized_sha256": "c6565d2f7f6e6a8065a2a79ceb1940abfdf4a603fb7dfbe64bd38b6df5b85dd9"
+    },
+    "tests/test_alternatives.py": {
+      "sha256": "27d14dc75e1d890b90356ba441282e8efb3eb0e3deb65cc5d9668cfc0460112e",
+      "lf_normalized_sha256": "27d14dc75e1d890b90356ba441282e8efb3eb0e3deb65cc5d9668cfc0460112e"
+    },
+    "app/services/allocation/review.py": {
+      "sha256": "8f44a8c5f2bff24bc67fd90f89882e10c5499f4b30825e8e116c7132715783ee",
+      "lf_normalized_sha256": "8f44a8c5f2bff24bc67fd90f89882e10c5499f4b30825e8e116c7132715783ee"
+    },
+    "app/services/chat/service.py": {
+      "sha256": "0fae562542a3ad954aca9f0558fef04745a16ae3f4a5a64b20717741fffd9fea",
+      "lf_normalized_sha256": "95282e0e629b269b85e0ea33bd69f5fc0afd8153bc812cb381c141c415bd8a3b"
+    },
+    "app/services/chat/interpretation.py": {
+      "sha256": "94c57e0b6e989f89b131854630955c1232d50038916a68bdc4a27f4bc70d5974",
+      "lf_normalized_sha256": "6ce42aa2888674b0fa6a993503dc9df9c986f84ca5ed736a1dbe83801f7fd0dc"
+    },
+    "app/offline/interpreter.py": {
+      "sha256": "52c04384e1d055fa195e509d4d5c82d258b9f00e445166393453cc9c402c537e",
+      "lf_normalized_sha256": "2916e871f892a19c99be3c16bf6c4c515cf00263dd395b6fac25b7ee78920d75"
+    },
+    "tests/test_chat.py": {
+      "sha256": "0e6b8c2193a8729d6d59c62604926264055bc8e0bea9c262f401ee83e8c36b44",
+      "lf_normalized_sha256": "498c900cbe7984c36c781fd3e702b9242221910bb5c01111045b26d5999f6c03"
+    },
+    "app/ui/chat-common.js": {
+      "sha256": "17dabff434c691d0efd711a3717f1c9046d66acf4a0b38fde9a704b4ae0cce6c",
+      "lf_normalized_sha256": "17dabff434c691d0efd711a3717f1c9046d66acf4a0b38fde9a704b4ae0cce6c"
+    },
+    "app/ui/chat.js": {
+      "sha256": "584788659bdea95d831113c26997ea5a20d1c302f876759c1b3c9ea9b7d57876",
+      "lf_normalized_sha256": "584788659bdea95d831113c26997ea5a20d1c302f876759c1b3c9ea9b7d57876"
+    },
+    "app/ui/index.html": {
+      "sha256": "8fc7c4a582c11f1483c3a26ab0dbff62a967c5dbcf8524ea48c4335b58aa498e",
+      "lf_normalized_sha256": "8fc7c4a582c11f1483c3a26ab0dbff62a967c5dbcf8524ea48c4335b58aa498e"
+    },
+    "tests/test_plan_ui.cjs": {
+      "sha256": "a06c61a21370bc6cdb9c07966546b22b40b1ec3686390403f46c41b3f51906c1",
+      "lf_normalized_sha256": "a06c61a21370bc6cdb9c07966546b22b40b1ec3686390403f46c41b3f51906c1"
+    },
+    "evaluation/evaluate_chat_language.py": {
+      "sha256": "d01aaecc8826641065434360bf35ee4f71c10c9c74e6069c2d422c4fdd4e2a2a",
+      "lf_normalized_sha256": "d01aaecc8826641065434360bf35ee4f71c10c9c74e6069c2d422c4fdd4e2a2a"
+    },
+    "evaluation/verify_gemini_live.py": {
+      "sha256": "73ef0b226038a7195aa38a9945e435e85368254714ed2f1c2884206845def6f2",
+      "lf_normalized_sha256": "73ef0b226038a7195aa38a9945e435e85368254714ed2f1c2884206845def6f2"
+    },
+    "evaluation/verify_ui.py": {
+      "sha256": "d1d8b756a48f00ccca5534810b07afd36e0b3245d92919084b716ec34b1e03e7",
+      "lf_normalized_sha256": "d1d8b756a48f00ccca5534810b07afd36e0b3245d92919084b716ec34b1e03e7"
+    },
+    "evaluation/verify_scope_flow_browser.py": {
+      "sha256": "d67f76963617e8259bdcf25ac2f69b9de8dd1f57921e521040b2c97b70101e34",
+      "lf_normalized_sha256": "d67f76963617e8259bdcf25ac2f69b9de8dd1f57921e521040b2c97b70101e34"
+    },
+    "tests/test_language_evaluation.py": {
+      "sha256": "6fc5e3f7b8eb61cfa47e97bffb204d6c3ec9052dfeb2cd151dbdb48797d1afc2",
+      "lf_normalized_sha256": "6fc5e3f7b8eb61cfa47e97bffb204d6c3ec9052dfeb2cd151dbdb48797d1afc2"
+    }
+  },
+  "publication_groups": [
+    {
+      "message": "feat(allocator): optimize hybrid splits and expose complete candidate plans",
+      "files": [
+        "app/allocator/planner.py",
+        "tests/test_allocator.py"
+      ]
+    },
+    {
+      "message": "feat(allocation): suggest explicit alternatives for infeasible requests",
+      "files": [
+        "app/services/allocation/alternatives.py",
+        "app/services/allocation/preflight.py",
+        "app/offline/reply.py",
+        "app/services/chat/presentation.py",
+        "app/schemas/parser_schema.py",
+        "tests/test_alternatives.py"
+      ]
+    },
+    {
+      "message": "fix(chat): protect reviewed plans and clarify offline request intent",
+      "files": [
+        "app/services/allocation/review.py",
+        "app/services/chat/service.py",
+        "app/services/chat/interpretation.py",
+        "app/offline/interpreter.py",
+        "tests/test_chat.py"
+      ]
+    },
+    {
+      "message": "feat(ui): show complete plans and approval changes",
+      "files": [
+        "app/ui/chat-common.js",
+        "app/ui/chat.js",
+        "app/ui/index.html",
+        "tests/test_plan_ui.cjs"
+      ]
+    },
+    {
+      "message": "test(evaluation): validate Chat v2 outcomes and audit exports",
+      "files": [
+        "evaluation/evaluate_chat_language.py",
+        "evaluation/verify_gemini_live.py",
+        "evaluation/verify_ui.py",
+        "evaluation/verify_scope_flow_browser.py",
+        "tests/test_language_evaluation.py"
+      ]
+    },
+    {
+      "message": "test: archive offline scope review and publication evidence",
+      "files": [
+        "evaluation/results/scope_review_20261017/alternatives-desktop.png",
+        "evaluation/results/scope_review_20261017/alternatives-mobile.png",
+        "evaluation/results/scope_review_20261017/browser.json",
+        "evaluation/results/scope_review_20261017/frontend-regression.txt",
+        "evaluation/results/scope_review_20261017/http-latency.json",
+        "evaluation/results/scope_review_20261017/language-cases.jsonl",
+        "evaluation/results/scope_review_20261017/language-summary.json",
+        "evaluation/results/scope_review_20261017/python-regression.txt",
+        "evaluation/results/scope_review_20261017/review-changed-desktop.png",
+        "evaluation/results/scope_review_20261017/simulator-comparison.json",
+        "evaluation/results/scope_review_20261017/split-candidates-desktop.png",
+        "evaluation/results/publish_review_20261018/python-regression.txt",
+        "evaluation/results/publish_review_20261018/frontend-regression.txt",
+        "evaluation/results/publish_review_20261018/source-manifest.json"
+      ]
+    },
+    {
+      "message": "docs: record scope corrections and publication checks",
+      "files": [
+        "KNOWN_ISSUES.md",
+        "README.md",
+        "docs/SCOPE_FLOW_IMPLEMENTATION_2026-10-17.md",
+        "docs/SCOPE_FLOW_REVIEW_RESULTS_2026-10-17.md",
+        "docs/PUBLISH_REVIEW_2026-10-18.md"
+      ]
+    }
+  ],
+  "notes": [
+    "Upstream line endings are preserved. Normalized hashes distinguish formatting from source changes.",
+    "Local AOCI scaffolding, raw Overview, host configuration and runtime files are not published."
+  ]
+}
