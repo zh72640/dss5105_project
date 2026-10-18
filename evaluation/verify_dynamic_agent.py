@@ -1,4 +1,5 @@
 """Run a reproducible native-tool graph acceptance trace in an isolated database."""
+import argparse
 from datetime import date
 from pathlib import Path
 import json
@@ -217,9 +218,12 @@ def run(output_path=Path("evaluation/results/dynamic_agent_acceptance.json")):
 
 
 if __name__ == "__main__":
-    report = run()
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--output', type=Path, default=Path('evaluation/results/dynamic_agent_acceptance.json'))
+    args = parser.parse_args()
+    report = run(args.output)
     print(json.dumps({
-        "output": "evaluation/results/dynamic_agent_acceptance.json",
+        "output": str(args.output),
         "query_tools": [item["tool_name"] for item in report["order_query"]["trace"]["tool_calls"]],
         "allocation_tools": [item["tool_name"] for item in report["allocation"]["trace"]["tool_calls"]],
         "preview_production_rows": report["allocation"]["production_rows_before_confirmation"],
