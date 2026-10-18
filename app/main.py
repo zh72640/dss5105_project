@@ -39,6 +39,8 @@ def create_app(settings: Settings | None = None, *, model_settings=None, model_f
         ("/", "index.html", "text/html"),
         ("/desk.js", "desk.js", "text/javascript"),
         ("/desk.css", "desk.css", "text/css"),
+        ("/operations.js", "operations.js", "text/javascript"),
+        ("/operations.css", "operations.css", "text/css"),
         ("/chat", "chat.html", "text/html"), ("/chat.css", "chat.css", "text/css"),
         ("/chat.js", "chat.js", "text/javascript"), ("/chat-common.js", "chat-common.js", "text/javascript"),
         ("/desk-chat.js", "desk-chat.js", "text/javascript")):
