@@ -3,6 +3,7 @@
 No real Gemini calls, browser automation or production database writes.
 Uses Chat v2 preview/confirm (legacy /api/sessions was retired).
 """
+import argparse
 import json
 import math
 import platform
@@ -86,8 +87,12 @@ def measure():
 
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--output', type=Path, default=ROOT / 'evaluation/results/ui_latency.json')
+    args = parser.parse_args()
     result = measure()
-    out = ROOT / "evaluation/results/ui_latency.json"
+    out = args.output
+    out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(result, indent=2) + "\n")
     print(json.dumps(result, indent=2))
     raise SystemExit(0 if result["all_observed_responses_under_3_seconds"] else 1)
