@@ -111,10 +111,12 @@ def verify(executable, output):
             server.shutdown()
             server.server_close()
             thread.join(timeout=20)
+    from evaluation.verify_operations_browser import verify as verify_operations
+    operations = verify_operations(executable, output / 'operations')
     report = {'checked_at': datetime.now(timezone.utc).isoformat(), 'mode': 'offline',
               'browser': 'headless local Chromium, fresh profile', 'checks': checks,
               'page_errors': errors, 'production_database_touched': False,
-              'live_model_calls': 0, 'status': 'PASS'}
+              'live_model_calls': 0, 'operations': operations, 'status': 'PASS'}
     (output / 'browser.json').write_text(json.dumps(report, indent=2) + '\n')
     return report
 
