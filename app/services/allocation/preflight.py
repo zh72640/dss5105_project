@@ -86,11 +86,15 @@ def preflight(connection, draft, as_of, pending=(), sources=None):
         if preferred and order and type(order['pieces']) is int:
             reason = exclusion_reason(preferred, order['category'], order['pieces'] - order['completed_pieces'], constraints['exclusion'])
             if reason:
-                problems.append(issue('PREFERRED_INELIGIBLE', 'preferred_workshop', f'Preferred workshop {preferred.workshop_id} is ineligible: {reason}.'))
+                problems.append(issue('PREFERRED_INELIGIBLE', 'preferred_workshop', f'Required sole workshop {preferred.workshop_id} cannot take the full batch: {reason}.'))
     except (ValueError, TypeError):
         problems.append(issue('RESOURCE_DATA_ERROR', 'workshop', 'Workshop queue data is missing or the business date is invalid.'))
     report['blocking_issues'] = list({(p['code'], p['field'], p['question']): p for p in problems}.values())
     report['ready_for_planning'] = not report['blocking_issues']
+    if not report['ready_for_planning']:
+        from app.services.allocation.alternatives import attach
+        planned_limit = limit if sources is not None and 'num_workshop_allowed' in sources else 1
+        attach(report, order, workshops, as_of, max_workshops=planned_limit)
     facts_hash = None
     if report['ready_for_planning']:
         facts_hash = digest({'order': order, 'constraints': constraints, 'business_date': as_of.isoformat(),
@@ -102,6 +106,8 @@ def check_solution(result, order, workshops, draft, report, as_of):
     if not result['success']:
         for code in result['reason_codes']:
             report['blocking_issues'].append(issue(code, 'constraints', 'No feasible plan satisfies the current constraints: ' + code + '. Revise the relevant constraint.'))
+        from app.services.allocation.alternatives import attach
+        attach(report, order, workshops, as_of, max_workshops=report.get('planning_max_workshops', 1))
         return report
     constraints = report['effective_constraints']
     parts = result['allocation']

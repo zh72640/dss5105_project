@@ -11,8 +11,8 @@ STALE_MESSAGE = "The recommendation became stale because business facts changed.
 
 
 def issue_text(result: TaskResult) -> str:
-    messages = list(dict.fromkeys(item['question'] for item in result.get('issues', [])
-                                 if item.get('question')))
+    from app.services.allocation.alternatives import issue_messages
+    messages = issue_messages(result.get('issues', []))
     return ' '.join(messages) or 'The task could not be completed.'
 
 

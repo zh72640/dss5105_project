@@ -19,7 +19,7 @@ class ParseResult:
     parse_status: str = "needs_clarification"
     missing_fields: list[str] = field(default_factory=list)
     ambiguities: list[str] = field(default_factory=list)
-    # Preserve named-workshop requests and explicit hard deadlines.
+    # Compatibility name: this is a required sole workshop, not a soft preference.
     preferred_workshop: str | None = None
     deadline_required: bool = False
 

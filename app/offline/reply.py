@@ -19,7 +19,8 @@ def solution_reply(result, order_id, committed=False):
 
 
 def clarification_reply(report):
-    questions = list(dict.fromkeys(p["question"] for p in report["blocking_issues"]))
+    from app.services.allocation.alternatives import issue_messages
+    questions = issue_messages(report["blocking_issues"])
     return "Please resolve the following:\n" + "\n".join(questions)
 
 
