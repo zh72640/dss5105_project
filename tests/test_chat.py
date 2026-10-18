@@ -185,6 +185,39 @@ class ChatBehavior(unittest.TestCase):
         self.assertNotEqual(result['recommendation_id'],old)
         self.assertEqual(self.scalar('SELECT COUNT(*) FROM working_order'),0)
 
+    def test_other_order_changes_reviewed_plan_and_requires_new_approval(self):
+        first=self.turn('Allocate ORD-045 fastest.')
+        old=first['session']['recommendation']
+        self.assertEqual(old['result']['allocation'][0]['workshop_id'],'W6')
+        other=chat.create(owner='alice',request_id='other-create',db_path=self.path,
+                          as_of=date(2026,4,1),mode='offline',message='Allocate ORD-096 fastest.')
+        chat.turn(other['session_id'],owner='alice',request_id='other-confirm',db_path=self.path,
+                  expected_version=other['session_version'],action='confirm',
+                  recommendation_id=other['recommendation_id'])
+        args=dict(action='confirm',request_id='reviewed-confirm',
+                  expected_version=first['session_version'],recommendation_id=old['recommendation_id'])
+        changed=self.turn(**args)
+        self.assertFalse(changed['committed'])
+        self.assertEqual(changed['reason_code'],'REVIEW_CHANGED')
+        self.assertEqual(changed['http_status'],409)
+        self.assertEqual(changed['reviewed_recommendation_id'],old['recommendation_id'])
+        self.assertEqual(changed['session']['recommendation']['result']['allocation'][0]['workshop_id'],'W8')
+        self.assertIn('allocation',{item['field'] for item in changed['review_changes']})
+        self.assertEqual(self.scalar("SELECT COUNT(*) FROM working_order WHERE order_id='ORD-045'"),0)
+        retry=self.turn(**args)
+        self.assertTrue(retry['replayed'])
+        self.assertEqual(retry['review_changes'],changed['review_changes'])
+        self.assertEqual(retry['recommendation_id'],changed['recommendation_id'])
+        with Database(self.path) as db:
+            saved=json.loads(db.connection.execute(
+                "SELECT response_json FROM chat_turns WHERE request_id='reviewed-confirm'").fetchone()[0])
+        self.assertEqual(saved['reason_code'],'REVIEW_CHANGED')
+        approved=self.confirm(request_id='accept-new-plan')
+        self.assertTrue(approved['committed'])
+        self.assertEqual(approved['committed_result']['allocation'],
+                         changed['session']['recommendation']['result']['allocation'])
+        self.assertEqual(self.scalar("SELECT COUNT(*) FROM working_order WHERE order_id='ORD-045'"),1)
+
     def test_read_refresh_disables_both_entry_points_when_resources_change(self):
         self.recommend()
         with Database(self.path) as db:
@@ -307,6 +340,34 @@ class ChatBehavior(unittest.TestCase):
             result=self.turn('方案多少钱，预算100元')
         self.assertEqual(result['task_state'],'BLOCKED')
         self.assertTrue(result['session']['task']['issues'])
+
+    def test_sales_query_with_order_id_never_creates_allocation(self):
+        with patch('app.services.allocation.service.allocate', side_effect=AssertionError('no allocation requested')):
+            result = self.turn('What price did we quote the customer on ORD-045?')
+        self.assertIsNone(result['session']['recommendation'])
+        self.assertIn('outside the dispatch workflow', result['assistant_message']['content'])
+        self.assertEqual(self.scalar('SELECT COUNT(*) FROM working_order'), 0)
+
+    def test_quote_as_dispatch_reason_is_not_a_finance_query(self):
+        result = self.turn('Send ORD-045 to FreshStart, their quote was good.')
+        self.assertEqual(result['task_state'], 'RECOMMENDED')
+        self.assertEqual(result['session']['task']['draft']['preferred_workshop'], 'W8')
+
+    def test_workshop_name_is_not_a_budget_cap(self):
+        result = self.turn('Allocate ORD-045; keep it away from BudgetWorks.')
+        self.assertEqual(result['task_state'], 'RECOMMENDED')
+        self.assertEqual(result['session']['task']['draft']['exclusion'], ['W3'])
+        blocked = self.turn('Keep the budget under 100 dollars.')
+        self.assertEqual(blocked['task_state'], 'BLOCKED')
+
+    def test_faster_split_request_and_hypothetical_remain_distinct(self):
+        result = self.turn('Allocate ORD-045. Split it across two shops if that is faster.')
+        self.assertEqual(result['task_state'], 'RECOMMENDED')
+        self.assertEqual(result['session']['task']['draft']['num_workshop_allowed'], 2)
+        rec_id = result['recommendation_id']
+        hypothetical = self.turn('What if we split it across three workshops?')
+        self.assertEqual(hypothetical['recommendation_id'], rec_id)
+        self.assertEqual(hypothetical['session']['task']['draft']['num_workshop_allowed'], 2)
 
     def test_currency_cap_cannot_be_silently_dropped(self):
         with patch('app.services.allocation.service.allocate',side_effect=AssertionError('planner must not run')):

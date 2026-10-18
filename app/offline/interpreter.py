@@ -5,7 +5,7 @@ from app.schemas.chat import TurnInterpretation
 from app.prompts import get_registry
 from app.llm.errors import check_response, check_structured, text_content, translate_error
 from app.llm.registry import selection_metadata
-from app.services.chat.interpretation import rule_interpret, validate_interpretation, FIELDS
+from app.services.chat.interpretation import rule_interpret, validate_interpretation, is_hypothetical, FIELDS
 
 def interpret(message, context, registry=None, mode='offline', model_key=None):
     baseline=rule_interpret(message,context)
@@ -42,7 +42,7 @@ def interpret(message, context, registry=None, mode='offline', model_key=None):
                 value.ambiguity_reason='Confirm the current recommendation explicitly; a question or ambiguous wording cannot commit it.'
         if (value.patch_operations or value.unsupported_constraints) and value.intent in ('query_order','query_workshop','explain_recommendation','help_or_chat'):
             value.intent='modify_constraints'
-        if re.search(r'如果|假如|\bif\b|what if',message,re.I):
+        if is_hypothetical(message):
             value.intent='explain_recommendation'
             value.patch_operations=[]
             value.unsupported_constraints=[]

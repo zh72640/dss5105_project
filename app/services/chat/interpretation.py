@@ -12,6 +12,16 @@ from app.services.allocation.preflight import issue
 FIELDS = set(get_args(PatchField))
 
 
+def is_hypothetical(message):
+    """Recognize questions while allowing the supported faster-split instruction."""
+    low = message.lower()
+    if re.search(r'如果|假如|what if|^\s*if\b', low):
+        return True
+    faster_split = re.search(r'\bsplit\b[^.!?]*\bif (?:that|it|this) '
+                             r'(?:gets? (?:it )?(?:back )?faster|(?:is|would be) faster)', low)
+    return bool(re.search(r'\bif\b', low)) and not faster_split
+
+
 class InterpretationValidationError(ValueError):
     def __init__(self, reason, **detail):
         super().__init__(reason)
@@ -68,7 +78,13 @@ def rule_interpret(message, context):
         else:
             output.update(intent='unsupported_or_ambiguous', ambiguity_reason='Specify which objective, workshop limit, exclusion, or deadline change to undo.')
         return TurnInterpretation(**output)
-    hypothetical = bool(re.search(r'如果|假如|\bif\b|what if', low))
+    financial_topic = re.search(r'\b(?:quote[ds]?|invoice[ds]?|revenue)\b|销售报价|发票', low)
+    financial_query = re.search(r'\b(?:what|how much|show|find|lookup|look up|tell me|retrieve)\b|^(?:quote|invoice)\b|查询|多少', low)
+    if financial_topic and financial_query:
+        output.update(intent='unsupported_or_ambiguous',
+                      ambiguity_reason='Sales quotes, invoices and revenue are outside the dispatch workflow. No allocation was requested or changed.')
+        return TurnInterpretation(**output)
+    hypothetical = is_hypothetical(low)
     querying = bool(re.search(r'为什么|为何|怎样|怎么样|状态|多少|什么时候|能.*准时|\bwhy\b|\bstatus\b|how much|when|on time\?', low))
     ids = order_ids(text)
     previous_user=next((m['content'] for m in reversed(context['history']) if m['role']=='user'),'')
@@ -125,7 +141,7 @@ def rule_interpret(message, context):
     if re.search(r'使用(?:订单)?登记(?:值|信息)|use registered (?:details|values)', low):
         for field in ('customer','product','category','pieces','order_date','due_date'):
             patch(field, op='unset')
-    unsupported = re.search(r'预算|budget|cost cap|exactly|精确|至少|at least|质量阈值|defect.*(?:under|below)|\b(?:under|less than)\s*\d|\d+\s*%|within\s+\w+\s+days?|(?:\d+|[一二两三四五六七八])天内|(?:成本|费用).*(?:上限|不得超过)|(?:不超过|最多花|不得超过)\s*\d+\s*(?:元|美元|dollars|USD)', low)
+    unsupported = re.search(r'预算|\bbudget\b|cost cap|exactly|精确|至少|at least|质量阈值|defect.*(?:under|below)|\b(?:under|less than)\s*\d|\d+\s*%|within\s+\w+\s+days?|(?:\d+|[一二两三四五六七八])天内|(?:成本|费用).*(?:上限|不得超过)|(?:不超过|最多花|不得超过)\s*\d+\s*(?:元|美元|dollars|USD)', low)
     if unsupported:
         output['unsupported_constraints'].append('unsupported_constraint')
     if re.search(r'取消(?:预算|精确拆分|质量阈值)|(?:drop|remove) (?:budget|unsupported constraint)', low):

@@ -271,6 +271,7 @@ def turn(sid, *, owner, request_id, expected_version, db_path, action='message',
                 task['issues']=[p for p in task['issues'] if p['code']!='MODEL_ERROR' or
                     (p.get('user_value')!=message and 'AMBIGUOUS_MESSAGE' not in interpretation.answered_question_ids)]
             committed=False
+            review_changes=None
             result=None
             trace=None
             rec=session['recommendation']
@@ -308,6 +309,8 @@ def turn(sid, *, owner, request_id, expected_version, db_path, action='message',
                 report,result,trace,facts_hash,plan_hash=allocation.recommend(c,task['draft'],date.fromisoformat(session['business_date']),task['issues'],task['sources'])
                 task['report']=report
                 if not report['ready_for_recommendation'] or facts_hash!=rec['facts_hash'] or plan_hash!=rec['plan_hash'] or task['task_version']!=rec['task_version']:
+                    from app.services.allocation.review import changes
+                    review_changes=changes(rec['result'],result,facts_changed=facts_hash!=rec['facts_hash'])
                     repository.supersede_recommendation(c,target)
                     task['state']='BLOCKED'
                     status=409
@@ -410,6 +413,8 @@ def turn(sid, *, owner, request_id, expected_version, db_path, action='message',
             action_label={'confirm':'Confirm recommendation','archive':'Archive session','new_request':'New request'}.get(action,action)
             for offset,role,content,mid in ((1,'user',message or action_label,uuid.uuid4().hex),(2,'assistant',reply,feedback_id)):
                 meta={'intent':intent,'recommendation_id':rec['recommendation_id'] if rec else None,'committed':committed}
+                if role=='assistant' and review_changes is not None:
+                    meta.update(reason_code='REVIEW_CHANGED',review_changes=review_changes)
                 repository.insert_message(c,message_id=mid,session_id=sid,turn_id=turn_id,
                     sequence=expected_version*2+offset,role=role,content=content,metadata_json=encoded(meta),now=now)
             repository.increment_session(c,sid,now)
@@ -417,6 +422,9 @@ def turn(sid, *, owner, request_id, expected_version, db_path, action='message',
                 'validation_report':task['report'],'assistant_message':{'message_id':feedback_id,'content':reply,'role':'assistant'},
                 'feedback_message_id':feedback_id,'recommendation_id':rec['recommendation_id'] if rec else None,
                 'cards':[],'suggested_actions':[],'committed':committed,'replayed':False,'http_status':status}
+            if review_changes is not None:
+                response.update(reason_code='REVIEW_CHANGED',review_changes=review_changes,
+                                reviewed_recommendation_id=target)
             if committed:
                 response['committed_result']=result
                 repository.confirm_recommendation(c,rec['recommendation_id'],turn_id,
@@ -435,5 +443,5 @@ def turn(sid, *, owner, request_id, expected_version, db_path, action='message',
                         'task_version':task['task_version'],'facts_hash':facts_hash,
                         'plan_hash':plan_hash,'business_request_id':business_key if committed else None,
                         'state_before':prior_task_state,'state_after':task['state'],
-                        'committed':committed})
+                        'committed':committed,'review_changes':review_changes})
             return response
