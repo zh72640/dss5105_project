@@ -11,7 +11,7 @@ class IntegerPlanner(unittest.TestCase):
         shops = [Workshop('W1', 'A', 3, 1, .1, 1.5, frozenset({'TOPS'}), 'ACTIVE', 4, 0., ''),
                  Workshop('W2', 'B', 2, 1, .02, .9, frozenset({'TOPS'}), 'ACTIVE', 5, .5, ''),
                  Workshop('W3', 'C', 4, 2, .05, 1.1, frozenset({'TOPS'}), 'ACTIVE', 6, .2, '')]
-        for pieces, limit, objective in itertools.product(range(1, 11), (1, 2, 3), ('min_cost', 'min_delay', 'min_defects')):
+        for pieces, limit, objective in itertools.product(range(1, 11), (1, 2, 3), ('min_cost', 'min_delay', 'min_defects', 'hybrid')):
             order = {'pieces': pieces, 'category': 'TOPS', 'due_date': '2026-04-30'}
             result = allocate(AllocationRequest(
                 order=order, workshops=shops, as_of=date(2026, 4, 1), objective=objective,
@@ -26,6 +26,8 @@ class IntegerPlanner(unittest.TestCase):
                     score = sum(q * w.defect_rate for q, w in zip(quantities, shops)) / pieces
                 else:
                     score = max(w.queue_days + w.lead_days + q / w.capacity for q, w in zip(quantities, shops) if q)
+                    if objective == 'hybrid':
+                        score = .6 * score + .4 * 100 * sum(q * w.defect_rate for q, w in zip(quantities, shops)) / pieces
                 scores.append(score)
             with self.subTest(pieces=pieces, limit=limit, objective=objective):
                 self.assertEqual(result['success'], bool(scores))
@@ -33,6 +35,56 @@ class IntegerPlanner(unittest.TestCase):
                     self.assertAlmostEqual(result['score'], min(scores))
                     self.assertEqual(sum(p['pieces'] for p in result['allocation']), pieces)
                     self.assertLessEqual(len(result['allocation']), limit)
+
+    def test_hybrid_optimizes_weighted_quality_instead_of_fastest_split(self):
+        shops = [Workshop('W1', 'A', 200, 0, .9, 1., frozenset({'TOPS'}), 'ACTIVE', None, 0., ''),
+                 Workshop('W2', 'B', 50, 0, 0., 2., frozenset({'TOPS'}), 'ACTIVE', 80, 0., '')]
+        request = AllocationRequest(order={'pieces': 100, 'category': 'TOPS', 'due_date': '2026-04-04'},
+                                    workshops=shops, as_of=date(2026, 4, 1), objective='hybrid', max_workshops=2)
+        result = allocate(request)
+        self.assertLessEqual(result['score'], 8.16 + 1e-10)
+        self.assertEqual({p['workshop_id']: p['pieces'] for p in result['allocation']}, {'W1': 20, 'W2': 80})
+        self.assertAlmostEqual(result['estimated_days'], 1.6)
+
+    def test_hybrid_with_deadline_matches_exhaustive_feasible_solutions(self):
+        shops = [Workshop('W1', 'A', 3, 0, .8, 1., frozenset({'TOPS'}), 'ACTIVE', 8, .5, ''),
+                 Workshop('W2', 'B', 2, 1, .1, 2., frozenset({'TOPS'}), 'ACTIVE', 7, 0., '')]
+        for pieces in range(1, 12):
+            feasible = []
+            for a in range(9):
+                b = pieces - a
+                if not 0 <= b <= 7:
+                    continue
+                used = [(w, q) for w, q in zip(shops, (a, b)) if q]
+                days = max(w.queue_days + w.lead_days + q / w.capacity for w, q in used)
+                if days <= 3:
+                    feasible.append(.6 * days + 40 * sum(q * w.defect_rate for w, q in used) / pieces)
+            result = allocate(AllocationRequest(
+                order={'pieces': pieces, 'category': 'TOPS', 'due_date': '2026-04-04'},
+                workshops=shops, as_of=date(2026, 4, 1), objective='hybrid',
+                max_workshops=2, deadline_required=True))
+            self.assertEqual(result['success'], bool(feasible))
+            if feasible:
+                self.assertAlmostEqual(result['score'], min(feasible))
+
+    def test_full_candidate_plans_exist_when_every_plan_requires_a_split(self):
+        shops = [Workshop('W1', 'A', 3, 1, .1, 1.5, frozenset({'TOPS'}), 'ACTIVE', 4, 0., ''),
+                 Workshop('W2', 'B', 2, 1, .02, .9, frozenset({'TOPS'}), 'ACTIVE', 5, .5, ''),
+                 Workshop('W3', 'C', 4, 2, .05, 1.1, frozenset({'TOPS'}), 'ACTIVE', 6, .2, '')]
+        result = allocate(AllocationRequest(
+            order={'pieces': 8, 'category': 'TOPS', 'due_date': '2026-04-30'},
+            workshops=shops, as_of=date(2026, 4, 1), objective='min_delay', max_workshops=2))
+        self.assertTrue(result['success'])
+        self.assertEqual(result['candidate_ranking'], [])
+        self.assertGreater(len(result['candidate_plans']), 0)
+        self.assertEqual(result['candidate_plans'][0]['allocation'], result['allocation'])
+        identities = []
+        for candidate in result['candidate_plans']:
+            self.assertEqual(sum(p['pieces'] for p in candidate['allocation']), 8)
+            self.assertLessEqual(len(candidate['allocation']), 2)
+            self.assertEqual(candidate['constraints']['max_workshops'], 2)
+            identities.append(tuple(sorted((p['workshop_id'], p['pieces']) for p in candidate['allocation'])))
+        self.assertEqual(len(set(identities)), len(identities))
 
     def test_hard_deadline_cost_respects_queue_capacity(self):
         shops = [Workshop('W1', 'Cheap', 100, 1, .1, 1., frozenset({'TOPS'}), 'ACTIVE', None, 10., ''),
