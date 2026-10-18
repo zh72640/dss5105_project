@@ -1,5 +1,7 @@
 # SweaterCo Dispatch Desk — MVP v0.6
 
+**2026-10-18 operations dashboard:** Overview now includes interactive workshop availability, queue, expected quality and unit-cost charts, plus searchable order progress. Order tracking shows registration, allocation, recorded production and completion, with cancellation and reassignment history. See the [dashboard guide and verification](docs/OPERATIONS_DASHBOARD.md).
+
 **2026-10-17 scope review:** Changed approvals expose before/after differences and require renewed confirmation. Offline planning includes complete candidate plans and conditional alternatives; weighted hybrid splits optimize their own objective. Current verification, remaining business decisions and the live-model exclusion are recorded in the [review report](docs/SCOPE_FLOW_REVIEW_RESULTS_2026-10-17.md).
 
 **2026-10-15 Agent architecture:** LLM chat sessions use native model tool calls in a durable LangGraph loop. Runtime-loaded Skills guide tool selection; guarded tools and SQLite transactions control business state. Single-workshop comparison scores live in `app/allocator/scoring.py`; `app/tools/allocation.py` exposes the guarded `compute_plan` tool through the service layer. See the [current architecture](docs/current_architecture.md) and [Agent, Skill, and state architecture](docs/AGENT_SKILL_ARCHITECTURE.md). Offline rules mode remains a separate demo.
@@ -78,6 +80,14 @@ Business replies in LLM chat are grounded in Tool results and saved facts. The s
 - [Known limits](KNOWN_ISSUES.md): provider acceptance, data, optimization, and deployment boundaries.
 
 ## Demonstrations and verification
+
+For the current repeatable Offline and mocked acceptance workflow, including isolated browser checks, fresh reports and presentation rehearsal steps, see [Test workflow](docs/TEST_WORKFLOW.md). Run all seven stages with:
+
+```bash
+uv run --no-project --python .venv/bin/python --with playwright python evaluation/run_test_workflow.py
+```
+
+This requires Node and installed Chrome/Chromium; Playwright is provided in a separate uv environment. Each run preserves its own evidence under `evaluation/live_results/` and does not call real model providers.
 
 ```bash
 uv run --locked python -X utf8 -m demos.lifecycle_demo
