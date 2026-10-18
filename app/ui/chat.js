@@ -98,7 +98,10 @@
     if(target.hidden)return;target.append(C.text('h2',report.ready_for_planning?'Requirements checked':'Review required'));
     const dl=C.text('dl');const values={'Order':report.resolved_fields?.order_id,'Category':({TOPS:'Tops',ACCESSORIES:'Accessories'}[report.resolved_fields?.category]||report.resolved_fields?.category),'Remaining pieces':report.resolved_fields?.pieces!=null?report.resolved_fields.pieces-report.resolved_fields.completed_pieces:undefined,'Registered due date':report.resolved_fields?.due_date,'Objective':objectiveNames[report.effective_constraints?.objective],'Workshop limit':report.effective_constraints?.num_workshop_allowed,'Excluded':report.effective_constraints?.exclusion?.join(', ')||'None','Hard deadline':report.effective_constraints?.deadline_required?'Yes':'No'};
     Object.entries(values).forEach(([k,v])=>{const n=C.text('div');n.append(C.text('dt',k),C.text('dd',v??'Pending'));dl.append(n);});target.append(dl);
+    const required=C.text('div');required.append(C.text('dt','Required sole workshop'),C.text('dd',report.effective_constraints?.preferred_workshop||'None'));dl.append(required);
     (report.blocking_issues||[]).forEach(p=>target.append(C.text('p',p.question,'chat-notice')));
+    if(report.alternatives?.length)target.append(C.alternatives(report.alternatives));
+    else if(report.alternatives_status==='no_known_feasible_alternative')target.append(C.text('p','No known feasible alternative preserves capability, status and your exclusions.','chat-notice'));
   }
   async function load(sid,followLatest=false){
     const ownerScope=scope,oldId=session?.session_id;
@@ -113,7 +116,7 @@
       $('chat-empty').hidden=messages.length>0;$('chat-title').textContent=session.title;
       $('chat-subtitle').textContent=`Business date ${session.business_date} · ${stateNames[session.task.state]} · ${session.mode==='offline'?'Offline rules demo':session.model_key}`;
       const lastCard=messages.filter(m=>m.role==='assistant'&&m.metadata?.recommendation_id===session.recommendation?.recommendation_id).at(-1)?.message_id;
-      $('chat-messages').replaceChildren();messages.forEach(m=>{const n=C.text('article',null,'chat-message '+m.role);n.append(C.text('small',m.role==='user'?'You':'Assistant'),C.text('div',m.content));if(session.recommendation&&m.message_id===lastCard)n.append(C.card(session.recommendation,confirm));$('chat-messages').append(n);});
+      $('chat-messages').replaceChildren();messages.forEach(m=>{const n=C.text('article',null,'chat-message '+m.role);n.append(C.text('small',m.role==='user'?'You':'Assistant'),C.text('div',m.content));if(m.metadata?.review_changes)n.append(C.reviewChanges(m.metadata.review_changes));if(session.recommendation&&m.message_id===lastCard)n.append(C.card(session.recommendation,confirm));$('chat-messages').append(n);});
       renderReport();$('chat-plan').replaceChildren();$('chat-plan').hidden=!session.recommendation;
       if(session.recommendation&&!lastCard)$('chat-plan').append(C.card(session.recommendation,confirm));
       persist();sessionURL(sid);controls();status(pending()?pendingNotice():'');if(followLatest||nearBottom||oldId!==sid)scroll.scrollTop=scroll.scrollHeight;return true;
