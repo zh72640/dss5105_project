@@ -57,6 +57,7 @@ def verify(executable, output):
 
                 page.goto(base)
                 expect(page.locator('.ops-chart')).to_have_count(4)
+                page.locator('details.analytics > summary').click()
                 expect(page.locator('.ops-bar-row')).to_have_count(24)
                 expect(page.locator('.ops-order-row').first).to_have_attribute('data-order-id', 'ORD-045')
                 quality = page.locator('.ops-chart').filter(has=page.get_by_role('heading', name='Production quality'))
@@ -113,6 +114,7 @@ def verify(executable, output):
                 assert page.evaluate('document.documentElement.scrollWidth <= innerWidth')
                 page.goto(base)
                 expect(page.locator('.ops-chart')).to_have_count(4)
+                page.locator('details.analytics > summary').click()
                 assert page.evaluate('document.documentElement.scrollWidth <= innerWidth')
                 page.locator('#tracking-search').fill('no-such-order')
                 expect(page.get_by_text('No orders match these filters.', exact=True)).to_be_visible()

@@ -54,7 +54,7 @@
   function clearConversation(){
     session=null;loading=false;epoch++;$('chat-input').value='';$('chat-messages').replaceChildren();
     $('chat-validation').hidden=true;$('chat-plan').replaceChildren();$('chat-plan').hidden=true;
-    $('chat-empty').hidden=false;$('chat-title').textContent='New request';$('chat-subtitle').textContent='Enter your request to begin.';status('');
+    $('review-placeholder').hidden=false;$('chat-decision-timeline').replaceChildren(C.text('li','Start a request to begin the record.'));$('chat-empty').hidden=false;$('chat-title').textContent='New request';$('chat-subtitle').textContent='Enter your request to begin.';status('');
   }
   function status(value){$('chat-status').textContent=value||'';}
   function endTarget(){
@@ -76,6 +76,7 @@
   }
   function controls(){
     const operation=pending(),working=busy(),blocked=working||!!operation||starting||loading;
+    $('chat-review-actions').hidden=!session||session.status==='ARCHIVED'||session.task?.state==='CONFIRMED';$('chat-reject-plan').disabled=blocked||!C.canConfirm(session?.recommendation);$('chat-not-allocated').disabled=blocked||!session;
     $('chat-send').disabled=blocked||session?.status==='ARCHIVED';
     $('chat-new').disabled=starting||(!session&&working&&activeId?.startsWith('create:'));
     $('chat-input').disabled=blocked||session?.status==='ARCHIVED';
@@ -85,13 +86,32 @@
     document.querySelectorAll('.chat-recommendation button').forEach(n=>n.disabled=blocked||!C.canConfirm(session?.recommendation));
   }
   async function allPages(url){let out=[],cursor=0;do{const data=await C.request(`${url}${url.includes('?')?'&':'?'}after=${cursor}&limit=100`);out.push(...data.items);cursor=data.next_cursor;}while(cursor!=null);return out;}
-  async function sessionList(append=false){
+  async function sessionList(){
     const ownerScope=scope,token=++listEpoch;
-    const data=await C.request(`/api/chat/sessions?after=${append?listCursor:0}&limit=30`);
+    const items=await allPages('/api/chat/sessions');
     if(scope!==ownerScope||token!==listEpoch)return;
-    if(!append)$('chat-session-list').replaceChildren();listCursor=data.next_cursor;
-    data.items.forEach(s=>{const b=C.text('button',s.title+(s.status==='ARCHIVED'?' · Archived':''),s.session_id===session?.session_id?'selected':'');b.type='button';b.addEventListener('click',()=>{load(s.session_id).catch(e=>status(e.message));document.body.classList.remove('show-chat-sidebar');});$('chat-session-list').append(b);});
-    $('chat-more-sessions').hidden=listCursor==null;
+    const pendingItems=items.filter(s=>s.status==='OPEN'&&!['CONFIRMED','CANCELLED'].includes(s.task_state));
+    const ordered=typeof DispatchUI!=='undefined'?DispatchUI.oldest(pendingItems):pendingItems;
+    const archived=items.filter(s=>!pendingItems.includes(s));
+    $('chat-session-list').replaceChildren();listCursor=null;
+    function append(s){
+      const b=C.text('button',null,s.session_id===(session?.session_id||activeId)?'selected':'');b.type='button';
+      b.append(C.text('span',s.order_id?`${s.order_id} · ${s.title==='New request'?'Dispatch request':s.title}`:s.title,'session-title'));if(b.dataset)b.dataset.sessionId=s.session_id;
+      const meta=C.text('span',null,'session-meta');
+      meta.append(C.text('span',s.status==='ARCHIVED'?'Archived':stateNames[s.task_state]||'Request'),C.text('span',s.created_at?new Date(s.created_at).toLocaleDateString('en-GB',{day:'numeric',month:'short'}):''));b.append(meta);
+      b.setAttribute?.('aria-current',s.session_id===(session?.session_id||activeId)?'true':'false');
+      b.addEventListener('click',()=>{load(s.session_id).then(()=>sessionList()).catch(e=>status(e.message));document.body.classList.remove('show-chat-sidebar');});$('chat-session-list').append(b);
+    }
+    ordered.forEach(append);
+    if(!ordered.length)$('chat-session-list').append(C.text('p','No pending requests. Start a new one above.','panel-body muted'));
+    if(archived.length){$('chat-session-list').append(C.text('div','Resolved & archived','session-section'));archived.forEach(append);}
+    $('chat-nav-count').textContent=ordered.length;$('chat-nav-count').hidden=!ordered.length;$('chat-more-sessions').hidden=true;
+  }
+  function renderTimeline(messages){
+    const target=$('chat-decision-timeline');target.replaceChildren();
+    const add=(title,when)=>{const row=C.text('li',title);if(when)row.append(C.text('small',new Date(when).toLocaleString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})));target.append(row);};
+    C.decisionEvents(session,messages).forEach(event=>add(event.title,event.when));
+    $('review-placeholder').hidden=!!Object.keys(session.task.report||{}).length||!!session.recommendation;
   }
   function renderReport(){
     const target=$('chat-validation'),report=session.task.report;target.replaceChildren();target.hidden=!Object.keys(report).length;
@@ -113,12 +133,11 @@
       const [snapshot,messages]=await Promise.all([C.request('/api/chat/sessions/'+encodeURIComponent(sid)),allPages('/api/chat/sessions/'+encodeURIComponent(sid)+'/messages')]);
       if(token!==epoch||scope!==ownerScope)return false;
       session=snapshot;session.recommendation&&Object.assign(session.recommendation,{session_version:session.version,task_state:session.task.state});
-      $('chat-empty').hidden=messages.length>0;$('chat-title').textContent=session.title;
+      $('chat-empty').hidden=messages.length>0;$('chat-title').textContent=session.title==='New request'&&session.task.report?.resolved_fields?.order_id?session.task.report.resolved_fields.order_id+' · Dispatch request':session.title;document.querySelectorAll('#chat-session-list button').forEach(b=>{const selected=b.dataset.sessionId===sid;b.classList.toggle('selected',selected);b.setAttribute('aria-current',String(selected));});
       $('chat-subtitle').textContent=`Business date ${session.business_date} · ${stateNames[session.task.state]} · ${session.mode==='offline'?'Offline rules demo':session.model_key}`;
-      const lastCard=messages.filter(m=>m.role==='assistant'&&m.metadata?.recommendation_id===session.recommendation?.recommendation_id).at(-1)?.message_id;
-      $('chat-messages').replaceChildren();messages.forEach(m=>{const n=C.text('article',null,'chat-message '+m.role);n.append(C.text('small',m.role==='user'?'You':'Assistant'),C.text('div',m.content));if(m.metadata?.review_changes)n.append(C.reviewChanges(m.metadata.review_changes));if(session.recommendation&&m.message_id===lastCard)n.append(C.card(session.recommendation,confirm));$('chat-messages').append(n);});
+      $('chat-messages').replaceChildren();messages.forEach(m=>{const n=C.text('article',null,'chat-message '+m.role);n.append(C.text('small',m.role==='user'?'You':'Assistant'),C.text('div',m.content));if(m.metadata?.review_changes)n.append(C.reviewChanges(m.metadata.review_changes));$('chat-messages').append(n);});
       renderReport();$('chat-plan').replaceChildren();$('chat-plan').hidden=!session.recommendation;
-      if(session.recommendation&&!lastCard)$('chat-plan').append(C.card(session.recommendation,confirm));
+      if(session.recommendation)$('chat-plan').append(C.card(session.recommendation,confirm));renderTimeline(messages);$('chat-business-date').textContent=typeof DispatchUI!=='undefined'?DispatchUI.date(session.business_date):session.business_date;
       persist();sessionURL(sid);controls();status(pending()?pendingNotice():'');if(followLatest||nearBottom||oldId!==sid)scroll.scrollTop=scroll.scrollHeight;return true;
     }catch(error){if(token===epoch&&scope===ownerScope)throw error;return false;}
     finally{if(token===epoch&&scope===ownerScope){loading=false;controls();}}
@@ -201,7 +220,7 @@
     starting=true;scope=null;activeId=null;clearConversation();controls();
     try{
       user=await C.request('/api/auth/me');$('chat-login').hidden=!!user.username;$('chat-app').hidden=!user.username;if(!user.username)return;
-      $('chat-identity').textContent=user.username;const models=await C.request('/api/models');$('chat-mode').value=models.default_mode;
+      $('chat-identity').textContent=user.username;$('chat-account-avatar').textContent=user.username.slice(0,2).toUpperCase();$('chat-admin-badge').hidden=!(user.auth_required&&user.role==='admin');$('chat-signout').hidden=!user.auth_required;const models=await C.request('/api/models');$('chat-mode').value=models.default_mode;
       $('chat-model').replaceChildren();models.models.forEach(m=>{const o=C.text('option',m.provider+' · '+m.model_key+(m.available?'':' (not configured)'));o.value=m.model_key;o.disabled=!m.available;$('chat-model').append(o);});$('chat-model').value=models.default_model||'';
       $('chat-model-label').hidden=$('chat-mode').value==='offline';
       const saved=restoreScope(),ownerScope=scope,url=new URL(location.href);
@@ -236,9 +255,10 @@
   });
   $('chat-input').addEventListener('keydown',event=>{if(event.key==='Enter'&&!event.shiftKey&&!event.isComposing){event.preventDefault();$('chat-composer').requestSubmit();}});
   $('chat-new').addEventListener('click',()=>newSession().catch(e=>status(e.message)));$('chat-retry').addEventListener('click',deliver);$('chat-end-request').addEventListener('click',endRequest);
+  $('chat-reject-plan').addEventListener('click',async()=>{await send('message','Reject recommendation.');$('chat-input').focus?.();});$('chat-not-allocated').addEventListener('click',()=>send('archive').catch(e=>status(e.message)));
   $('chat-archive').addEventListener('click',()=>send('archive').catch(e=>status(e.message)));
   $('chat-more-sessions').addEventListener('click',()=>sessionList(true));
-  $('chat-menu').addEventListener('click',()=>document.body.classList.toggle('show-chat-sidebar'));
+  $('chat-menu').addEventListener('click',()=>document.body.classList.toggle('show-chat-sidebar'));document.addEventListener?.('keydown',event=>{if(event.key==='Escape')document.body.classList.remove('show-chat-sidebar');});
   $('chat-mode').addEventListener('change',()=>{$('chat-model-label').hidden=$('chat-mode').value==='offline';status('Mode selection applies to new sessions. The current session keeps its mode.');});
   $('chat-font').value=localStorage.getItem('sweaterco.text-size')||'medium';document.documentElement.dataset.textSize=$('chat-font').value;
   $('chat-font').addEventListener('change',()=>{document.documentElement.dataset.textSize=$('chat-font').value;localStorage.setItem('sweaterco.text-size',$('chat-font').value);});

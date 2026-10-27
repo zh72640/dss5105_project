@@ -102,8 +102,11 @@ def supersede_recommendation(connection, recommendation_id):
 
 
 def session_page(connection, owner, after, limit):
-    return connection.execute('''SELECT rowid AS cursor,session_id,title,status,version,updated_at
-        FROM chat_sessions WHERE owner_username=? AND (?=0 OR rowid<?) ORDER BY rowid DESC LIMIT ?''',
+    return connection.execute('''SELECT s.rowid AS cursor,s.session_id,s.title,s.status,s.version,
+        s.created_at,s.updated_at,t.state AS task_state,
+        json_extract(t.draft_json,'$.order_id') AS order_id
+        FROM chat_sessions s JOIN chat_allocation_tasks t USING(session_id)
+        WHERE s.owner_username=? AND (?=0 OR s.rowid<?) ORDER BY s.rowid DESC LIMIT ?''',
         (owner, after, after, limit + 1)).fetchall()
 
 

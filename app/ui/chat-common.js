@@ -18,7 +18,13 @@
     const node=text('article',null,'chat-recommendation');
     node.append(text('strong','Allocation plan · '+stateLabel(recommendation.status)));
     (result.allocation||[]).forEach(p=>node.append(text('p',`Workshop ${p.workshop_id} · ${p.workshop_name}: ${p.pieces} pieces`)));
-    node.append(text('p',`Estimated completion ${result.estimated_delivery_date} · Estimated cost ${result.estimated_cost}`));
+    if(node.dataset)node.dataset.status=recommendation.status;
+    if(root.DispatchUI){
+      const U=root.DispatchUI,parts=result.allocation||[],total=parts.reduce((n,p)=>n+p.pieces,0),bar=text('div',null,'plan-parts');
+      parts.forEach(p=>{const part=text('div',p.workshop_id,'plan-part');part.style.backgroundColor=U.color(p.workshop_id);part.style.flex=String(p.pieces/Math.max(1,total));part.append(text('small',`${U.number(p.pieces,0)} pcs`));bar.append(part);});node.append(bar);
+      const metrics=text('dl',null,'plan-metrics');
+      [['Completion',U.date(result.estimated_delivery_date)],['Estimated cost',`${U.number(result.estimated_cost,2)} units`],['Expected defects',typeof result.expected_defect_rate==='number'?`${U.number(result.expected_defect_rate*100,2)}%`:'—']].forEach(([label,value])=>{const item=text('div');item.append(text('dt',label),text('dd',value));metrics.append(item);});node.append(metrics);
+    }else node.append(text('p',`Estimated completion ${result.estimated_delivery_date} · Estimated cost ${result.estimated_cost}`));
     if(result.warnings?.length)node.append(text('p',result.warnings.map(w=>({ESTIMATED_DEADLINE_MISS:'Estimated date exceeds the registered due date; the deadline is currently soft.'}[w]||w)).join('; '),'chat-notice'));
     if(result.candidate_plans?.length){
       const details=text('details');details.append(text('summary','Compare complete candidate plans'));
@@ -63,7 +69,25 @@
     node.append(text('p','No allocation was committed by this attempt. Review the new plan before confirming.'));
     return node;
   }
-  const api={confirmation,canConfirm,stateLabel,text,request,card,alternatives,reviewChanges};
+  function decisionEvents(session,messages){
+    const events=[{title:'Request created',when:session.created_at}],plans=new Set();
+    let submitted=false,committed=false,cancelled=false;
+    for(const message of messages){
+      const meta=message.metadata||{};let title=null;
+      if(message.role==='user'){
+        title=meta.intent==='confirm_allocation'?'Confirmation requested':meta.intent==='reject_recommendation'?'Rejection requested':meta.intent==='cancel_task'?'Closure requested':submitted?'Message sent':'Request submitted';submitted=true;
+      }else if(meta.committed){title='Allocation committed';committed=true;}
+      else if(meta.intent==='reject_recommendation')title='Recommendation rejected';
+      else if(meta.intent==='cancel_task'){title='Request closed';cancelled=true;}
+      else if(meta.recommendation_id&&!plans.has(meta.recommendation_id)){title='Recommendation prepared';plans.add(meta.recommendation_id);}
+      if(title)events.push({title,when:message.created_at});
+    }
+    if(session.task.state==='CONFIRMED'&&!committed)events.push({title:'Allocation confirmed',when:session.updated_at});
+    if(session.task.state==='CANCELLED'&&!cancelled)events.push({title:'Marked not allocated',when:session.updated_at});
+    if(session.status==='ARCHIVED')events.push({title:'Request archived',when:session.updated_at});
+    return events;
+  }
+  const api={confirmation,canConfirm,stateLabel,text,request,card,alternatives,reviewChanges,decisionEvents};
   if(typeof module!=='undefined'&&module.exports)module.exports=api;
   else root.ChatV2=api;
 })(typeof globalThis!=='undefined'?globalThis:this);

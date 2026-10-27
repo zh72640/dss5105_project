@@ -1,5 +1,7 @@
 # SweaterCo Dispatch Desk — MVP v0.6
 
+**2026-10-27 UI redesign:** The supplied UI prototypes now drive the shared knit-inspired login, top navigation, dashboard, three-column Requests view, order register and workshop queue dialogs. Real Chat v2 confirmation and production controls are preserved. See the [implementation and verification notes](docs/UI_REDESIGN_2026-10-27.md).
+
 **2026-10-18 operations dashboard:** Overview now includes interactive workshop availability, queue, expected quality and unit-cost charts, plus searchable order progress. Order tracking shows registration, allocation, recorded production and completion, with cancellation and reassignment history. See the [dashboard guide and verification](docs/OPERATIONS_DASHBOARD.md).
 
 **2026-10-17 scope review:** Changed approvals expose before/after differences and require renewed confirmation. Offline planning includes complete candidate plans and conditional alternatives; weighted hybrid splits optimize their own objective. Current verification, remaining business decisions and the live-model exclusion are recorded in the [review report](docs/SCOPE_FLOW_REVIEW_RESULTS_2026-10-17.md).

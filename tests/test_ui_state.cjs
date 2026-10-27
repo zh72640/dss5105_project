@@ -15,7 +15,7 @@ function setup(fetch) {
     return nodes.get(id);
   };
   const context = vm.createContext({
-    document:{documentElement:{dataset:{}},getElementById:node,querySelectorAll(selector){return selector==='[data-action="new"]'?['overview-new','recommendations-new','empty-new'].map(node):[];}},
+    document:{documentElement:{dataset:{}},getElementById:node,querySelectorAll(selector){return selector==='[data-action="new"]'?['recommendations-new','empty-new'].map(node):[];}},
     localStorage:{setItem:(k,v)=>storage.set(k,v),getItem:k=>storage.get(k)},
     sessionStorage:{setItem(){},getItem(){return null}},
     window:{addEventListener(){},scrollTo(){}},
@@ -109,13 +109,14 @@ test('text size persists across initialization and invalid storage uses medium',
 
 test('all existing New request buttons route directly to a new Chat session even with a pending Desk operation',async()=>{
   const {api,nodes,href}=setup();api.state.pending={kind:'event'};api.state.busy=true;api.controls();
-  for(const id of ['overview-new','recommendations-new','empty-new']){
+  for(const id of ['recommendations-new','empty-new']){
     assert.equal(nodes.get(id).disabled,false);await nodes.get(id).listeners.click();
     assert.equal(href.value,'/chat?new=1');href.value='';
   }
   const html=fs.readFileSync(path.join(__dirname,'../app/ui/index.html'),'utf8');
   const entries=html.match(/<button[^>]*data-action="new"[^>]*>/g);
-  assert.equal(entries.length,3);assert.ok(entries.every(entry=>!entry.includes('data-mutate')));
+  assert.equal(entries.length,2);
+  assert.doesNotMatch(html.split('id="page-home"')[1].split('id="page-recommendations"')[0], /data-action="new"/);assert.ok(entries.every(entry=>!entry.includes('data-mutate')));
   assert.doesNotMatch(html,/id="new-dialog"|id="new-request-form"/);
   assert.doesNotMatch(source,/sweaterco\.chat\.draft|new-message|new-objective/);
 });
