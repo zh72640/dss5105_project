@@ -86,12 +86,18 @@ class ExplanationResponseBehavior(unittest.TestCase):
         self.assertEqual(user_result, state['task_result'])
         self.assertNotIn('source_node', user_result)
         self.assertEqual(user_result['result']['recommendation_id'], result['recommendation_id'])
+        evidence = user_result['result']['explanation_evidence']
+        self.assertEqual(evidence, result['cards'][0]['result']['explanation_evidence'])
+        self.assertTrue(evidence['candidates'])
+        self.assertIn('Minimize completion days', evidence['score_formula'])
+        for heading in ('Allocation plan:', 'Allocation method:', 'Why this recommendation:', 'Review before allocation:'):
+            self.assertIn(heading, messages[0]['content'])
         self.assertEqual(len(model.offered), 3)
         calls = [item['detail'] for item in self.trace()['events'] if item['event_type'] == 'model_call']
         self.assertEqual([item['stage'] for item in calls],
                          ['intent', 'extract', 'tool_loop', 'tool_loop', 'tool_loop', 'explanation'])
         self.assertEqual(calls[-1]['prompt']['id'], 'allocation.explain')
-        self.assertEqual(calls[-1]['prompt']['version'], 'v2')
+        self.assertEqual(calls[-1]['prompt']['version'], 'v3')
 
     def test_gemini_explanation_contains_user_content_without_a_network_call(self):
         from langchain_core.messages import convert_to_messages
@@ -289,6 +295,30 @@ class ExplanationResponseBehavior(unittest.TestCase):
         self.assertIn('No allocation was committed', result['explanation'])
         self.assertFalse(result['committed'])
         self.assertIsNotNone(result['allocation'])
+
+    def test_explicit_negative_commit_sentence_keeps_the_explanation(self):
+        text = 'Allocation plan: Review the saved plan. No allocation has been committed by this plan.'
+        model = ExplanationScript(actions=[*actions()[:3], AIMessage(content=text)])
+        result = self.turn(model)
+        self.assertEqual(result['explanation'], text)
+        self.assertFalse(result['committed'])
+
+    def test_negative_sentence_cannot_hide_a_later_false_commit_claim(self):
+        text = 'No allocation has been committed. I have committed the recommendation.'
+        model = ExplanationScript(actions=[*actions()[:3], AIMessage(content=text)])
+        result = self.turn(model)
+        self.assertNotEqual(result['explanation'], text)
+        self.assertIn('No allocation was committed', result['explanation'])
+
+    def test_old_response_without_evidence_field_remains_readable(self):
+        result = self.turn(ExplanationScript(actions=actions()))
+        session = chat.inspect(self.sid, owner='alice', db_path=self.path)
+        session['recommendation']['result'].pop('explanation_evidence')
+        legacy = {key: deepcopy(result[key]) for key in ('type', 'explanation', 'allocation', 'issues', 'recommendation_id')}
+        legacy['allocation'].pop('explanation_evidence')
+        reconciled = presentation.reconcile_response(legacy, session)
+        self.assertEqual(reconciled['allocation'], legacy['allocation'])
+        self.assertEqual(reconciled['explanation'], legacy['explanation'])
 
     def test_http_serializes_allocation_with_its_explanation(self):
         model = ExplanationScript(actions=actions())

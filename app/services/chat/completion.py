@@ -103,10 +103,15 @@ def evaluate_compat(session, tool_results, pending_question=None) -> TaskResult:
 
 def _verified_reply(reply, state, task, recommendation):
     """Do not display an operation-success claim without its saved business result."""
-    if re.search(r"\b(?:I (?:have )?|we (?:have )?)(?:committed|submitted|confirmed)\b|\b(?:has been|was|is now|successfully) (?:committed|submitted|confirmed)\b", reply, re.I):
+    # Remove only explicit negative claims, not their whole sentence. A later
+    # affirmative claim must still be checked, even when the reply also says no.
+    claims = re.sub(r"\b(?:no\s+(?:production\s+)?(?:allocation|recommendation|order|plan|assignment|event|completion|cancellation|reassignment)|nothing)\s+"
+                    r"(?:has been|have been|was|is now|successfully)\s+(?:committed|submitted|confirmed|recorded)\b",
+                    "", reply, flags=re.I)
+    if re.search(r"\b(?:I (?:have )?|we (?:have )?)(?:committed|submitted|confirmed)\b|\b(?:has been|was|is now|successfully) (?:committed|submitted|confirmed)\b", claims, re.I):
         if task["state"] != "CONFIRMED" or not recommendation or recommendation["status"] != "confirmed":
             return "No allocation was committed. Confirm a valid recommendation card to submit it."
-    if re.search(r"\b(?:I (?:have )?|we (?:have )?)recorded\b|\b(?:event|completion|cancellation|reassignment) (?:was|has been) recorded\b", reply, re.I):
+    if re.search(r"\b(?:I (?:have )?|we (?:have )?)recorded\b|\b(?:event|completion|cancellation|reassignment) (?:was|has been) recorded\b", claims, re.I):
         recorded = any(item["name"] == "record_production_event" and item["result"].get("ok")
                        for item in state.get("tool_results", []))
         if not recorded:

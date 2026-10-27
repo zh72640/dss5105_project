@@ -4,7 +4,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 Identifier = Annotated[str, Field(pattern=r"^[A-Za-z0-9_-]{1,128}$")]
 Version = Annotated[int, Field(ge=0)]
-Objective = Literal["min_delay", "min_cost", "min_defects", "hybrid"]
+Objective = Literal["min_delay", "min_cost", "min_defects", "hybrid", "weighted_hybrid"]
 
 
 class Input(BaseModel):

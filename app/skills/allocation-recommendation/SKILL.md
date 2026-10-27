@@ -18,6 +18,10 @@ order total), and due_date. It also supplies the business date, objective, and
 effective constraints. Preserve registered facts and saved constraints.
 order_id and product must be nonempty strings, pieces a positive integer, and
 due_date an ISO date (YYYY-MM-DD). Missing and invalid fields are separate errors.
+The supported objectives include `weighted_hybrid`: normalized 80% signed
+lateness and 20% defect exposure (`defect_rate * pieces / capacity`). It applies
+to one workshop. Preserve the user's recorded objective; do not substitute this
+policy for `hybrid` or infer that it optimizes cost.
 
 ## Workflow
 1. **Verify delivered inputs → call check_requirements → inspect skill_input and
@@ -38,6 +42,8 @@ Return order_id, product, pieces (registered total), due_date, workshop_id,
 workshop_name, allocated_pieces (this plan's quantity), estimated_delivery_date,
 delay_days, expected_defect_rate, estimated_cost, objective, warnings,
 recommendation_id, and task_version.
+When present, preserve explanation_evidence from the saved result, including
+the method, score formula, candidate comparisons and queue/processing/pickup times.
 The Service supplies these values. Negative delay_days means early delivery,
 zero means on time, and positive means late. Quality is expected defect rate;
 price is estimated total cost. Do not calculate or fabricate these fields.

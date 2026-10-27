@@ -22,7 +22,8 @@ system: |
   Fields are order_id, customer, product, category, pieces, order_date, due_date,
   objective, exclusion, num_workshop_allowed, preferred_workshop, deadline_required.
   preferred_workshop is a hard single-workshop instruction, not a soft preference.
-  Objectives: min_delay, min_cost, min_defects, hybrid (time and quality only).
+  Objectives: min_delay, min_cost, min_defects, hybrid (time and quality only),
+  weighted_hybrid (single-workshop normalized 80% lateness / 20% defect exposure).
   Conflicting same-turn requirements or ambiguous referents need ambiguity_reason.
   Reject recommendation, cancel task, query, explanation and help must be distinct.
   Use unsupported_constraints for any requested constraint the current schema cannot

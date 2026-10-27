@@ -2,7 +2,7 @@
 from datetime import date
 from typing import Annotated
 
-from pydantic import Field, field_validator
+from pydantic import Field, FiniteFloat, field_validator
 
 from app.schemas.api import Input
 
@@ -34,6 +34,32 @@ class AllocationSkillInput(AllocationFields):
     due_date: str
 
 
+class AllocationCandidateEvidence(Input):
+    workshop_id: str
+    workshop_name: str
+    score: FiniteFloat
+    estimated_days: FiniteFloat
+    estimated_cost: FiniteFloat
+    expected_defect_rate: Annotated[float, Field(ge=0, le=1, allow_inf_nan=False)]
+    scoring_components: dict[str, FiniteFloat] = Field(default_factory=dict)
+
+
+class AllocationExplanationEvidence(Input):
+    method: str
+    score_formula: str
+    comparison_scope: str
+    selection_reason: str
+    selected_score: FiniteFloat
+    queue_days: FiniteFloat
+    processing_days: FiniteFloat
+    transport_days: FiniteFloat
+    eligible_workshops: list[str]
+    rejected_workshops: dict[str, str]
+    required_sole_workshop: str | None = None
+    deadline_required: bool
+    candidates: list[AllocationCandidateEvidence]
+
+
 class AllocationRecommendationResult(AllocationSkillInput):
     recommendation_id: str
     task_version: Annotated[int, Field(ge=0)]
@@ -46,6 +72,7 @@ class AllocationRecommendationResult(AllocationSkillInput):
     estimated_cost: Annotated[float, Field(ge=0, allow_inf_nan=False)]
     objective: str
     warnings: list[str]
+    explanation_evidence: AllocationExplanationEvidence | None = None
 
     @field_validator("estimated_delivery_date")
     @classmethod

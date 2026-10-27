@@ -17,7 +17,7 @@ def record_production_event(
     config: RunnableConfig,
     workshop_id: Annotated[str, Field(min_length=1)] | None = None,
     pieces: Annotated[int, Field(ge=1)] | None = None,
-    objective: Literal["min_delay", "min_cost", "min_defects", "hybrid"] | None = None,
+    objective: Literal["min_delay", "min_cost", "min_defects", "hybrid", "weighted_hybrid"] | None = None,
     exclusion: list[str] | None = None,
     max_workshops: Annotated[int, Field(ge=1)] | None = None,
     preferred_workshop: Annotated[str, Field(min_length=1)] | None = None,

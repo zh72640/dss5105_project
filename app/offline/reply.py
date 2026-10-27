@@ -4,7 +4,7 @@ from app.llm.errors import check_response, text_content, translate_error
 from app.llm.registry import selection_metadata
 
 OBJECTIVES = {"min_delay": "earliest completion", "min_cost": "lowest cost",
-              "min_defects": "lowest defect rate", "hybrid": "weighted time and quality"}
+              "min_defects": "lowest defect rate", "hybrid": "weighted time and quality", "weighted_hybrid": "normalized 80/20 lateness and defect exposure"}
 
 
 def solution_reply(result, order_id, committed=False):

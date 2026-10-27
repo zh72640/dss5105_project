@@ -4,7 +4,7 @@
   let user=null,session=null,listCursor=0,epoch=0,listEpoch=0,scope=null,activeId=null,starting=false,loading=false;
   const executing=new Set();
   const stateNames={COLLECTING:'Collecting requirements',BLOCKED:'Needs clarification',READY:'Ready to calculate',RECOMMENDED:'Awaiting confirmation',CONFIRMED:'Committed',CANCELLED:'Cancelled'};
-  const objectiveNames={min_delay:'Earliest completion',min_cost:'Lowest cost',min_defects:'Lowest defect rate',hybrid:'Weighted time and quality'};
+  const objectiveNames={min_delay:'Earliest completion',min_cost:'Lowest cost',min_defects:'Lowest defect rate',hybrid:'Weighted time and quality',weighted_hybrid:'Normalized lateness and defect exposure (80/20)'};
   const key=()=>`sweaterco.chat.v2.${user?.username||''}`;
   function savedState(storageKey){
     try{return JSON.parse(localStorage.getItem(storageKey)||'{}')||{};}catch{return {};}

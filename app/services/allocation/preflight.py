@@ -68,6 +68,9 @@ def preflight(connection, draft, as_of, pending=(), sources=None):
     limit = constraints['num_workshop_allowed']
     if type(limit) is not int or not 1 <= limit <= 8:
         problems.append(issue('INVALID_WORKSHOP_LIMIT', 'num_workshop_allowed', 'The workshop limit must be an integer from 1 to 8.'))
+    elif constraints['objective'] == 'weighted_hybrid' and limit > 1 and 'num_workshop_allowed' in (sources or {}):
+        problems.append(issue('WEIGHTED_HYBRID_SINGLE_WORKSHOP_ONLY', 'num_workshop_allowed',
+            'Normalized 80/20 scoring supports one workshop. Choose one workshop or another objective for splitting.'))
     if constraints['preferred_workshop'] in constraints['exclusion']:
         problems.append(issue('PREFERRED_EXCLUDED', 'preferred_workshop', 'The same workshop is preferred and excluded. Clarify which constraint applies.'))
     try:

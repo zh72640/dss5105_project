@@ -5,6 +5,7 @@ from datetime import date, timedelta
 from itertools import combinations, groupby
 
 from app.allocator.eligibility import exclusion_reason
+from app.allocator.strategies import normalize_weighted, explanation_evidence
 
 
 def _part(workshop, quantity):
@@ -98,6 +99,7 @@ def plan(order, workshops, *, objective, as_of, max_workshops=1, exclusion=None,
          preferred_workshop=None, deadline_required=False):
     """Enumerate 1..max_workshops configurations. max_workshops>=2 enables splits."""
     pieces = order["pieces"]
+    requested_limit = max_workshops
     exclusion = list(exclusion or [])
     max_workshops = min(max_workshops, len(workshops))
     rejected, eligible = {}, []
@@ -114,6 +116,9 @@ def plan(order, workshops, *, objective, as_of, max_workshops=1, exclusion=None,
             "objective": objective, "rejected": rejected, "reason_codes": [], "warnings": [],
             "eligible_workshops": [w.workshop_id for w in eligible], "candidate_ranking": [],
             "candidate_plans": [], "candidate_plan_count": 0}
+    if objective == "weighted_hybrid" and requested_limit > 1:
+        return {**base, "reason_codes": ["WEIGHTED_HYBRID_SINGLE_WORKSHOP_ONLY"],
+                "message": "Normalized 80/20 scoring supports one workshop. Use a one-workshop limit or choose another objective for splitting."}
     if preferred_workshop:
         preferred = next((w for w in workshops if w.workshop_id == preferred_workshop), None)
         reason = "unknown_workshop" if preferred is None else exclusion_reason(
@@ -137,12 +142,14 @@ def plan(order, workshops, *, objective, as_of, max_workshops=1, exclusion=None,
             cost = round(sum(p["estimated_cost"] for p in parts), 2)
             defects = sum(p["pieces"] * p["defect_rate"] for p in parts) / pieces
             score = {"min_delay": days, "min_cost": cost, "min_defects": defects,
-                     "hybrid": .6 * days + .4 * defects * 100}[objective]
+                     "hybrid": .6 * days + .4 * defects * 100, "weighted_hybrid": 0.0}[objective]
             options.append({"allocation": parts, "estimated_days": days, "estimated_cost": cost,
                             "expected_defect_rate": defects, "score": score})
     if not options:
         reason = "DEADLINE_INFEASIBLE" if deadline_required else "CAPACITY_INFEASIBLE"
         return {**base, "reason_codes": [reason], "message": "No complete integer allocation satisfies the batch/count/deadline constraints."}
+    if objective == "weighted_hybrid":
+        normalize_weighted(options, (deadline - as_of).days)
     options.sort(key=lambda p: (round(p["score"], 10), p["estimated_days"], p["estimated_cost"],
                                len(p["allocation"]), [a["workshop_id"] for a in p["allocation"]]))
     best = options[0]
@@ -174,5 +181,7 @@ def plan(order, workshops, *, objective, as_of, max_workshops=1, exclusion=None,
             "candidate_ranking": ranking, "warnings": warnings,
             "candidate_plans": candidates, "candidate_plan_count": len(seen),
             "candidate_plan_scope": "Up to five distinct best plans from the evaluated workshop subsets.",
+            "explanation_evidence": explanation_evidence(best, options, objective, rejected,
+                [w.workshop_id for w in eligible], preferred_workshop, deadline_required),
             "reason_codes": ["ELIGIBLE", "BEST_CONFIGURED_SCORE", "INTEGER_PIECES_CONSERVED"],
             "message": f"Allocated {pieces} pieces to {len(best['allocation'])} workshop(s) using {objective}."}

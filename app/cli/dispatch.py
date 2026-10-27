@@ -22,7 +22,7 @@ def main():
     source.add_argument("--request", help="Dataset label, e.g. R09 (not the idempotency key)")
     source.add_argument("--message", help="Complete natural-language message")
     parser.add_argument("--objective", default="min_delay",
-                        choices=["min_delay", "min_lateness", "fastest_turnaround", "min_defects", "min_cost", "hybrid"])
+                        choices=["min_delay", "min_lateness", "fastest_turnaround", "min_defects", "min_cost", "hybrid", "weighted_hybrid"])
     parser.add_argument("--db", default=str(ROOT / "runtime/dispatch.sqlite3"), help="Use :memory: for an isolated run")
     parser.add_argument("--request-id", help="Reuse this key only when retrying identical input")
     parser.add_argument("--as-of", type=date.fromisoformat, default=date(2026, 4, 1))

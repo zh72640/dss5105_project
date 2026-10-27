@@ -8,4 +8,4 @@ active:
   agent.reply: v1
   allocation.execute: v1
   agent.response: v1
-  allocation.explain: v2
+  allocation.explain: v3

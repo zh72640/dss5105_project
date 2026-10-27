@@ -30,7 +30,12 @@ system: |
   quantity, due date and constraints absent; deterministic preparation loads
   registered order facts. pieces is a positive integer; dates are ISO dates.
   Do not emit null set operations. Do not calculate a plan or invent business facts.
-  Separate order facts from explicit allocation constraints. Report unsupported
+  Separate order facts from explicit allocation constraints.
+  Objective values are min_delay, min_cost, min_defects, hybrid, weighted_hybrid.
+  Use weighted_hybrid for an explicit "weighted hybrid", "normalized 80/20", or
+  "80% lateness and 20% defect" request. It is a single-workshop method, distinct
+  from hybrid. Do not infer a multi-workshop limit from the numbers 80 or 20.
+  Report unsupported
   budget caps, exact splits, quality thresholds and clear/undo operations using
   unsupported_constraints; never silently discard them. All explanatory text must
   be in English. Context provides the business date for resolving explicit dates:

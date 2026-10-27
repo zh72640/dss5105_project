@@ -1,6 +1,6 @@
 """Fixed user-facing copy. These strings are never sent as LLM instructions."""
 OBJECTIVES = {"min_cost": "lowest total cost", "min_delay": "earliest completion",
-              "min_defects": "lowest expected defect rate", "hybrid": "a balance of time and quality"}
+              "min_defects": "lowest expected defect rate", "hybrid": "a balance of time and quality", "weighted_hybrid": "normalized 80/20 lateness and defect exposure"}
 
 
 TEXT = {

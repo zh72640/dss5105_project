@@ -70,6 +70,8 @@ def extract(message: str, reference_date: date) -> dict:
     objectives = (["min_cost"] if cheap else []) + (["min_delay"] if speed else []) + (["min_defects"] if quality else [])
     if re.search(r"\bhybrid\b|balance.*(?:speed|quality)", low):
         objectives = ["hybrid"]
+    if re.search(r"\bweighted[ _]hybrid\b|\bnormalized\s+80/20\b|80%\s+lateness", low):
+        objectives = ["weighted_hybrid"]
     if cheap and cost_ignored:
         ambiguities.append("conflicting_objective")
     if re.search(r"\bnot (?:the )?(?:cheapest|fastest)|do not prioritize", low):

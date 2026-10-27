@@ -53,7 +53,11 @@ def reconcile_response(body: dict, session: dict) -> dict:
             current = saved_result(recommendation)
         except (ValueError, KeyError, TypeError):
             pass
-    if current == body['allocation']:
+    try:
+        supplied = AllocationRecommendationResult.model_validate(body['allocation']).model_dump()
+    except (ValueError, KeyError, TypeError):
+        supplied = None
+    if current is not None and current == supplied:
         return deepcopy(body)
     issue = {'code': 'RECOMMENDATION_STALE', 'field': 'recommendation',
              'severity': 'blocking', 'question': STALE_MESSAGE}

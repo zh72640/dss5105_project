@@ -1,0 +1,49 @@
+Template ID,Category,English Sentence Template
+S01,Standard Allocation,We recommend assigning order {order_id} to {workshop_name}.
+S02,Standard Allocation,{workshop_name} is eligible to process this order based on its production capabilities and current operational status.
+S03,Standard Allocation,"The estimated completion date is {completion_date}, compared with the order deadline of {due_date}."
+S04,Standard Allocation,"Among the eligible workshops, {workshop_name} provides the lowest estimated lateness of {lateness_days} days."
+S05,Standard Allocation,This recommendation is based on the objective of minimizing order lateness.
+E01,Eligibility & Capacity,"{workshop_name} supports the required product category, {product_category}."
+E02,Eligibility & Capacity,{workshop_name} cannot be considered because it does not support the required product category.
+E03,Eligibility & Capacity,{workshop_name} cannot be selected because its current status is {workshop_status}.
+E04,Eligibility & Capacity,The order quantity of {quantity} exceeds {workshop_name}'s maximum batch size of {max_batch}.
+E05,Eligibility & Capacity,The workshop's current queue and available capacity have been considered when estimating the completion date.
+E06,Eligibility & Capacity,No workshop satisfies all the required eligibility constraints for this order.
+P01,Invalid Workshop Preference,"You requested {requested_workshop}, but this workshop does not meet the eligibility requirements for order {order_id}."
+P02,Invalid Workshop Preference,We cannot assign this order to {requested_workshop} because {constraint_reason}.
+P03,Invalid Workshop Preference,We have therefore evaluated other eligible workshops based on the minimum-lateness objective.
+P04,Invalid Workshop Preference,"The recommended alternative is {recommended_workshop}, with an estimated completion date of {completion_date}."
+O01,Preference vs. Objective,We acknowledge your preference for {user_preference}.
+O02,Preference vs. Objective,"However, the allocation objective for this system is to minimize order lateness."
+O03,Preference vs. Objective,The recommendation is determined by the minimum-lateness objective rather than the lowest production cost.
+O04,Preference vs. Objective,The recommendation is based on estimated lateness rather than the lowest defect rate.
+O05,Preference vs. Objective,The requested workshop is not selected because another eligible workshop provides a lower estimated lateness.
+O06,Preference vs. Objective,"Your preference has been recorded, but it has not overridden the allocation objective or hard constraints."
+L01,Overdue / Late Completion,"The recorded due date for order {order_id} is {due_date}, which has already passed."
+L02,Overdue / Late Completion,The order cannot be completed by its original deadline based on the current dispatch date.
+L03,Overdue / Late Completion,"Despite the missed deadline, {workshop_name} is recommended because it minimizes the estimated lateness among eligible workshops."
+L04,Overdue / Late Completion,"The estimated lateness is {lateness_days} days, based on the calculated completion date of {completion_date}."
+L05,Overdue / Late Completion,This recommendation does not guarantee on-time delivery.
+C01,Clarification Required,Could you please provide the Order ID so that we can identify the correct order?
+C02,Clarification Required,Multiple orders may match your description. Please specify which order you would like to dispatch.
+C03,Clarification Required,We could not identify a unique order from the information provided.
+C04,Clarification Required,The updated due date has not been confirmed. Please provide the revised deadline.
+C05,Clarification Required,"According to orders.csv, the current recorded due date is {due_date}."
+C06,Clarification Required,We need the missing information before proceeding with the allocation.
+C07,Clarification Required,We cannot assume the order quantity based on previous or usual orders.
+C08,Clarification Required,"Are you requesting a new workshop allocation, or would you like to check the current status of the order?"
+Q01,Enquiry / Information Retrieval,"According to orders.csv, order {order_id} belongs to {customer_name}."
+Q02,Enquiry / Information Retrieval,The requested information is not available in the provided records.
+Q03,Enquiry / Information Retrieval,We could not find order {order_id} in orders.csv.
+Q04,Enquiry / Information Retrieval,The available data does not contain historical workshop allocation records for the requested period.
+Q05,Enquiry / Information Retrieval,The workshop's production cost is not the same as the price quoted to the customer.
+Q06,Enquiry / Information Retrieval,We cannot verify the customer quotation price from the available data.
+Q07,Enquiry / Information Retrieval,We cannot confirm the order's current status without a valid matching record.
+H01,Human Review / Final Decision,This allocation recommendation is pending human review.
+H02,Human Review / Final Decision,Please review the recommended workshop and its supporting explanation before approval.
+H03,Human Review / Final Decision,The recommendation has been approved by the dispatcher.
+H04,Human Review / Final Decision,The recommendation was rejected by the dispatcher.
+H05,Human Review / Final Decision,The dispatcher selected {selected_workshop} instead of the recommended {recommended_workshop}.
+H06,Human Review / Final Decision,The final allocation decision and review outcome have been recorded.
+H07,Human Review / Final Decision,The final human-selected allocation differs from the system's minimum-lateness recommendation.

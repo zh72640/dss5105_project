@@ -16,7 +16,12 @@ Input: the current session or an unambiguous saved recommendation reference. Out
 1. Call `inspect_recommendation` to obtain the saved result and current validity. If the reference is ambiguous, call `ask_user` and pause.
 2. Use `get_order` or `list_workshops` only when current facts are needed to explain the result.
 3. Use `score_workshop` only for an order-specific single-workshop comparison. Distinguish its original hybrid score from the planner's weighted objective.
-4. Explain the saved evidence and state whether the recommendation is still valid. If stale, invite a fresh calculation.
+4. Present the allocation plan, the selected method, why it was recommended, and
+   the review step in that order. Use the saved result's `explanation_evidence`
+   for comparisons, including normalized 80/20 scores when the objective is
+   `weighted_hybrid`. Do not replace this evidence with today's queue or confuse
+   defect exposure with defect rate. If comparison evidence is absent, say so.
+   State whether the recommendation is still valid. If stale, invite a fresh calculation.
 
 ## Failure handling
 For no saved recommendation, report its absence. For stale or conflicting data, do not present the old plan as confirmable. On denied or unavailable Tools, state that the explanation is incomplete rather than inventing evidence.

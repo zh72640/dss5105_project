@@ -62,6 +62,7 @@ def saved_result(recommendation):
     payload.update(recommendation_id=recommendation["recommendation_id"],
                    task_version=recommendation["task_version"],
                    workshop_id=part["workshop_id"], workshop_name=part["workshop_name"])
+    payload["explanation_evidence"] = result.get("explanation_evidence")
     validated = AllocationRecommendationResult.model_validate(payload)
     if (validated.allocated_pieces != part["pieces"] or
             validated.allocated_pieces > validated.pieces or

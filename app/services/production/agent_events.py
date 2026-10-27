@@ -51,6 +51,7 @@ def record_production_event(
             "min_cost": ("min_cost", "minimum cost", "lowest cost", "minimize cost"),
             "min_defects": ("min_defects", "minimum defects", "lowest defects", "minimize defects"),
             "hybrid": ("hybrid", "balanced objective"),
+            "weighted_hybrid": ("weighted_hybrid", "weighted hybrid", "normalized 80/20", "80% lateness"),
         }
         if not any(phrase in words for phrase in phrases[objective]):
             raise ToolFailure(

@@ -36,12 +36,12 @@ class PromptCatalogTests(unittest.TestCase):
 
     def test_active_catalog_and_no_parser_v1(self):
         entries = self.registry.list()
-        self.assertEqual(len(entries), 13)
-        self.assertEqual(len(self.registry.list(kind="prompt")), 11)
+        self.assertEqual(len(entries), 14)
+        self.assertEqual(len(self.registry.list(kind="prompt")), 12)
         self.assertTrue(all(len(item["content_hash"]) == 64 for item in entries))
         self.assertEqual({(item['id'], item['version']) for item in entries if not item['active']},
                          {('allocation.extract', 'v1'), ('allocation.extract', 'v2'),
-                          ('allocation.extract_retry', 'v1'), ('allocation.explain', 'v1')})
+                          ('allocation.extract_retry', 'v1'), ('allocation.explain', 'v1'), ('allocation.explain', 'v2')})
         self.assertFalse(any(item["id"].startswith("parsing.") for item in entries))
 
     def test_render_is_immutable_and_single_pass(self):

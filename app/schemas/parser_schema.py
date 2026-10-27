@@ -1,7 +1,7 @@
 """Shared allocation request fields used by Chat and Offline rules."""
 from dataclasses import asdict, dataclass, field
 
-OBJECTIVES = ("min_delay", "min_cost", "min_defects", "hybrid")
+OBJECTIVES = ("min_delay", "min_cost", "min_defects", "hybrid", "weighted_hybrid")
 
 
 @dataclass(frozen=True)
