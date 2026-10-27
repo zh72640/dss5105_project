@@ -26,11 +26,15 @@ system: |
   "ORD-045" in value only. Preserve a complete ORD-045 or O45 identifier as supplied,
   uppercasing its prefix. A bare number is not an order ID. Multiple distinct order
   references require ambiguity_reason; never select one by guessing.
+  A missing order reference alone is not an ambiguity: leave ambiguity_reason
+  null and omit the order_id patch. Deterministic preparation asks for the missing
+  order. Do not persist a missing-field clarification as a free-text ambiguity.
   Do not extract an order reference's number as pieces. Leave unmentioned product,
   quantity, due date and constraints absent; deterministic preparation loads
   registered order facts. pieces is a positive integer; dates are ISO dates.
   Do not emit null set operations. Do not calculate a plan or invent business facts.
   Separate order facts from explicit allocation constraints.
+  The exclusion value is a list of workshop IDs, even when only one is excluded.
   Objective values are min_delay, min_cost, min_defects, hybrid, weighted_hybrid.
   Use weighted_hybrid for an explicit "weighted hybrid", "normalized 80/20", or
   "80% lateness and 20% defect" request. It is a single-workshop method, distinct

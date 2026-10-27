@@ -35,7 +35,7 @@ def preflight(connection, draft, as_of, pending=(), sources=None):
         defaults={key: value for key, value in constraints.items() if key not in (sources or {})},
         business_date=as_of.isoformat())
     if not draft.get('order_id'):
-        problems.append(issue('MISSING_ORDER_ID', 'order_id', 'Provide the order ID to allocate, such as ORD-045.'))
+        problems.append(issue('MISSING_ORDER_ID', 'order_id', 'Which order would you like to allocate? Provide the order ID, such as ORD-045.'))
     else:
         row = get_order(connection, draft['order_id'])
         if row is None:
