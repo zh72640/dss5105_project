@@ -1,0 +1,33 @@
+
+name: Clarification Detection Evaluation
+
+on:
+  push:
+    branches:
+      - tongling
+  workflow_dispatch:
+
+jobs:
+  evaluate:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download project code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Run clarification evaluation
+        run: |
+          python run_clarification_eval.py --backend offline
+
+      - name: Save evaluation results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: clarification-evaluation-results
+          path: evaluation/results/clarification_detection/
+          if-no-files-found: warn
