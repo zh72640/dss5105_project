@@ -1,24 +1,66 @@
-from app.schemas import AllocationResult, DecisionStatus, StructuredRequest
-from app.tools.data import load_workshops
-from app.tools.delivery import estimate_candidate
-from app.tools.models import Order
-from .scoring import with_score
+"""Public allocate() entry: validate inputs then run deterministic planning."""
+from dataclasses import dataclass, field
+from datetime import date
+from typing import Any
+
+from app.allocator.planner import plan
+from app.schemas.parser_schema import OBJECTIVES
 
 
-def allocate(request: StructuredRequest, order: Order, objective: str = "min_lateness") -> AllocationResult:
-    selected_objective = request.objective_override or objective
-    metrics = [estimate_candidate(w, order.category, request.quantity or order.pieces,
-        request.required_date or order.due_date, request.excluded_workshops)
-        for w in load_workshops().values()]
-    eligible = sorted((with_score(m, selected_objective) for m in metrics if m.eligible), key=lambda m: m.score)
-    if not eligible:
-        return AllocationResult(request.request_id, DecisionStatus.ESCALATE,
-            candidate_ranking=metrics, reason_codes=["NO_ELIGIBLE_WORKSHOP"],
-            objective=selected_objective, message="No workshop satisfies all hard constraints.")
-    winner = eligible[0]
-    warnings = [] if winner.deadline_met else ["ESTIMATED_DEADLINE_MISS"]
-    return AllocationResult(request.request_id, DecisionStatus.ALLOCATE, winner.workshop_id,
-        winner.workshop_name, eligible, ["ELIGIBLE", "BEST_CONFIGURED_SCORE"],
-        selected_objective, warnings,
-        f"Recommend {winner.workshop_name}: best deterministic {selected_objective} score among eligible workshops.")
+@dataclass(frozen=True)
+class AllocationRequest:
+    order: dict[str, Any]
+    workshops: list
+    as_of: date
+    objective: str
+    exclusion: list[str] = field(default_factory=list)
+    preferred_workshop: str | None = None
+    deadline_required: bool = False
+    max_workshops: int = 1
 
+
+def _validate(request: AllocationRequest) -> None:
+    order = request.order
+    if not isinstance(order, dict):
+        raise ValueError("order must be a mapping")
+    for key in ("pieces", "category", "due_date"):
+        if key not in order:
+            raise ValueError(f"order missing required field: {key}")
+    if type(order["pieces"]) is not int or order["pieces"] <= 0:
+        raise ValueError("order pieces must be a positive integer")
+    try:
+        date.fromisoformat(order["due_date"])
+    except (TypeError, ValueError) as error:
+        raise ValueError("order due_date must be an ISO date string") from error
+    if type(request.as_of) is not date:
+        raise ValueError("as_of must be a date")
+    if request.objective not in OBJECTIVES:
+        raise ValueError("objective is unsupported")
+    if type(request.max_workshops) is not int or not 1 <= request.max_workshops <= 8:
+        raise ValueError("max_workshops must be an integer from 1 to 8")
+    if not isinstance(request.workshops, list):
+        raise ValueError("workshops must be a list")
+    if request.exclusion is not None and not isinstance(request.exclusion, list):
+        raise ValueError("exclusion must be a list")
+    if type(request.deadline_required) is not bool:
+        raise ValueError("deadline_required must be a boolean")
+    for workshop in request.workshops:
+        if getattr(workshop, "capacity", 0) <= 0:
+            raise ValueError(f"invalid capacity for workshop {getattr(workshop, 'workshop_id', '?')}")
+        if getattr(workshop, "queue_days", 0) < 0:
+            raise ValueError(f"invalid queue for workshop {getattr(workshop, 'workshop_id', '?')}")
+
+
+def allocate(request: AllocationRequest) -> dict:
+    """Compute one allocation plan. max_workshops>=2 enables multi-workshop enumeration."""
+    _validate(request)
+    return plan(
+        request.order,
+        request.workshops,
+        objective=request.objective,
+        as_of=request.as_of,
+        max_workshops=request.max_workshops,
+        exclusion=list(request.exclusion or []),
+        preferred_workshop=request.preferred_workshop,
+        deadline_required=request.deadline_required,
+    )

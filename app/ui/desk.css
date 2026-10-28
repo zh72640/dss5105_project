@@ -34,3 +34,9 @@ summary{cursor:pointer;color:var(--teal);font-weight:600;line-height:1.6}
 .login-screen{min-height:calc(100vh - var(--display-height))}
 @media(max-width:1150px){.review-grid{grid-template-columns:minmax(0,1fr)}.request-list{position:static}.request-list #request-list{max-height:12rem}}
 @media(max-width:800px){.sidebar{position:static;width:auto}.workspace{margin-left:0}.display-settings{justify-content:center}.edit-grid{grid-template-columns:minmax(0,1fr)}.metrics{grid-template-columns:minmax(0,1fr)}.topbar{padding:1rem}.home-grid{grid-template-columns:minmax(0,1fr)}.sidebar nav{max-width:100%}.page-heading h1{font-size:1.8rem}}
+
+.brand .admin-badge{display:inline-flex;align-items:center;border:1px solid #81b7a8;border-radius:4px;padding:3px 7px;margin-top:8px;background:#28584e;color:#e5f6ed;font-size:0.786rem;font-weight:650;letter-spacing:.3px;line-height:1.2}
+
+.model-controls{display:flex;gap:1rem;align-items:end;flex-wrap:wrap;margin-bottom:.75rem}.model-controls label{display:flex;flex-direction:column;gap:.3rem}.model-controls select{min-width:10rem;max-width:100%}
+
+.chat-v2-panel{margin-bottom:1.5rem}.chat-v2-panel #chat-recommendations-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:1rem}.chat-v2-panel .chat-recommendation{padding:1rem;border:1px solid var(--line,#d9e3dc);border-radius:10px;overflow-wrap:anywhere}.chat-v2-panel .chat-recommendation strong{display:block;margin-bottom:.6rem}.chat-v2-panel .chat-recommendation p{margin:.4rem 0}.chat-v2-panel .chat-recommendation a{display:block;margin-top:.7rem}

@@ -1,0 +1,35 @@
+{
+  "date": "2026-10-13",
+  "application_version": "mvp_v0.6",
+  "database_version": 7,
+  "python_tests": {
+    "passed": 247,
+    "failed": 0,
+    "command": "uv run --locked --offline python -X utf8 -m unittest discover -s tests -q"
+  },
+  "frontend_tests": {
+    "passed": 9,
+    "failed": 0,
+    "command": "node --test tests/test_ui_state.cjs"
+  },
+  "browser_checks": {
+    "supplied_admin_credentials": "passed",
+    "upper_left_admin_badge": "passed",
+    "badge_after_refresh": "passed",
+    "badge_hidden_after_logout": "passed",
+    "badge_hidden_for_regular_user": "passed"
+  },
+  "source_checks": {
+    "plaintext_admin_password_absent": true,
+    "root_readme_english": true
+  },
+  "migration_checks": [
+    "versions 1 through 6 upgrade to 7",
+    "existing regular passwords and cookies preserved",
+    "admin name collision rolls back",
+    "failed migration record rolls back",
+    "concurrent upgrade provisions one admin"
+  ],
+  "real_model_calls": 0,
+  "scope": "Regular and administrator accounts, backend authorization foundation, and administrator identity badge."
+}

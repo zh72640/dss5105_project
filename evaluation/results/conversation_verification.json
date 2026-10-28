@@ -1,0 +1,1808 @@
+{
+  "mode": "offline",
+  "model_key": null,
+  "cases": 80,
+  "passed": 80,
+  "failed": 0,
+  "accuracy": 1.0,
+  "human_reviewed": false,
+  "live_model_verified": false,
+  "limitations": [
+    "候选 holdout 尚未经独立人工复核；本报告不是独立盲测成绩。",
+    "离线测试不证明任意自然语言或在线模型质量。"
+  ],
+  "results": [
+    {
+      "id": "context-01",
+      "split": "development",
+      "passed": true,
+      "actual_state": "RECOMMENDED",
+      "expected": {
+        "state": "RECOMMENDED",
+        "order_id": "ORD-045",
+        "objective": "min_delay",
+        "num_workshop_allowed": 1,
+        "exclusion": [
+          "W3"
+        ]
+      },
+      "actual_constraints": {
+        "order_id": "ORD-045",
+        "objective": "min_delay",
+        "num_workshop_allowed": 1,
+        "exclusion": [
+          "W3"
+        ]
+      },
+      "committed": false,
+      "service_failed": false
+    },
+    {
+      "id": "context-02",
+      "split": "candidate_holdout",
+      "passed": true,
+      "actual_state": "RECOMMENDED",
+      "expected": {
+        "state": "RECOMMENDED",
+        "order_id": "ORD-045",
+        "objective": "min_delay",
+        "num_workshop_allowed": 2,
+        "exclusion": [
+          "W3"
+        ]
+      },
+      "actual_constraints": {
+        "order_id": "ORD-045",
+        "objective": "min_delay",
+        "num_workshop_allowed": 2,
+        "exclusion": [
+          "W3"
+        ]
+      },
+      "committed": false,
+      "service_failed": false
+    },
+    {
+      "id": "context-03",
+      "split": "development",
+      "passed": true,
+      "actual_state": "RECOMMENDED",
+      "expected": {
+        "state": "RECOMMENDED",
+        "order_id": "ORD-045",
+        "objective": "min_delay",
+        "num_workshop_allowed": 3,
+        "exclusion": [
+          "W3"
+        ]
+      },
+      "actual_constraints": {
+        "order_id": "ORD-045",
+        "objective": "min_delay",
+        "num_workshop_allowed": 3,
+        "exclusion": [
+          "W3"
+        ]
+      },
+      "committed": false,
+      "service_failed": false
+    },
+    {
+      "id": "context-04",
+      "split": "candidate_holdout",
+      "passed": true,
+      "actual_state": "RECOMMENDED",
+      "expected": {
+        "state": "RECOMMENDED",
+        "order_id": "ORD-045",
+        "objective": "min_delay",
+        "num_workshop_allowed": 4,
+        "exclusion": [
+          "W3"
+        ]
+      },
+      "actual_constraints": {
+        "order_id": "ORD-045",
+        "objective": "min_delay",
+        "num_workshop_allowed": 4,
+        "exclusion": [
+          "W3"
+        ]
+      },
+      "committed": false,
+      "service_failed": false
+    },
+    {
+      "id": "context-05",
+      "split": "development",
+      "passed": true,
+      "actual_state": "RECOMMENDED",
+      "expected": {
+        "state": "RECOMMENDED",
+        "order_id": "ORD-045",
+        "objective": "min_delay",
+        "num_workshop_allowed": 1,
+        "exclusion": [
+          "W3"
+        ]
+      },
+      "actual_constraints": {
+        "order_id": "ORD-045",
+        "objective": "min_delay",
+        "num_workshop_allowed": 1,
+        "exclusion": [
+          "W3"
+        ]
+      },
+      "committed": false,
+      "service_failed": false
+    },
+    {
+      "id": "context-06",
+      "split": "candidate_holdout",
+      "passed": true,
+      "actual_state": "RECOMMENDED",
+      "expected": {
+        "state": "RECOMMENDED",
+        "order_id": "ORD-045",
+        "objective": "min_delay",
+        "num_workshop_allowed": 2,
+        "exclusion": [
+          "W3"
+        ]
+      },
+      "actual_constraints": {
+        "order_id": "ORD-045",
+        "objective": "min_delay",
+        "num_workshop_allowed": 2,
+        "exclusion": [
+          "W3"
+        ]
+      },
+      "committed": false,
+      "service_failed": false
+    },
+    {
+      "id": "context-07",
+      "split": "development",
+      "passed": true,
+      "actual_state": "RECOMMENDED",
+      "expected": {
+        "state": "RECOMMENDED",
+        "order_id": "ORD-045",
+        "objective": "min_delay",
+        "num_workshop_allowed": 3,
+        "exclusion": [
+          "W3"
+        ]
+      },
+      "actual_constraints": {
+        "order_id": "ORD-045",
+        "objective": "min_delay",
+        "num_workshop_allowed": 3,
+        "exclusion": [
+          "W3"
+        ]
+      },
+      "committed": false,
+      "service_failed": false
+    },
+    {
+      "id": "context-08",
+      "split": "candidate_holdout",
+      "passed": true,
+      "actual_state": "RECOMMENDED",
+      "expected": {
+        "state": "RECOMMENDED",
+        "order_id": "ORD-045",
+        "objective": "min_delay",
+        "num_workshop_allowed": 4,
+        "exclusion": [
+          "W3"
+        ]
+      },
+      "actual_constraints": {
+        "order_id": "ORD-045",
+        "objective": "min_delay",
+        "num_workshop_allowed": 4,
+        "exclusion": [
+          "W3"
+        ]
+      },
+      "committed": false,
+      "service_failed": false
+    },
+    {
+      "id": "context-09",
+      "split": "development",
+      "passed": true,
+      "actual_state": "RECOMMENDED",
+      "expected": {
+        "state": "RECOMMENDED",
+        "order_id": "ORD-045",
+        "objective": "min_delay",
+        "num_workshop_allowed": 1,
+        "exclusion": [
+          "W3"
+        ]
+      },
+      "actual_constraints": {
+        "order_id": "ORD-045",
+        "objective": "min_delay",
+        "num_workshop_allowed": 1,
+        "exclusion": [
+          "W3"
+        ]
+      },
+      "committed": false,
+      "service_failed": false
+    },
+    {
+      "id": "context-10",
+      "split": "candidate_holdout",
+      "passed": true,
+      "actual_state": "RECOMMENDED",
+      "expected": {
+        "state": "RECOMMENDED",
+        "order_id": "ORD-045",
+        "objective": "min_delay",
+        "num_workshop_allowed": 2,
+        "exclusion": [
+          "W3"
+        ]
+      },
+      "actual_constraints": {
+        "order_id": "ORD-045",
+        "objective": "min_delay",
+        "num_workshop_allowed": 2,
+        "exclusion": [
+          "W3"
+        ]
+      },
+      "committed": false,
+      "service_failed": false
+    },
+    {
+      "id": "context-11",
+      "split": "development",
+      "passed": true,
+      "actual_state": "RECOMMENDED",
+      "expected": {
+        "state": "RECOMMENDED",
+        "order_id": "ORD-045",
+        "objective": "min_delay",
+        "num_workshop_allowed": 3,
+        "exclusion": [
+          "W3"
+        ]
+      },
+      "actual_constraints": {
+        "order_id": "ORD-045",
+        "objective": "min_delay",
+        "num_workshop_allowed": 3,
+        "exclusion": [
+          "W3"
+        ]
+      },
+      "committed": false,
+      "service_failed": false
+    },
+    {
+      "id": "context-12",
+      "split": "candidate_holdout",
+      "passed": true,
+      "actual_state": "RECOMMENDED",
+      "expected": {
+        "state": "RECOMMENDED",
+        "order_id": "ORD-045",
+        "objective": "min_delay",
+        "num_workshop_allowed": 4,
+        "exclusion": [
+          "W3"
+        ]
+      },
+      "actual_constraints": {
+        "order_id": "ORD-045",
+        "objective": "min_delay",
+        "num_workshop_allowed": 4,
+        "exclusion": [
+          "W3"
+        ]
+      },
+      "committed": false,
+      "service_failed": false
+    },
+    {
+      "id": "context-13",
+      "split": "development",
+      "passed": true,
+      "actual_state": "RECOMMENDED",
+      "expected": {
+        "state": "RECOMMENDED",
+        "order_id": "ORD-045",
+        "objective": "min_delay",
+        "num_workshop_allowed": 1,
+        "exclusion": [
+          "W3"
+        ]
+      },
+      "actual_constraints": {
+        "order_id": "ORD-045",
+        "objective": "min_delay",
+        "num_workshop_allowed": 1,
+        "exclusion": [
+          "W3"
+        ]
+      },
+      "committed": false,
+      "service_failed": false
+    },
+    {
+      "id": "context-14",
+      "split": "candidate_holdout",
+      "passed": true,
+      "actual_state": "RECOMMENDED",
+      "expected": {
+        "state": "RECOMMENDED",
+        "order_id": "ORD-045",
+        "objective": "min_delay",
+        "num_workshop_allowed": 2,
+        "exclusion": [
+          "W3"
+        ]
+      },
+      "actual_constraints": {
+        "order_id": "ORD-045",
+        "objective": "min_delay",
+        "num_workshop_allowed": 2,
+        "exclusion": [
+          "W3"
+        ]
+      },
+      "committed": false,
+      "service_failed": false
+    },
+    {
+      "id": "context-15",
+      "split": "development",
+      "passed": true,
+      "actual_state": "RECOMMENDED",
+      "expected": {
+        "state": "RECOMMENDED",
+        "order_id": "ORD-045",
+        "objective": "min_delay",
+        "num_workshop_allowed": 3,
+        "exclusion": [
+          "W3"
+        ]
+      },
+      "actual_constraints": {
+        "order_id": "ORD-045",
+        "objective": "min_delay",
+        "num_workshop_allowed": 3,
+        "exclusion": [
+          "W3"
+        ]
+      },
+      "committed": false,
+      "service_failed": false
+    },
+    {
+      "id": "context-16",
+      "split": "candidate_holdout",
+      "passed": true,
+      "actual_state": "RECOMMENDED",
+      "expected": {
+        "state": "RECOMMENDED",
+        "order_id": "ORD-045",
+        "objective": "min_delay",
+        "num_workshop_allowed": 4,
+        "exclusion": [
+          "W3"
+        ]
+      },
+      "actual_constraints": {
+        "order_id": "ORD-045",
+        "objective": "min_delay",
+        "num_workshop_allowed": 4,
+        "exclusion": [
+          "W3"
+        ]
+      },
+      "committed": false,
+      "service_failed": false
+    },
+    {
+      "id": "context-17",
+      "split": "development",
+      "passed": true,
+      "actual_state": "RECOMMENDED",
+      "expected": {
+        "state": "RECOMMENDED",
+        "order_id": "ORD-045",
+        "objective": "min_cost",
+        "num_workshop_allowed": 1,
+        "exclusion": [
+          "W3"
+        ]
+      },
+      "actual_constraints": {
+        "order_id": "ORD-045",
+        "objective": "min_cost",
+        "num_workshop_allowed": 1,
+        "exclusion": [
+          "W3"
+        ]
+      },
+      "committed": false,
+      "service_failed": false
+    },
+    {
+      "id": "context-18",
+      "split": "candidate_holdout",
+      "passed": true,
+      "actual_state": "RECOMMENDED",
+      "expected": {
+        "state": "RECOMMENDED",
+        "order_id": "ORD-045",
+        "objective": "min_cost",
+        "num_workshop_allowed": 2,
+        "exclusion": [
+          "W3"
+        ]
+      },
+      "actual_constraints": {
+        "order_id": "ORD-045",
+        "objective": "min_cost",
+        "num_workshop_allowed": 2,
+        "exclusion": [
+          "W3"
+        ]
+      },
+      "committed": false,
+      "service_failed": false
+    },
+    {
+      "id": "context-19",
+      "split": "development",
+      "passed": true,
+      "actual_state": "RECOMMENDED",
+      "expected": {
+        "state": "RECOMMENDED",
+        "order_id": "ORD-045",
+        "objective": "min_cost",
+        "num_workshop_allowed": 3,
+        "exclusion": [
+          "W3"
+        ]
+      },
+      "actual_constraints": {
+        "order_id": "ORD-045",
+        "objective": "min_cost",
+        "num_workshop_allowed": 3,
+        "exclusion": [
+          "W3"
+        ]
+      },
+      "committed": false,
+      "service_failed": false
+    },
+    {
+      "id": "context-20",
+      "split": "candidate_holdout",
+      "passed": true,
+      "actual_state": "RECOMMENDED",
+      "expected": {
+        "state": "RECOMMENDED",
+        "order_id": "ORD-045",
+        "objective": "min_cost",
+        "num_workshop_allowed": 4,
+        "exclusion": [
+          "W3"
+        ]
+      },
+      "actual_constraints": {
+        "order_id": "ORD-045",
+        "objective": "min_cost",
+        "num_workshop_allowed": 4,
+        "exclusion": [
+          "W3"
+        ]
+      },
+      "committed": false,
+      "service_failed": false
+    },
+    {
+      "id": "context-21",
+      "split": "development",
+      "passed": true,
+      "actual_state": "RECOMMENDED",
+      "expected": {
+        "state": "RECOMMENDED",
+        "order_id": "ORD-045",
+        "objective": "min_cost",
+        "num_workshop_allowed": 1,
+        "exclusion": [
+          "W3"
+        ]
+      },
+      "actual_constraints": {
+        "order_id": "ORD-045",
+        "objective": "min_cost",
+        "num_workshop_allowed": 1,
+        "exclusion": [
+          "W3"
+        ]
+      },
+      "committed": false,
+      "service_failed": false
+    },
+    {
+      "id": "context-22",
+      "split": "candidate_holdout",
+      "passed": true,
+      "actual_state": "RECOMMENDED",
+      "expected": {
+        "state": "RECOMMENDED",
+        "order_id": "ORD-045",
+        "objective": "min_cost",
+        "num_workshop_allowed": 2,
+        "exclusion": [
+          "W3"
+        ]
+      },
+      "actual_constraints": {
+        "order_id": "ORD-045",
+        "objective": "min_cost",
+        "num_workshop_allowed": 2,
+        "exclusion": [
+          "W3"
+        ]
+      },
+      "committed": false,
+      "service_failed": false
+    },
+    {
+      "id": "context-23",
+      "split": "development",
+      "passed": true,
+      "actual_state": "RECOMMENDED",
+      "expected": {
+        "state": "RECOMMENDED",
+        "order_id": "ORD-045",
+        "objective": "min_cost",
+        "num_workshop_allowed": 3,
+        "exclusion": [
+          "W3"
+        ]
+      },
+      "actual_constraints": {
+        "order_id": "ORD-045",
+        "objective": "min_cost",
+        "num_workshop_allowed": 3,
+        "exclusion": [
+          "W3"
+        ]
+      },
+      "committed": false,
+      "service_failed": false
+    },
+    {
+      "id": "context-24",
+      "split": "candidate_holdout",
+      "passed": true,
+      "actual_state": "RECOMMENDED",
+      "expected": {
+        "state": "RECOMMENDED",
+        "order_id": "ORD-045",
+        "objective": "min_cost",
+        "num_workshop_allowed": 4,
+        "exclusion": [
+          "W3"
+        ]
+      },
+      "actual_constraints": {
+        "order_id": "ORD-045",
+        "objective": "min_cost",
+        "num_workshop_allowed": 4,
+        "exclusion": [
+          "W3"
+        ]
+      },
+      "committed": false,
+      "service_failed": false
+    },
+    {
+      "id": "context-25",
+      "split": "development",
+      "passed": true,
+      "actual_state": "RECOMMENDED",
+      "expected": {
+        "state": "RECOMMENDED",
+        "order_id": "ORD-045",
+        "objective": "min_cost",
+        "num_workshop_allowed": 1,
+        "exclusion": [
+          "W3"
+        ]
+      },
+      "actual_constraints": {
+        "order_id": "ORD-045",
+        "objective": "min_cost",
+        "num_workshop_allowed": 1,
+        "exclusion": [
+          "W3"
+        ]
+      },
+      "committed": false,
+      "service_failed": false
+    },
+    {
+      "id": "context-26",
+      "split": "candidate_holdout",
+      "passed": true,
+      "actual_state": "RECOMMENDED",
+      "expected": {
+        "state": "RECOMMENDED",
+        "order_id": "ORD-045",
+        "objective": "min_cost",
+        "num_workshop_allowed": 2,
+        "exclusion": [
+          "W3"
+        ]
+      },
+      "actual_constraints": {
+        "order_id": "ORD-045",
+        "objective": "min_cost",
+        "num_workshop_allowed": 2,
+        "exclusion": [
+          "W3"
+        ]
+      },
+      "committed": false,
+      "service_failed": false
+    },
+    {
+      "id": "context-27",
+      "split": "development",
+      "passed": true,
+      "actual_state": "RECOMMENDED",
+      "expected": {
+        "state": "RECOMMENDED",
+        "order_id": "ORD-045",
+        "objective": "min_cost",
+        "num_workshop_allowed": 3,
+        "exclusion": [
+          "W3"
+        ]
+      },
+      "actual_constraints": {
+        "order_id": "ORD-045",
+        "objective": "min_cost",
+        "num_workshop_allowed": 3,
+        "exclusion": [
+          "W3"
+        ]
+      },
+      "committed": false,
+      "service_failed": false
+    },
+    {
+      "id": "context-28",
+      "split": "candidate_holdout",
+      "passed": true,
+      "actual_state": "RECOMMENDED",
+      "expected": {
+        "state": "RECOMMENDED",
+        "order_id": "ORD-045",
+        "objective": "min_cost",
+        "num_workshop_allowed": 4,
+        "exclusion": [
+          "W3"
+        ]
+      },
+      "actual_constraints": {
+        "order_id": "ORD-045",
+        "objective": "min_cost",
+        "num_workshop_allowed": 4,
+        "exclusion": [
+          "W3"
+        ]
+      },
+      "committed": false,
+      "service_failed": false
+    },
+    {
+      "id": "context-29",
+      "split": "development",
+      "passed": true,
+      "actual_state": "RECOMMENDED",
+      "expected": {
+        "state": "RECOMMENDED",
+        "order_id": "ORD-045",
+        "objective": "min_cost",
+        "num_workshop_allowed": 1,
+        "exclusion": [
+          "W3"
+        ]
+      },
+      "actual_constraints": {
+        "order_id": "ORD-045",
+        "objective": "min_cost",
+        "num_workshop_allowed": 1,
+        "exclusion": [
+          "W3"
+        ]
+      },
+      "committed": false,
+      "service_failed": false
+    },
+    {
+      "id": "context-30",
+      "split": "candidate_holdout",
+      "passed": true,
+      "actual_state": "RECOMMENDED",
+      "expected": {
+        "state": "RECOMMENDED",
+        "order_id": "ORD-045",
+        "objective": "min_cost",
+        "num_workshop_allowed": 2,
+        "exclusion": [
+          "W3"
+        ]
+      },
+      "actual_constraints": {
+        "order_id": "ORD-045",
+        "objective": "min_cost",
+        "num_workshop_allowed": 2,
+        "exclusion": [
+          "W3"
+        ]
+      },
+      "committed": false,
+      "service_failed": false
+    },
+    {
+      "id": "context-31",
+      "split": "development",
+      "passed": true,
+      "actual_state": "RECOMMENDED",
+      "expected": {
+        "state": "RECOMMENDED",
+        "order_id": "ORD-045",
+        "objective": "min_cost",
+        "num_workshop_allowed": 3,
+        "exclusion": [
+          "W3"
+        ]
+      },
+      "actual_constraints": {
+        "order_id": "ORD-045",
+        "objective": "min_cost",
+        "num_workshop_allowed": 3,
+        "exclusion": [
+          "W3"
+        ]
+      },
+      "committed": false,
+      "service_failed": false
+    },
+    {
+      "id": "context-32",
+      "split": "candidate_holdout",
+      "passed": true,
+      "actual_state": "RECOMMENDED",
+      "expected": {
+        "state": "RECOMMENDED",
+        "order_id": "ORD-045",
+        "objective": "min_cost",
+        "num_workshop_allowed": 4,
+        "exclusion": [
+          "W3"
+        ]
+      },
+      "actual_constraints": {
+        "order_id": "ORD-045",
+        "objective": "min_cost",
+        "num_workshop_allowed": 4,
+        "exclusion": [
+          "W3"
+        ]
+      },
+      "committed": false,
+      "service_failed": false
+    },
+    {
+      "id": "context-33",
+      "split": "development",
+      "passed": true,
+      "actual_state": "RECOMMENDED",
+      "expected": {
+        "state": "RECOMMENDED",
+        "order_id": "ORD-045",
+        "objective": "min_defects",
+        "num_workshop_allowed": 1,
+        "exclusion": [
+          "W3"
+        ]
+      },
+      "actual_constraints": {
+        "order_id": "ORD-045",
+        "objective": "min_defects",
+        "num_workshop_allowed": 1,
+        "exclusion": [
+          "W3"
+        ]
+      },
+      "committed": false,
+      "service_failed": false
+    },
+    {
+      "id": "context-34",
+      "split": "candidate_holdout",
+      "passed": true,
+      "actual_state": "RECOMMENDED",
+      "expected": {
+        "state": "RECOMMENDED",
+        "order_id": "ORD-045",
+        "objective": "min_defects",
+        "num_workshop_allowed": 2,
+        "exclusion": [
+          "W3"
+        ]
+      },
+      "actual_constraints": {
+        "order_id": "ORD-045",
+        "objective": "min_defects",
+        "num_workshop_allowed": 2,
+        "exclusion": [
+          "W3"
+        ]
+      },
+      "committed": false,
+      "service_failed": false
+    },
+    {
+      "id": "context-35",
+      "split": "development",
+      "passed": true,
+      "actual_state": "RECOMMENDED",
+      "expected": {
+        "state": "RECOMMENDED",
+        "order_id": "ORD-045",
+        "objective": "min_defects",
+        "num_workshop_allowed": 3,
+        "exclusion": [
+          "W3"
+        ]
+      },
+      "actual_constraints": {
+        "order_id": "ORD-045",
+        "objective": "min_defects",
+        "num_workshop_allowed": 3,
+        "exclusion": [
+          "W3"
+        ]
+      },
+      "committed": false,
+      "service_failed": false
+    },
+    {
+      "id": "context-36",
+      "split": "candidate_holdout",
+      "passed": true,
+      "actual_state": "RECOMMENDED",
+      "expected": {
+        "state": "RECOMMENDED",
+        "order_id": "ORD-045",
+        "objective": "min_defects",
+        "num_workshop_allowed": 4,
+        "exclusion": [
+          "W3"
+        ]
+      },
+      "actual_constraints": {
+        "order_id": "ORD-045",
+        "objective": "min_defects",
+        "num_workshop_allowed": 4,
+        "exclusion": [
+          "W3"
+        ]
+      },
+      "committed": false,
+      "service_failed": false
+    },
+    {
+      "id": "context-37",
+      "split": "development",
+      "passed": true,
+      "actual_state": "RECOMMENDED",
+      "expected": {
+        "state": "RECOMMENDED",
+        "order_id": "ORD-045",
+        "objective": "min_defects",
+        "num_workshop_allowed": 1,
+        "exclusion": [
+          "W3"
+        ]
+      },
+      "actual_constraints": {
+        "order_id": "ORD-045",
+        "objective": "min_defects",
+        "num_workshop_allowed": 1,
+        "exclusion": [
+          "W3"
+        ]
+      },
+      "committed": false,
+      "service_failed": false
+    },
+    {
+      "id": "context-38",
+      "split": "candidate_holdout",
+      "passed": true,
+      "actual_state": "RECOMMENDED",
+      "expected": {
+        "state": "RECOMMENDED",
+        "order_id": "ORD-045",
+        "objective": "min_defects",
+        "num_workshop_allowed": 2,
+        "exclusion": [
+          "W3"
+        ]
+      },
+      "actual_constraints": {
+        "order_id": "ORD-045",
+        "objective": "min_defects",
+        "num_workshop_allowed": 2,
+        "exclusion": [
+          "W3"
+        ]
+      },
+      "committed": false,
+      "service_failed": false
+    },
+    {
+      "id": "context-39",
+      "split": "development",
+      "passed": true,
+      "actual_state": "RECOMMENDED",
+      "expected": {
+        "state": "RECOMMENDED",
+        "order_id": "ORD-045",
+        "objective": "min_defects",
+        "num_workshop_allowed": 3,
+        "exclusion": [
+          "W3"
+        ]
+      },
+      "actual_constraints": {
+        "order_id": "ORD-045",
+        "objective": "min_defects",
+        "num_workshop_allowed": 3,
+        "exclusion": [
+          "W3"
+        ]
+      },
+      "committed": false,
+      "service_failed": false
+    },
+    {
+      "id": "context-40",
+      "split": "candidate_holdout",
+      "passed": true,
+      "actual_state": "RECOMMENDED",
+      "expected": {
+        "state": "RECOMMENDED",
+        "order_id": "ORD-045",
+        "objective": "min_defects",
+        "num_workshop_allowed": 4,
+        "exclusion": [
+          "W3"
+        ]
+      },
+      "actual_constraints": {
+        "order_id": "ORD-045",
+        "objective": "min_defects",
+        "num_workshop_allowed": 4,
+        "exclusion": [
+          "W3"
+        ]
+      },
+      "committed": false,
+      "service_failed": false
+    },
+    {
+      "id": "context-41",
+      "split": "development",
+      "passed": true,
+      "actual_state": "RECOMMENDED",
+      "expected": {
+        "state": "RECOMMENDED",
+        "order_id": "ORD-045",
+        "objective": "min_defects",
+        "num_workshop_allowed": 1,
+        "exclusion": [
+          "W3"
+        ]
+      },
+      "actual_constraints": {
+        "order_id": "ORD-045",
+        "objective": "min_defects",
+        "num_workshop_allowed": 1,
+        "exclusion": [
+          "W3"
+        ]
+      },
+      "committed": false,
+      "service_failed": false
+    },
+    {
+      "id": "context-42",
+      "split": "candidate_holdout",
+      "passed": true,
+      "actual_state": "RECOMMENDED",
+      "expected": {
+        "state": "RECOMMENDED",
+        "order_id": "ORD-045",
+        "objective": "min_defects",
+        "num_workshop_allowed": 2,
+        "exclusion": [
+          "W3"
+        ]
+      },
+      "actual_constraints": {
+        "order_id": "ORD-045",
+        "objective": "min_defects",
+        "num_workshop_allowed": 2,
+        "exclusion": [
+          "W3"
+        ]
+      },
+      "committed": false,
+      "service_failed": false
+    },
+    {
+      "id": "context-43",
+      "split": "development",
+      "passed": true,
+      "actual_state": "RECOMMENDED",
+      "expected": {
+        "state": "RECOMMENDED",
+        "order_id": "ORD-045",
+        "objective": "min_defects",
+        "num_workshop_allowed": 3,
+        "exclusion": [
+          "W3"
+        ]
+      },
+      "actual_constraints": {
+        "order_id": "ORD-045",
+        "objective": "min_defects",
+        "num_workshop_allowed": 3,
+        "exclusion": [
+          "W3"
+        ]
+      },
+      "committed": false,
+      "service_failed": false
+    },
+    {
+      "id": "context-44",
+      "split": "candidate_holdout",
+      "passed": true,
+      "actual_state": "RECOMMENDED",
+      "expected": {
+        "state": "RECOMMENDED",
+        "order_id": "ORD-045",
+        "objective": "min_defects",
+        "num_workshop_allowed": 4,
+        "exclusion": [
+          "W3"
+        ]
+      },
+      "actual_constraints": {
+        "order_id": "ORD-045",
+        "objective": "min_defects",
+        "num_workshop_allowed": 4,
+        "exclusion": [
+          "W3"
+        ]
+      },
+      "committed": false,
+      "service_failed": false
+    },
+    {
+      "id": "context-45",
+      "split": "development",
+      "passed": true,
+      "actual_state": "RECOMMENDED",
+      "expected": {
+        "state": "RECOMMENDED",
+        "order_id": "ORD-045",
+        "objective": "min_defects",
+        "num_workshop_allowed": 1,
+        "exclusion": [
+          "W3"
+        ]
+      },
+      "actual_constraints": {
+        "order_id": "ORD-045",
+        "objective": "min_defects",
+        "num_workshop_allowed": 1,
+        "exclusion": [
+          "W3"
+        ]
+      },
+      "committed": false,
+      "service_failed": false
+    },
+    {
+      "id": "context-46",
+      "split": "candidate_holdout",
+      "passed": true,
+      "actual_state": "RECOMMENDED",
+      "expected": {
+        "state": "RECOMMENDED",
+        "order_id": "ORD-045",
+        "objective": "min_defects",
+        "num_workshop_allowed": 2,
+        "exclusion": [
+          "W3"
+        ]
+      },
+      "actual_constraints": {
+        "order_id": "ORD-045",
+        "objective": "min_defects",
+        "num_workshop_allowed": 2,
+        "exclusion": [
+          "W3"
+        ]
+      },
+      "committed": false,
+      "service_failed": false
+    },
+    {
+      "id": "context-47",
+      "split": "development",
+      "passed": true,
+      "actual_state": "RECOMMENDED",
+      "expected": {
+        "state": "RECOMMENDED",
+        "order_id": "ORD-045",
+        "objective": "min_defects",
+        "num_workshop_allowed": 3,
+        "exclusion": [
+          "W3"
+        ]
+      },
+      "actual_constraints": {
+        "order_id": "ORD-045",
+        "objective": "min_defects",
+        "num_workshop_allowed": 3,
+        "exclusion": [
+          "W3"
+        ]
+      },
+      "committed": false,
+      "service_failed": false
+    },
+    {
+      "id": "context-48",
+      "split": "candidate_holdout",
+      "passed": true,
+      "actual_state": "RECOMMENDED",
+      "expected": {
+        "state": "RECOMMENDED",
+        "order_id": "ORD-045",
+        "objective": "min_defects",
+        "num_workshop_allowed": 4,
+        "exclusion": [
+          "W3"
+        ]
+      },
+      "actual_constraints": {
+        "order_id": "ORD-045",
+        "objective": "min_defects",
+        "num_workshop_allowed": 4,
+        "exclusion": [
+          "W3"
+        ]
+      },
+      "committed": false,
+      "service_failed": false
+    },
+    {
+      "id": "context-49",
+      "split": "development",
+      "passed": true,
+      "actual_state": "RECOMMENDED",
+      "expected": {
+        "state": "RECOMMENDED",
+        "order_id": "ORD-045",
+        "objective": "hybrid",
+        "num_workshop_allowed": 1,
+        "exclusion": [
+          "W3"
+        ]
+      },
+      "actual_constraints": {
+        "order_id": "ORD-045",
+        "objective": "hybrid",
+        "num_workshop_allowed": 1,
+        "exclusion": [
+          "W3"
+        ]
+      },
+      "committed": false,
+      "service_failed": false
+    },
+    {
+      "id": "context-50",
+      "split": "candidate_holdout",
+      "passed": true,
+      "actual_state": "RECOMMENDED",
+      "expected": {
+        "state": "RECOMMENDED",
+        "order_id": "ORD-045",
+        "objective": "hybrid",
+        "num_workshop_allowed": 2,
+        "exclusion": [
+          "W3"
+        ]
+      },
+      "actual_constraints": {
+        "order_id": "ORD-045",
+        "objective": "hybrid",
+        "num_workshop_allowed": 2,
+        "exclusion": [
+          "W3"
+        ]
+      },
+      "committed": false,
+      "service_failed": false
+    },
+    {
+      "id": "context-51",
+      "split": "development",
+      "passed": true,
+      "actual_state": "RECOMMENDED",
+      "expected": {
+        "state": "RECOMMENDED",
+        "order_id": "ORD-045",
+        "objective": "hybrid",
+        "num_workshop_allowed": 3,
+        "exclusion": [
+          "W3"
+        ]
+      },
+      "actual_constraints": {
+        "order_id": "ORD-045",
+        "objective": "hybrid",
+        "num_workshop_allowed": 3,
+        "exclusion": [
+          "W3"
+        ]
+      },
+      "committed": false,
+      "service_failed": false
+    },
+    {
+      "id": "context-52",
+      "split": "candidate_holdout",
+      "passed": true,
+      "actual_state": "RECOMMENDED",
+      "expected": {
+        "state": "RECOMMENDED",
+        "order_id": "ORD-045",
+        "objective": "hybrid",
+        "num_workshop_allowed": 4,
+        "exclusion": [
+          "W3"
+        ]
+      },
+      "actual_constraints": {
+        "order_id": "ORD-045",
+        "objective": "hybrid",
+        "num_workshop_allowed": 4,
+        "exclusion": [
+          "W3"
+        ]
+      },
+      "committed": false,
+      "service_failed": false
+    },
+    {
+      "id": "context-53",
+      "split": "development",
+      "passed": true,
+      "actual_state": "RECOMMENDED",
+      "expected": {
+        "state": "RECOMMENDED",
+        "order_id": "ORD-045",
+        "objective": "hybrid",
+        "num_workshop_allowed": 1,
+        "exclusion": [
+          "W3"
+        ]
+      },
+      "actual_constraints": {
+        "order_id": "ORD-045",
+        "objective": "hybrid",
+        "num_workshop_allowed": 1,
+        "exclusion": [
+          "W3"
+        ]
+      },
+      "committed": false,
+      "service_failed": false
+    },
+    {
+      "id": "context-54",
+      "split": "candidate_holdout",
+      "passed": true,
+      "actual_state": "RECOMMENDED",
+      "expected": {
+        "state": "RECOMMENDED",
+        "order_id": "ORD-045",
+        "objective": "hybrid",
+        "num_workshop_allowed": 2,
+        "exclusion": [
+          "W3"
+        ]
+      },
+      "actual_constraints": {
+        "order_id": "ORD-045",
+        "objective": "hybrid",
+        "num_workshop_allowed": 2,
+        "exclusion": [
+          "W3"
+        ]
+      },
+      "committed": false,
+      "service_failed": false
+    },
+    {
+      "id": "context-55",
+      "split": "development",
+      "passed": true,
+      "actual_state": "RECOMMENDED",
+      "expected": {
+        "state": "RECOMMENDED",
+        "order_id": "ORD-045",
+        "objective": "hybrid",
+        "num_workshop_allowed": 3,
+        "exclusion": [
+          "W3"
+        ]
+      },
+      "actual_constraints": {
+        "order_id": "ORD-045",
+        "objective": "hybrid",
+        "num_workshop_allowed": 3,
+        "exclusion": [
+          "W3"
+        ]
+      },
+      "committed": false,
+      "service_failed": false
+    },
+    {
+      "id": "context-56",
+      "split": "candidate_holdout",
+      "passed": true,
+      "actual_state": "RECOMMENDED",
+      "expected": {
+        "state": "RECOMMENDED",
+        "order_id": "ORD-045",
+        "objective": "hybrid",
+        "num_workshop_allowed": 4,
+        "exclusion": [
+          "W3"
+        ]
+      },
+      "actual_constraints": {
+        "order_id": "ORD-045",
+        "objective": "hybrid",
+        "num_workshop_allowed": 4,
+        "exclusion": [
+          "W3"
+        ]
+      },
+      "committed": false,
+      "service_failed": false
+    },
+    {
+      "id": "context-57",
+      "split": "development",
+      "passed": true,
+      "actual_state": "RECOMMENDED",
+      "expected": {
+        "state": "RECOMMENDED",
+        "order_id": "ORD-045",
+        "objective": "hybrid",
+        "num_workshop_allowed": 1,
+        "exclusion": [
+          "W3"
+        ]
+      },
+      "actual_constraints": {
+        "order_id": "ORD-045",
+        "objective": "hybrid",
+        "num_workshop_allowed": 1,
+        "exclusion": [
+          "W3"
+        ]
+      },
+      "committed": false,
+      "service_failed": false
+    },
+    {
+      "id": "context-58",
+      "split": "candidate_holdout",
+      "passed": true,
+      "actual_state": "RECOMMENDED",
+      "expected": {
+        "state": "RECOMMENDED",
+        "order_id": "ORD-045",
+        "objective": "hybrid",
+        "num_workshop_allowed": 2,
+        "exclusion": [
+          "W3"
+        ]
+      },
+      "actual_constraints": {
+        "order_id": "ORD-045",
+        "objective": "hybrid",
+        "num_workshop_allowed": 2,
+        "exclusion": [
+          "W3"
+        ]
+      },
+      "committed": false,
+      "service_failed": false
+    },
+    {
+      "id": "context-59",
+      "split": "development",
+      "passed": true,
+      "actual_state": "RECOMMENDED",
+      "expected": {
+        "state": "RECOMMENDED",
+        "order_id": "ORD-045",
+        "objective": "hybrid",
+        "num_workshop_allowed": 3,
+        "exclusion": [
+          "W3"
+        ]
+      },
+      "actual_constraints": {
+        "order_id": "ORD-045",
+        "objective": "hybrid",
+        "num_workshop_allowed": 3,
+        "exclusion": [
+          "W3"
+        ]
+      },
+      "committed": false,
+      "service_failed": false
+    },
+    {
+      "id": "context-60",
+      "split": "candidate_holdout",
+      "passed": true,
+      "actual_state": "RECOMMENDED",
+      "expected": {
+        "state": "RECOMMENDED",
+        "order_id": "ORD-045",
+        "objective": "hybrid",
+        "num_workshop_allowed": 4,
+        "exclusion": [
+          "W3"
+        ]
+      },
+      "actual_constraints": {
+        "order_id": "ORD-045",
+        "objective": "hybrid",
+        "num_workshop_allowed": 4,
+        "exclusion": [
+          "W3"
+        ]
+      },
+      "committed": false,
+      "service_failed": false
+    },
+    {
+      "id": "context-61",
+      "split": "development",
+      "passed": true,
+      "actual_state": "RECOMMENDED",
+      "expected": {
+        "state": "RECOMMENDED",
+        "order_id": "ORD-045",
+        "objective": "hybrid",
+        "num_workshop_allowed": 1,
+        "exclusion": [
+          "W3"
+        ]
+      },
+      "actual_constraints": {
+        "order_id": "ORD-045",
+        "objective": "hybrid",
+        "num_workshop_allowed": 1,
+        "exclusion": [
+          "W3"
+        ]
+      },
+      "committed": false,
+      "service_failed": false
+    },
+    {
+      "id": "context-62",
+      "split": "candidate_holdout",
+      "passed": true,
+      "actual_state": "RECOMMENDED",
+      "expected": {
+        "state": "RECOMMENDED",
+        "order_id": "ORD-045",
+        "objective": "hybrid",
+        "num_workshop_allowed": 2,
+        "exclusion": [
+          "W3"
+        ]
+      },
+      "actual_constraints": {
+        "order_id": "ORD-045",
+        "objective": "hybrid",
+        "num_workshop_allowed": 2,
+        "exclusion": [
+          "W3"
+        ]
+      },
+      "committed": false,
+      "service_failed": false
+    },
+    {
+      "id": "context-63",
+      "split": "development",
+      "passed": true,
+      "actual_state": "RECOMMENDED",
+      "expected": {
+        "state": "RECOMMENDED",
+        "order_id": "ORD-045",
+        "objective": "hybrid",
+        "num_workshop_allowed": 3,
+        "exclusion": [
+          "W3"
+        ]
+      },
+      "actual_constraints": {
+        "order_id": "ORD-045",
+        "objective": "hybrid",
+        "num_workshop_allowed": 3,
+        "exclusion": [
+          "W3"
+        ]
+      },
+      "committed": false,
+      "service_failed": false
+    },
+    {
+      "id": "context-64",
+      "split": "candidate_holdout",
+      "passed": true,
+      "actual_state": "RECOMMENDED",
+      "expected": {
+        "state": "RECOMMENDED",
+        "order_id": "ORD-045",
+        "objective": "hybrid",
+        "num_workshop_allowed": 4,
+        "exclusion": [
+          "W3"
+        ]
+      },
+      "actual_constraints": {
+        "order_id": "ORD-045",
+        "objective": "hybrid",
+        "num_workshop_allowed": 4,
+        "exclusion": [
+          "W3"
+        ]
+      },
+      "committed": false,
+      "service_failed": false
+    },
+    {
+      "id": "blocker-01",
+      "split": "development",
+      "passed": true,
+      "actual_state": "BLOCKED",
+      "expected": {
+        "state": "BLOCKED"
+      },
+      "actual_constraints": {},
+      "committed": false,
+      "service_failed": false
+    },
+    {
+      "id": "blocker-02",
+      "split": "development",
+      "passed": true,
+      "actual_state": "BLOCKED",
+      "expected": {
+        "state": "BLOCKED"
+      },
+      "actual_constraints": {},
+      "committed": false,
+      "service_failed": false
+    },
+    {
+      "id": "blocker-03",
+      "split": "development",
+      "passed": true,
+      "actual_state": "BLOCKED",
+      "expected": {
+        "state": "BLOCKED"
+      },
+      "actual_constraints": {},
+      "committed": false,
+      "service_failed": false
+    },
+    {
+      "id": "blocker-04",
+      "split": "development",
+      "passed": true,
+      "actual_state": "BLOCKED",
+      "expected": {
+        "state": "BLOCKED"
+      },
+      "actual_constraints": {},
+      "committed": false,
+      "service_failed": false
+    },
+    {
+      "id": "blocker-05",
+      "split": "development",
+      "passed": true,
+      "actual_state": "BLOCKED",
+      "expected": {
+        "state": "BLOCKED"
+      },
+      "actual_constraints": {},
+      "committed": false,
+      "service_failed": false
+    },
+    {
+      "id": "blocker-06",
+      "split": "development",
+      "passed": true,
+      "actual_state": "BLOCKED",
+      "expected": {
+        "state": "BLOCKED"
+      },
+      "actual_constraints": {},
+      "committed": false,
+      "service_failed": false
+    },
+    {
+      "id": "blocker-07",
+      "split": "development",
+      "passed": true,
+      "actual_state": "BLOCKED",
+      "expected": {
+        "state": "BLOCKED"
+      },
+      "actual_constraints": {},
+      "committed": false,
+      "service_failed": false
+    },
+    {
+      "id": "blocker-08",
+      "split": "development",
+      "passed": true,
+      "actual_state": "BLOCKED",
+      "expected": {
+        "state": "BLOCKED"
+      },
+      "actual_constraints": {},
+      "committed": false,
+      "service_failed": false
+    },
+    {
+      "id": "blocker-09",
+      "split": "development",
+      "passed": true,
+      "actual_state": "BLOCKED",
+      "expected": {
+        "state": "BLOCKED"
+      },
+      "actual_constraints": {},
+      "committed": false,
+      "service_failed": false
+    },
+    {
+      "id": "blocker-10",
+      "split": "development",
+      "passed": true,
+      "actual_state": "BLOCKED",
+      "expected": {
+        "state": "BLOCKED"
+      },
+      "actual_constraints": {},
+      "committed": false,
+      "service_failed": false
+    },
+    {
+      "id": "blocker-11",
+      "split": "development",
+      "passed": true,
+      "actual_state": "BLOCKED",
+      "expected": {
+        "state": "BLOCKED"
+      },
+      "actual_constraints": {},
+      "committed": false,
+      "service_failed": false
+    },
+    {
+      "id": "blocker-12",
+      "split": "development",
+      "passed": true,
+      "actual_state": "BLOCKED",
+      "expected": {
+        "state": "BLOCKED"
+      },
+      "actual_constraints": {},
+      "committed": false,
+      "service_failed": false
+    },
+    {
+      "id": "blocker-13",
+      "split": "development",
+      "passed": true,
+      "actual_state": "BLOCKED",
+      "expected": {
+        "state": "BLOCKED"
+      },
+      "actual_constraints": {},
+      "committed": false,
+      "service_failed": false
+    },
+    {
+      "id": "blocker-14",
+      "split": "development",
+      "passed": true,
+      "actual_state": "BLOCKED",
+      "expected": {
+        "state": "BLOCKED"
+      },
+      "actual_constraints": {},
+      "committed": false,
+      "service_failed": false
+    },
+    {
+      "id": "blocker-15",
+      "split": "development",
+      "passed": true,
+      "actual_state": "BLOCKED",
+      "expected": {
+        "state": "BLOCKED"
+      },
+      "actual_constraints": {},
+      "committed": false,
+      "service_failed": false
+    },
+    {
+      "id": "blocker-16",
+      "split": "development",
+      "passed": true,
+      "actual_state": "BLOCKED",
+      "expected": {
+        "state": "BLOCKED"
+      },
+      "actual_constraints": {},
+      "committed": false,
+      "service_failed": false
+    }
+  ]
+}

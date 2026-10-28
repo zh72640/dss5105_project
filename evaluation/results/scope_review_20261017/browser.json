@@ -1,0 +1,15 @@
+{
+  "checked_at": "2026-10-17T10:57:27.829660+00:00",
+  "mode": "offline",
+  "browser": "headless local Chromium, fresh profile",
+  "checks": [
+    "Blocked request displays conditional alternatives without approval buttons or production writes.",
+    "390px mobile alternatives view has no horizontal page overflow.",
+    "Concurrent-order change returns W6 to W8 for re-review, survives reload, then commits once after renewed confirmation.",
+    "Complete split candidates render quantities, delivery dates, cost and quality."
+  ],
+  "page_errors": [],
+  "production_database_touched": false,
+  "live_model_calls": 0,
+  "status": "PASS"
+}

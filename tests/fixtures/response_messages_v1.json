@@ -1,0 +1,826 @@
+[
+  {
+    "function": "guidance",
+    "args": {
+      "blockers": [
+        "order_id"
+      ],
+      "draft": {
+        "preferred_workshop": "W7"
+      },
+      "result": {},
+      "trace": {
+        "order": {
+          "pieces": 100
+        }
+      }
+    },
+    "expected": [
+      {
+        "code": "order_id",
+        "field": "order_id",
+        "question": "Which order should I allocate?",
+        "help": "Choose an existing order below, or reply with its ID, for example ORD-045."
+      }
+    ]
+  },
+  {
+    "function": "guidance",
+    "args": {
+      "blockers": [
+        "multiple_order_ids"
+      ],
+      "draft": {
+        "preferred_workshop": "W7"
+      },
+      "result": {},
+      "trace": {
+        "order": {
+          "pieces": 100
+        }
+      }
+    },
+    "expected": [
+      {
+        "code": "multiple_order_ids",
+        "field": "order_id",
+        "question": "More than one order was mentioned.",
+        "help": "Choose one order for this request. Start a separate request for another order."
+      }
+    ]
+  },
+  {
+    "function": "guidance",
+    "args": {
+      "blockers": [
+        "conflicting_objective"
+      ],
+      "draft": {
+        "preferred_workshop": "W7"
+      },
+      "result": {},
+      "trace": {
+        "order": {
+          "pieces": 100
+        }
+      }
+    },
+    "expected": [
+      {
+        "code": "conflicting_objective",
+        "field": "objective",
+        "question": "Should I prioritize cost, speed, or quality?",
+        "help": "Choose one objective below. For example, select Lowest cost."
+      }
+    ]
+  },
+  {
+    "function": "guidance",
+    "args": {
+      "blockers": [
+        "negated_objective"
+      ],
+      "draft": {
+        "preferred_workshop": "W7"
+      },
+      "result": {},
+      "trace": {
+        "order": {
+          "pieces": 100
+        }
+      }
+    },
+    "expected": [
+      {
+        "code": "negated_objective",
+        "field": "objective",
+        "question": "Which objective should replace the one you rejected?",
+        "help": "Choose an objective below."
+      }
+    ]
+  },
+  {
+    "function": "guidance",
+    "args": {
+      "blockers": [
+        "relative_due_date"
+      ],
+      "draft": {
+        "preferred_workshop": "W7"
+      },
+      "result": {},
+      "trace": {
+        "order": {
+          "pieces": 100
+        }
+      }
+    },
+    "expected": [
+      {
+        "code": "relative_due_date",
+        "field": "due_date",
+        "question": "What is the exact due date?",
+        "help": "Use YYYY-MM-DD, for example 2026-04-08. It must match the registered order; this desk does not edit the order register."
+      }
+    ]
+  },
+  {
+    "function": "guidance",
+    "args": {
+      "blockers": [
+        "invalid_date"
+      ],
+      "draft": {
+        "preferred_workshop": "W7"
+      },
+      "result": {},
+      "trace": {
+        "order": {
+          "pieces": 100
+        }
+      }
+    },
+    "expected": [
+      {
+        "code": "invalid_date",
+        "field": "due_date",
+        "question": "The date is not valid.",
+        "help": "Enter a valid calendar date in the details form."
+      }
+    ]
+  },
+  {
+    "function": "guidance",
+    "args": {
+      "blockers": [
+        "conflicting_workshop_limit"
+      ],
+      "draft": {
+        "preferred_workshop": "W7"
+      },
+      "result": {},
+      "trace": {
+        "order": {
+          "pieces": 100
+        }
+      }
+    },
+    "expected": [
+      {
+        "code": "conflicting_workshop_limit",
+        "field": "num_workshop_allowed",
+        "question": "How many workshops may share this order?",
+        "help": "Set a single maximum, from 1 to 8, below."
+      }
+    ]
+  },
+  {
+    "function": "guidance",
+    "args": {
+      "blockers": [
+        "preferred_workshop_excluded"
+      ],
+      "draft": {
+        "preferred_workshop": "W7"
+      },
+      "result": {},
+      "trace": {
+        "order": {
+          "pieces": 100
+        }
+      }
+    },
+    "expected": [
+      {
+        "code": "preferred_workshop_excluded",
+        "field": "preferred_workshop",
+        "question": "The preferred workshop is also excluded.",
+        "help": "Clear the preference or remove that workshop from exclusions."
+      }
+    ]
+  },
+  {
+    "function": "guidance",
+    "args": {
+      "blockers": [
+        "UNKNOWN_EXCLUDED_WORKSHOP"
+      ],
+      "draft": {
+        "preferred_workshop": "W7"
+      },
+      "result": {},
+      "trace": {
+        "order": {
+          "pieces": 100
+        }
+      }
+    },
+    "expected": [
+      {
+        "code": "UNKNOWN_EXCLUDED_WORKSHOP",
+        "field": "exclusion",
+        "question": "An excluded workshop ID is not in the register.",
+        "help": "Select exclusions from the workshop list below."
+      }
+    ]
+  },
+  {
+    "function": "guidance",
+    "args": {
+      "blockers": [
+        "UNKNOWN_PREFERRED_WORKSHOP"
+      ],
+      "draft": {
+        "preferred_workshop": "W7"
+      },
+      "result": {},
+      "trace": {
+        "order": {
+          "pieces": 100
+        }
+      }
+    },
+    "expected": [
+      {
+        "code": "UNKNOWN_PREFERRED_WORKSHOP",
+        "field": "preferred_workshop",
+        "question": "The preferred workshop is not in the register.",
+        "help": "Select a registered workshop or choose Any eligible workshop."
+      }
+    ]
+  },
+  {
+    "function": "guidance",
+    "args": {
+      "blockers": [
+        "unknown_workshop_name"
+      ],
+      "draft": {
+        "preferred_workshop": "W7"
+      },
+      "result": {},
+      "trace": {
+        "order": {
+          "pieces": 100
+        }
+      }
+    },
+    "expected": [
+      {
+        "code": "unknown_workshop_name",
+        "field": "preferred_workshop",
+        "question": "I cannot identify the workshop name.",
+        "help": "Select its exact name in the details form."
+      }
+    ]
+  },
+  {
+    "function": "guidance",
+    "args": {
+      "blockers": [
+        "unclear_workshop_constraint"
+      ],
+      "draft": {
+        "preferred_workshop": "W7"
+      },
+      "result": {},
+      "trace": {
+        "order": {
+          "pieces": 100
+        }
+      }
+    },
+    "expected": [
+      {
+        "code": "unclear_workshop_constraint",
+        "field": "preferred_workshop",
+        "question": "Should this workshop be used or excluded?",
+        "help": "Set Preferred workshop or Excluded workshops below."
+      }
+    ]
+  },
+  {
+    "function": "guidance",
+    "args": {
+      "blockers": [
+        "multiple_preferred_workshops"
+      ],
+      "draft": {
+        "preferred_workshop": "W7"
+      },
+      "result": {},
+      "trace": {
+        "order": {
+          "pieces": 100
+        }
+      }
+    },
+    "expected": [
+      {
+        "code": "multiple_preferred_workshops",
+        "field": "preferred_workshop",
+        "question": "Only one preferred workshop can be specified.",
+        "help": "Choose one, or clear the preference and allow multiple workshops."
+      }
+    ]
+  },
+  {
+    "function": "guidance",
+    "args": {
+      "blockers": [
+        "ORDER_NOT_FOUND"
+      ],
+      "draft": {
+        "preferred_workshop": "W7"
+      },
+      "result": {},
+      "trace": {
+        "order": {
+          "pieces": 100
+        }
+      }
+    },
+    "expected": [
+      {
+        "code": "ORDER_NOT_FOUND",
+        "field": "order_id",
+        "question": "That order is not in the register.",
+        "help": "Start a new request and select an existing order. Creating new business orders is not supported here."
+      }
+    ]
+  },
+  {
+    "function": "guidance",
+    "args": {
+      "blockers": [
+        "UNSUPPORTED_REPLY"
+      ],
+      "draft": {
+        "preferred_workshop": "W7"
+      },
+      "result": {},
+      "trace": {
+        "order": {
+          "pieces": 100
+        }
+      }
+    },
+    "expected": [
+      {
+        "code": "UNSUPPORTED_REPLY",
+        "field": "details",
+        "question": "I could not apply this update in the current mode.",
+        "help": "Your previous requirements are retained. Use Edit details below, or replace the full request. Offline shortcuts include: cheapest; use two workshops; exclude W3."
+      }
+    ]
+  },
+  {
+    "function": "guidance",
+    "args": {
+      "blockers": [
+        "unsupported_constraint"
+      ],
+      "draft": {
+        "preferred_workshop": "W7"
+      },
+      "result": {},
+      "trace": {
+        "order": {
+          "pieces": 100
+        }
+      }
+    },
+    "expected": [
+      {
+        "code": "unsupported_constraint",
+        "field": "request",
+        "question": "This requirement is not supported by the allocator.",
+        "help": "Budget caps, exact split ratios and minimum quantities are not supported. Replace the full request with supported requirements, or handle the order manually."
+      }
+    ]
+  },
+  {
+    "function": "guidance",
+    "args": {
+      "blockers": [
+        "RECOMMENDATION_REJECTED"
+      ],
+      "draft": {
+        "preferred_workshop": "W7"
+      },
+      "result": {},
+      "trace": {
+        "order": {
+          "pieces": 100
+        }
+      }
+    },
+    "expected": [
+      {
+        "code": "RECOMMENDATION_REJECTED",
+        "field": "details",
+        "question": "What would you like to change?",
+        "help": "Edit the objective, exclusions or workshop limit, then review the new recommendation."
+      }
+    ]
+  },
+  {
+    "function": "guidance",
+    "args": {
+      "blockers": [
+        "ORDER_SWITCH_REQUIRES_NEW_SESSION"
+      ],
+      "draft": {
+        "preferred_workshop": "W7"
+      },
+      "result": {},
+      "trace": {
+        "order": {
+          "pieces": 100
+        }
+      }
+    },
+    "expected": [
+      {
+        "code": "ORDER_SWITCH_REQUIRES_NEW_SESSION",
+        "field": "order_id",
+        "question": "This request already belongs to another order.",
+        "help": "Use New request to allocate a different order."
+      }
+    ]
+  },
+  {
+    "function": "guidance",
+    "args": {
+      "blockers": [
+        "ORDER_VERSION_CONFLICT"
+      ],
+      "draft": {
+        "preferred_workshop": "W7"
+      },
+      "result": {},
+      "trace": {
+        "order": {
+          "pieces": 100
+        }
+      }
+    },
+    "expected": [
+      {
+        "code": "ORDER_VERSION_CONFLICT",
+        "field": "details",
+        "question": "The order changed after your review.",
+        "help": "Apply your requirements again to load a fresh recommendation before approving."
+      }
+    ]
+  },
+  {
+    "function": "guidance",
+    "args": {
+      "blockers": [
+        "DEADLINE_INFEASIBLE"
+      ],
+      "draft": {
+        "preferred_workshop": "W7"
+      },
+      "result": {},
+      "trace": {
+        "order": {
+          "pieces": 100
+        }
+      }
+    },
+    "expected": [
+      {
+        "code": "DEADLINE_INFEASIBLE",
+        "field": "deadline_required",
+        "question": "No eligible plan can meet the required deadline.",
+        "help": "If late delivery is acceptable, turn off Hard deadline; otherwise arrange the order manually."
+      }
+    ]
+  },
+  {
+    "function": "guidance",
+    "args": {
+      "blockers": [
+        "CAPACITY_INFEASIBLE"
+      ],
+      "draft": {
+        "preferred_workshop": "W7"
+      },
+      "result": {},
+      "trace": {
+        "order": {
+          "pieces": 100
+        }
+      }
+    },
+    "expected": [
+      {
+        "code": "CAPACITY_INFEASIBLE",
+        "field": "num_workshop_allowed",
+        "question": "The allowed workshops cannot fit all remaining pieces.",
+        "help": "Increase Maximum workshops or review your exclusions. Batch limits still apply."
+      }
+    ]
+  },
+  {
+    "function": "guidance",
+    "args": {
+      "blockers": [
+        "NO_ELIGIBLE_WORKSHOP"
+      ],
+      "draft": {
+        "preferred_workshop": "W7"
+      },
+      "result": {},
+      "trace": {
+        "order": {
+          "pieces": 100
+        }
+      }
+    },
+    "expected": [
+      {
+        "code": "NO_ELIGIBLE_WORKSHOP",
+        "field": "exclusion",
+        "question": "No workshop meets all requirements.",
+        "help": "Review your exclusions and preference below, and open Calculation & eligibility details for the rejection reasons."
+      }
+    ]
+  },
+  {
+    "function": "guidance",
+    "args": {
+      "blockers": [
+        "INVALID_REQUEST"
+      ],
+      "draft": {
+        "preferred_workshop": "W7"
+      },
+      "result": {},
+      "trace": {
+        "order": {
+          "pieces": 100
+        }
+      }
+    },
+    "expected": [
+      {
+        "code": "INVALID_REQUEST",
+        "field": "request",
+        "question": "I could not interpret this as an allocation request.",
+        "help": "Use an existing order and allocation requirements, for example: Allocate ORD-045 at the lowest cost. Use Production for cancellation or completion."
+      }
+    ]
+  },
+  {
+    "function": "guidance",
+    "args": {
+      "blockers": [
+        "ORDER_FIELD_CONFLICT:pieces"
+      ],
+      "draft": {
+        "preferred_workshop": "W7"
+      },
+      "result": {},
+      "trace": {
+        "order": {
+          "pieces": 100
+        }
+      }
+    },
+    "expected": [
+      {
+        "code": "ORDER_FIELD_CONFLICT:pieces",
+        "field": "pieces",
+        "question": "The pieces in your request does not match the order register.",
+        "help": "Registered value: 100. Select Use registered order details below, or start a new request for the correct order."
+      }
+    ]
+  },
+  {
+    "function": "guidance",
+    "args": {
+      "blockers": [
+        "ORDER_ALREADY_WORKING"
+      ],
+      "draft": {
+        "preferred_workshop": "W7"
+      },
+      "result": {},
+      "trace": {
+        "order": {
+          "pieces": 100
+        }
+      }
+    },
+    "expected": [
+      {
+        "code": "ORDER_ALREADY_WORKING",
+        "field": "order_id",
+        "question": "This order cannot be allocated again.",
+        "help": "Use Production for existing allocations, or start a new request for a Ready or Unassigned order."
+      }
+    ]
+  },
+  {
+    "function": "guidance",
+    "args": {
+      "blockers": [
+        "STATUS_SUSPENDED"
+      ],
+      "draft": {
+        "preferred_workshop": "W7"
+      },
+      "result": {},
+      "trace": {
+        "order": {
+          "pieces": 100
+        }
+      }
+    },
+    "expected": [
+      {
+        "code": "STATUS_SUSPENDED",
+        "field": "preferred_workshop",
+        "question": "The requested workshop W7 cannot take this order: status suspended.",
+        "help": "Choose another Preferred workshop or select Any eligible workshop. A preferred workshop must take the full remaining batch; increase the workshop limit only after clearing the preference."
+      }
+    ]
+  },
+  {
+    "function": "guidance",
+    "args": {
+      "blockers": [
+        "unknown_blocker"
+      ],
+      "draft": {
+        "preferred_workshop": "W7"
+      },
+      "result": {},
+      "trace": {
+        "order": {
+          "pieces": 100
+        }
+      }
+    },
+    "expected": [
+      {
+        "code": "unknown_blocker",
+        "field": "request",
+        "question": "I still need a clarification: unknown blocker.",
+        "help": "Edit the relevant field below. If this requirement cannot be expressed there, replace the full request with one clear allocation instruction."
+      }
+    ]
+  },
+  {
+    "function": "guidance",
+    "args": {
+      "blockers": [
+        "PARSER_ERROR"
+      ],
+      "draft": {
+        "preferred_workshop": "W7"
+      },
+      "result": {},
+      "parser_error": "gemini_api_key_missing"
+    },
+    "expected": [
+      {
+        "code": "PARSER_ERROR",
+        "field": "service",
+        "question": "The AI service could not process this message.",
+        "help": "The server has no API key. Configure the provider environment variable locally and restart, or use Edit details without AI."
+      }
+    ]
+  },
+  {
+    "function": "guidance",
+    "args": {
+      "blockers": [
+        "PARSER_ERROR"
+      ],
+      "draft": {
+        "preferred_workshop": "W7"
+      },
+      "result": {},
+      "parser_error": "gemini_http_401"
+    },
+    "expected": [
+      {
+        "code": "PARSER_ERROR",
+        "field": "service",
+        "question": "The AI service could not process this message.",
+        "help": "The provider rejected the server credentials. Check the API key locally, or use Edit details without AI."
+      }
+    ]
+  },
+  {
+    "function": "guidance",
+    "args": {
+      "blockers": [
+        "PARSER_ERROR"
+      ],
+      "draft": {
+        "preferred_workshop": "W7"
+      },
+      "result": {},
+      "parser_error": "deepseek_http_402"
+    },
+    "expected": [
+      {
+        "code": "PARSER_ERROR",
+        "field": "service",
+        "question": "The AI service could not process this message.",
+        "help": "The provider account has insufficient balance. Check the account locally, or use Edit details without AI."
+      }
+    ]
+  },
+  {
+    "function": "guidance",
+    "args": {
+      "blockers": [
+        "PARSER_ERROR"
+      ],
+      "draft": {
+        "preferred_workshop": "W7"
+      },
+      "result": {},
+      "parser_error": "deepseek_connection_error"
+    },
+    "expected": [
+      {
+        "code": "PARSER_ERROR",
+        "field": "service",
+        "question": "The AI service could not process this message.",
+        "help": "The model service is unavailable or returned an invalid response. Retry your text, or use Edit details without AI. No extra order information is required for this error."
+      }
+    ]
+  },
+  {
+    "function": "allocation_reply",
+    "args": {
+      "result": {
+        "success": true,
+        "allocation": [
+          {
+            "pieces": 100,
+            "workshop_name": "Sample Workshop",
+            "workshop_id": "W1"
+          }
+        ],
+        "estimated_delivery_date": "2026-04-08",
+        "estimated_cost": 1200,
+        "objective": "min_cost",
+        "warnings": [
+          "ESTIMATED_DEADLINE_MISS"
+        ]
+      },
+      "order_id": "ORD-045",
+      "committed": false
+    },
+    "expected": "Proposed \u2014 awaiting your approval: ORD-045, 100 pieces. I recommend assigning 100 pieces to Sample Workshop (W1). Estimated completion: 2026-04-08. Estimated total cost: 1,200.00 cost units. The plan targets lowest total cost. Attention: estimated completion is later than the order due date. Select Accept allocation to save it."
+  },
+  {
+    "function": "allocation_reply",
+    "args": {
+      "result": {
+        "success": true,
+        "allocation": [
+          {
+            "pieces": 100,
+            "workshop_name": "Sample Workshop",
+            "workshop_id": "W1"
+          }
+        ],
+        "estimated_delivery_date": "2026-04-08",
+        "estimated_cost": 1200,
+        "objective": "min_cost",
+        "warnings": [
+          "ESTIMATED_DEADLINE_MISS"
+        ]
+      },
+      "order_id": "ORD-045",
+      "committed": true
+    },
+    "expected": "Approved and saved: ORD-045, 100 pieces. I have assigned 100 pieces to Sample Workshop (W1). Estimated completion: 2026-04-08. Estimated total cost: 1,200.00 cost units. The plan targets lowest total cost. Attention: estimated completion is later than the order due date."
+  },
+  {
+    "function": "allocation_reply",
+    "args": {
+      "result": {}
+    },
+    "expected": "No allocation has been made."
+  },
+  {
+    "function": "allocation_reply",
+    "args": {
+      "result": {
+        "success": false,
+        "message": "Existing failure message."
+      }
+    },
+    "expected": "Existing failure message."
+  }
+]

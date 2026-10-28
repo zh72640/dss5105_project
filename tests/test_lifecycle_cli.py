@@ -12,10 +12,10 @@ class LifecycleCLITests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             path = str(Path(directory) / 'cli.sqlite3')
             allocation = subprocess.run([sys.executable, '-m', 'app.cli', '--message', 'Allocate ORD-045 to Nimble Needle.',
-                                         '--backend', 'offline', '--db', path], capture_output=True, text=True, check=True)
+                                         '--db', path], capture_output=True, text=True, check=True)
             self.assertTrue(json.loads(allocation.stdout)['result']['success'])
             def command(*arguments):
-                return subprocess.run([sys.executable, '-m', 'app.lifecycle_cli', *arguments, '--db', path],
+                return subprocess.run([sys.executable, '-m', 'app.cli.lifecycle', *arguments, '--db', path],
                                       capture_output=True, text=True)
             current = command('inspect', 'ORD-045')
             self.assertEqual(json.loads(current.stdout)['version'], 1)

@@ -16,7 +16,7 @@ class SimulatorAdapter(unittest.TestCase):
         queues = {wid: w.queue0 for wid, w in workshops.items()}
         batch = {"order_id":"TEST","pieces":150,"category":"TOPS","sent_date":date(2026,4,1),"due_date":date(2026,4,9)}
         before = deepcopy((workshops, queues, batch))
-        for objective in ("min_delay", "min_cost", "min_defects", "hybrid"):
+        for objective in ("min_delay", "min_cost", "min_defects", "hybrid", "weighted_hybrid"):
             choice = make_allocator(objective)(batch, workshops, queues)
             self.assertIn(choice, [w.workshop_id for w in eligible_workshops(batch, workshops)])
         self.assertEqual(before, (workshops, queues, batch))
@@ -24,8 +24,8 @@ class SimulatorAdapter(unittest.TestCase):
     def test_official_runs_are_repeatable_complete_and_report_losses(self):
         report = compare()
         self.assertEqual(report, compare())
-        self.assertEqual(len(report["runs"]), 14)
-        self.assertEqual(len(report["comparisons"]), 24)
+        self.assertEqual(len(report["runs"]), 16)
+        self.assertEqual(len(report["comparisons"]), 30)
         self.assertTrue(report["primary_per_order_losses"])
         for run in report["runs"]:
             self.assertEqual(run["metrics"]["batches"], 120)

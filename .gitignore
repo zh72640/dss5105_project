@@ -10,3 +10,5 @@ runtime/*
 *.sqlite3-wal
 .venv/
 evaluation/live_results/
+
+.cache/

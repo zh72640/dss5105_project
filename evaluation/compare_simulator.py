@@ -10,7 +10,7 @@ from harness.simulate import Simulator, cheapest, greedy_biggest, random_choice
 ROOT = Path(__file__).resolve().parents[1]
 METRICS = ("mean_days", "p90_days", "late_percent", "defect_percent", "total_cost", "max_share_percent")
 BASELINES = {"random": random_choice, "greedy_biggest": greedy_biggest, "cheapest": cheapest}
-OBJECTIVES = ("min_delay", "min_defects", "hybrid", "min_cost")
+OBJECTIVES = ("min_delay", "min_defects", "hybrid", "min_cost", "weighted_hybrid")
 
 
 def summarize(outcomes):
@@ -58,10 +58,11 @@ def compare(seeds=(5105,)):
                                        "order_id": batch["order_id"], "worse_metrics": worse,
                                        "planner": ours, "baseline_outcome": theirs})
     hashes = {f: hashlib.sha256((ROOT / f).read_bytes()).hexdigest() for f in
-              ("harness/simulate.py", "data/orders.csv", "data/workshops.csv", "app/allocator/planner.py", "evaluation/simulator_adapter.py")}
+              ("harness/simulate.py", "data/orders.csv", "data/workshops.csv", "app/allocator/planner.py", "app/allocator/strategies.py", "evaluation/simulator_adapter.py")}
     return {"schema_version": "simulator_comparison_v1", "seeds": list(seeds), "source_sha256": hashes,
             "primary_setting": "min_delay (existing default; team objective assignment pending confirmation)",
             "hybrid_score": "0.6 * estimated_days + 0.4 * expected_defect_rate * 100",
+            "weighted_hybrid_score": "0.8 * minmax(signed lateness) + 0.2 * minmax(defect_rate * pieces / capacity), single workshop only",
             "limitations": ["Single-workshop adapter; split plans are not evaluated by the official API.",
                             "min_delay minimizes estimated turnaround, not the global count of late orders.",
                             "Fixed development dataset, not a held-out experiment; no tuning performed by this script.",

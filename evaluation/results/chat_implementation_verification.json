@@ -1,0 +1,59 @@
+{
+  "date": "2026-10-15",
+  "implementation": "chat_v2",
+  "database_version": 8,
+  "python_regression": {
+    "tests": 325,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": true
+  },
+  "frontend_tests": {
+    "tests": 17,
+    "passed": 17,
+    "failed": 0,
+    "report": "chat_frontend_tests.txt"
+  },
+  "offline_conversation": {
+    "mode": "offline",
+    "model_key": null,
+    "cases": 80,
+    "passed": 80,
+    "failed": 0,
+    "accuracy": 1.0,
+    "human_reviewed": false,
+    "live_model_verified": false,
+    "limitations": [
+      "候选 holdout 尚未经独立人工复核；本报告不是独立盲测成绩。",
+      "离线测试不证明任意自然语言或在线模型质量。"
+    ]
+  },
+  "browser": {
+    "chat_confirmation": true,
+    "workbench_confirmation_and_saved_feedback": true,
+    "post_commit_followup": true,
+    "refresh_recovery": true,
+    "desktop": {
+      "width": 1200,
+      "height": 900,
+      "screenshot": "chat_browser_desktop.jpg"
+    },
+    "mobile": {
+      "width": 390,
+      "height": 844,
+      "horizontal_overflow": false,
+      "session_menu_checked": true,
+      "screenshot": "chat_browser_mobile.jpg"
+    },
+    "data": "Separate disposable seeded databases; no user runtime database used."
+  },
+  "live_models": {
+    "verified": false,
+    "reason": "No configured provider credentials in this test environment."
+  },
+  "holdout_review": {
+    "candidate_cases": 32,
+    "independent_human_reviewed": false
+  }
+}

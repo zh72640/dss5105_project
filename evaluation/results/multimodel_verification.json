@@ -1,0 +1,32 @@
+{
+  "feature": "request-scoped multi-provider models",
+  "python": {
+    "command": ".venv/Scripts/python.exe -X utf8 -m unittest discover -s tests -p test_*.py -q",
+    "passed": 283,
+    "result": "PASS"
+  },
+  "frontend": {
+    "command": "node --test tests/test_ui_state.cjs",
+    "passed": 11,
+    "result": "PASS"
+  },
+  "provider_initialization": {
+    "providers": [
+      "openai",
+      "claude",
+      "gemini",
+      "deepseek"
+    ],
+    "result": "PASS",
+    "remote_calls": false
+  },
+  "protected_existing_files": {
+    "count": 38,
+    "changed": 0
+  },
+  "real_model_calls": "NOT_RUN",
+  "limitations": [
+    "Background jobs use the configured default model; use session turns for request-specific model choice.",
+    "Model availability and credentials are only verified during real API calls."
+  ]
+}

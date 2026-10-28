@@ -1,0 +1,46 @@
+{
+  "date": "2026-10-13",
+  "application_version": "mvp_v0.6",
+  "database_version": 7,
+  "parser_contract": "parser_v1",
+  "python_tests": {
+    "passed": 266,
+    "failed": 0,
+    "command": "uv run --locked --offline python -X utf8 -m unittest discover -s tests -q"
+  },
+  "focused_python_tests": {
+    "passed": 123,
+    "failed": 0,
+    "command": "uv run --locked --offline python -X utf8 -m unittest tests.test_prompt_registry tests.test_parser tests.test_deepseek tests.test_gemini_sdk tests.test_assistant_desk -q"
+  },
+  "frontend_tests": {
+    "passed": 9,
+    "failed": 0,
+    "command": "node --test tests/test_ui_state.cjs"
+  },
+  "frozen_fixture_parity": {
+    "provider_message_bundles": 4,
+    "user_replies": 35,
+    "result": "identical to pre-migration messages"
+  },
+  "catalog_checks": [
+    "existing parser instructions, context, four examples, provider fragment and retry extracted into YAML",
+    "new function discovered without registry conditionals or transport changes",
+    "generic Gemini and DeepSeek generation accepts function-specific messages and output schemas",
+    "explicit active versions and pinned composition references",
+    "immutable snapshots preserve retries across catalog changes",
+    "safe YAML parsing rejects duplicate keys, unsafe tags and invalid definitions",
+    "missing and unknown variables rejected; variable values are never recursively templated",
+    "component hashes and bundle metadata exclude runtime values",
+    "legacy imports and deterministic response text preserved"
+  ],
+  "dependency_lock_check": "passed",
+  "diff_whitespace_check": "passed",
+  "real_model_calls": 0,
+  "scope": "Central prompt catalog, rendering and version APIs, provider integration, response templates, compatibility adapters and English maintenance documentation.",
+  "boundaries": [
+    "Prompt Lab editor UI and draft persistence are future work",
+    "Changed YAML defaults require service restart",
+    "Startup, account initialization and SQLite schema are unchanged"
+  ]
+}

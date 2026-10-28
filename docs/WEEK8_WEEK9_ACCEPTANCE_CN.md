@@ -1,57 +1,28 @@
-# Week 8/9 推进范围与验收
+# Week 8/9 progress and historical acceptance
 
-更新：2026-10-03；版本 MVP v0.3；分支 ningtao。
+Updated 2026-10-03 for MVP v0.3 on the original `ningtao` branch. This is a historical Sprint 1 record, not evidence that later dynamic-Agent work or the formal course presentation was completed.
 
-## 1. 周目标依据
+The local course specification described a Week 9 Sprint 1 upload by 2026-10-16 15:00 and a 19:00 presentation with five minutes of talk and two minutes of questions. It called for problem and architecture, business value, early results, risks and assumptions, and a Sprint 2 route and success criteria. Detailed external daily plans existed for Weeks 4–6 only. The Week 8 feature scope below was an internal plan derived from the earlier handoff, not an instructor-approved list.
 
-本地课程总要求 `Capstone_Project_Spec.pdf` 第 2–3 页将 Week 9 定义为 Sprint 1：2026-10-16 15:00 前上传材料，19:00 开始展示，5 分钟现场讲述 + 2 分钟问答。内容包括问题与架构、业务价值、早期进展、风险、假设和 Sprint 2 路线及成功标准。
+## Delivered at v0.3
 
-仓库外 Plans 目前只有 Week 4、5、6 的详细计划，没有官方 Week 8/9 逐日功能清单。因此本轮 Week 8 的实现目标是依据前次交接和课程要求制定的内部计划；不能把它写成教师已经指定或批准的功能列表。
+- Migration 003 added durable `sessions` and `session_messages`, versions, and message sequence.
+- The legacy session accepted a missing-order clarification, order answer, workshop-count or exclusion edits, exclusion clearing, objective change, preview, explicit confirmation, and closure.
+- A draft did not touch production tables; confirmation locked and rechecked order, workshop, and queue facts before applying.
+- Cross-session isolation of draft data, request replay and cross-endpoint key conflict, stale version, concurrent confirmation/edit, audit insertion failure rollback, order version checks, and remaining-piece allocation after partial completion were tested.
+- UI, API, and CLI could create, restore, revise, replace, confirm, and close; browser refresh recovered the draft and proposal.
+- v1/v2 database upgrades to v3 preserved production records and rolled back failed migration.
+- The original production planner ran in single-workshop mode against the unchanged official simulator harness. Three baselines and four objectives across standard/shock scenarios with seed 5105 covered all 120 orders in 14 new runs.
+- A written architecture, demonstration steps, risks, and route map existed. Formal slides, team identities, upload, and live rehearsal remained open.
 
-本轮技术范围：持久化多轮澄清、显式分配确认、官方模拟器对比、可重复演示、中文部署与交接材料。正式幻灯片、团队身份资料、上传和现场彩排尚未完成；本记录不等于 Week 9 正式提交完成。
+An initial comparison recorded 396 unfavorable comparisons across scenarios and baselines, with ten distinct illustrative orders. The 396 entries were not 396 independent orders or system failures. Simulator order differences were affected by different queue histories and were not causal counterfactuals.
 
-## 2. 功能与证据
+## Test and browser evidence
 
-| 交付目标 | 实现 / 证据 | 状态 |
-|---|---|---|
-| 会话持久化 | migration 003，sessions/session_messages，版本与消息序列 | 完成 |
-| 缺字段澄清与修改 | 缺订单号 → 回答 → 改工坊数、排除、清除排除、改目标 | 完成，有限命令语法 |
-| 预览与确认 | 草稿不写生产状态；confirm 锁内重新检索及计算 | 完成 |
-| 隔离和幂等 | 跨会话不继承订单；同 key 重放；跨接口 key 冲突 | 完成 |
-| 并发与失败 | 过期会话版本、并发确认/编辑、消息审计故障全回滚 | 完成 |
-| 生产兼容 | 订单版本保护、部分完工只分配剩余；旧生命周期回归 | 完成 |
-| 页面/API/CLI | 新建、恢复、消息、替换、确认、关闭；刷新恢复方案 | 完成 |
-| 旧库升级 | v1/v2 → v3；保留生产状态；迁移失败回滚 | 完成 |
-| 官方适配 | 原生产 planner 单工坊模式，原 harness 不改 | 完成 |
-| 对比实验 | 三基线、四目标、standard/shock、seed 5105、全部120订单 | 14组完成 |
-| 损失披露 | 24组基线比较、396条主设置不利对比记录、10个不同订单例子 | 完成初版分析 |
-| 技术说明 | 整体说明、部署、操作、数据库、会话、变更、下一阶段 | 完成 |
-| Sprint 1 展示准备 | 架构图、5分钟讲述安排、演示步骤、风险和路线 | 文字材料完成，正式 slides 待制作 |
+The recorded `evaluation/verify_mvp.py` run at 2026-10-03T02:39:34Z passed **168 tests** with no failures, errors, or skips. It included 13 new session core tests, one CLI, two HTTP, and two simulator checks over the earlier 150-test baseline. Offline parser results matched 60/60 and original behavior labels 30/30. Lifecycle and session demos each passed in temporary persistent databases; repeated confirmation did not assign twice. Official standard/shock baseline output stayed unchanged.
 
-396 是跨场景和基线的对比记录数，不是 396 个独立订单或系统故障。模拟器的逐订单损失同时受不同历史队列影响，不能当作因果反事实。
+Chrome exercised missing order → ORD-045 → two-workshop limit → exclude W8 → refresh → confirm against a separate temporary database. The session ended `CLOSED` at version 5; the order became `WORKING` at version 1 with W5/150 pieces. After an interruption, documentation was completed from this saved run without repeating the full tests or calling a live model. See [verification summary](../evaluation/results/verification_summary.json), [test output](../evaluation/results/test_results.txt), and [session demo](../evaluation/results/session_demo.json).
 
-## 3. 自动与人工验收
+For the standard scenario at seed 5105, the speed objective averaged 8.05 days and 1.67% late, compared with the random baseline's 21.52 days and 34.17% late. Its cost was 115,640 versus random 111,780 and minimum-cost baseline 85,960; its defect rate was 5% versus random 4.17%. Hybrid averaged 8.79 days and 3.33% defects. These were one-seed development-data results without independent holdout or multiple-seed statistical conclusions. The official simulator only supported single-workshop runs; split benefits were outside that comparison. Standard and shock scenarios consumed randomness differently, including rework samples.
 
-中断前已运行 `.venv/bin/python evaluation/verify_mvp.py`，证据时间为 `2026-10-03T02:39:34.598033+00:00`（新加坡 10:39）：
-
-- 168 条测试，0 failure、0 error、0 skip。新增 13 条会话核心、1 条 CLI、2 条 HTTP、2 条模拟器测试，原 150 条基线保留。
-- 60/60 离线解析完整匹配，30/30 原始行为标签匹配。
-- 生命周期与会话在各自同一临时持久库连续演示通过；重复确认不重复分配。
-- 官方 standard/shock 与 Week 4 基线一致；新策略另外运行 14 组对比。
-- Chrome 实际执行缺订单 → ORD-045 → 两工坊上限 → 排除 W8 → 刷新恢复 → 确认；会话 CLOSED/version5，订单 WORKING/version1，W5/150 件。独立 /tmp 库，未写入用户 runtime。
-
-摘要：[verification_summary.json](../evaluation/results/verification_summary.json)；详细测试：[test_results.txt](../evaluation/results/test_results.txt)；会话演示：[session_demo.json](../evaluation/results/session_demo.json)；算法结果：[中文报告](../evaluation/results/simulator_comparison_CN.md)。
-
-恢复中断后仅补齐文档和发布记录，没有再次重复完整测试或真实模型请求；上述数字来自已完成的同一轮验收。
-
-## 4. 可展示的结果与边界
-
-seed 5105 标准场景：速度目标平均 8.05 天、迟交率 1.67%；随机基线为 21.52 天、34.17%。速度目标成本 115640，高于随机 111780 与最低成本基线 85960；缺陷率 5% 也高于随机的 4.17%。混合目标平均 8.79 天、缺陷率 3.33%，体现可配置目标的权衡。
-
-这些是开发数据上的单 seed 实验，尚无独立 holdout 或多 seed 统计结论。官方只支持单工坊，拆单收益未纳入；冲击不会告知策略，不能声称预测停工。standard/shock 因随机数消耗不同，返工样本也不同。
-
-## 5. 仍未通过或需要外部输入
-
-真实 Gemini 全量仍为 2026-10-02 的 ACCEPTANCE_FAILED：14/60 匹配、46 条最终 HTTP 429。本轮使用离线和 SDK 模拟网络测试，未把在线失败改成通过。
-
-Data Schema2 原件、第二人标签复核、独立 holdout、30 条解释忠实性评分、团队主目标和业务政策确认仍待完成。Week 9 正式 slides 需补团队信息并按课程命名上传；本轮没有替团队上传 Canvas 或发送消息。
+The separate 2026-10-02 full live Gemini run remained `ACCEPTANCE_FAILED`: 14/60 matches and 46 final HTTP 429 cases. This Week 8/9 pass used offline and simulated SDK transport and did not change that outcome. Original Data Schema2 DDL, second human label review, independent holdout, explanation fidelity scoring, and business objective/policy approval still required external input. No Canvas upload or formal slides were claimed.

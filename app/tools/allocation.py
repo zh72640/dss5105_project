@@ -1,84 +1,29 @@
-from .models import Workshop
+"""Category 1: plan computation Tool → service wrapper that calls allocator.allocate."""
+from langchain_core.runnables import RunnableConfig
+from langchain_core.tools import tool
+
+from app.services.chat import operations as agent_operations
 
 
-def get_estimated_completion_time(
-    workshop: Workshop,
-    batch: dict,
-    queues: dict
-) -> float:
+@tool
+def compute_plan(config: RunnableConfig) -> dict:
     """
-    Calculate the estimated completion time for a given workshop and batch.
+    Compute and verify an integer allocation plan for a READY task.
+
+    Does not save a recommendation or write production allocation. Requires
+    check_requirements to have succeeded. Uses allocator.allocate with
+    sources-gated max_workshops from the allocation service.
 
     Args:
-        workshop (Workshop): The workshop to evaluate.
-        batch (dict): The batch of orders.
-        queues (dict): The current queues for each workshop.
+        config: Trusted runtime config (connection, session, as_of). Not model-supplied.
 
     Returns:
-        float: The estimated completion time (in number of days)
+        dict: result, report, facts_hash, plan_hash, and task_version.
+
+    Errors:
+        INVALID_TASK_STATE, PLAN_BLOCKED, SKILL_INPUT_INCOMPLETE, SKILL_INPUT_STALE,
+        INVALID_ALLOCATION_INPUT, MULTI_WORKSHOP_UNSUPPORTED.
     """
-    eta = batch["pieces"] / workshop.capacity + workshop.lead_days + queues[workshop.workshop_id]
-    return eta
-
-
-def get_lateness_score(
-    workshop: Workshop,
-    batch: dict,
-    queues: dict
-) -> float:
-    """
-    Calculate the lateness score for a given workshop and batch.
-
-    Args:
-        workshop (Workshop): The workshop to evaluate.
-        batch (dict): The batch of orders.
-        queues (dict): The current queues for each workshop.
-
-    Returns:
-        float: The lateness score.
-    """
-    eta = get_estimated_completion_time(workshop, batch, queues)
-    allowed_days = (batch["due_date"] - batch["sent_date"]).days
-    lateness_score = eta - allowed_days if workshop.status == "ACTIVE" else 10000
-    return lateness_score
-
-
-def get_defect_score(
-    workshop: Workshop,
-    batch: dict
-) -> float:
-    """
-    Calculate the defect score for a given workshop and batch.
-
-    Args:
-        workshop (Workshop): The workshop to evaluate.
-        batch (dict): The batch of orders.
-
-    Returns:
-        float: The defect score.
-    """    
-    return workshop.defect_rate if workshop.status == "ACTIVE" else 10000
-
-
-def get_hybrid_score(
-    workshop: Workshop,
-    batch: dict,
-    queues: dict
-) -> float:
-    """
-    Calculate the hybrid score for a given workshop and batch.
-    Objective is to choose the workshop that minimizes defects while meeting deadlines.
-
-    Args:
-        workshop (Workshop): The workshop to evaluate.
-        batch (dict): The batch of orders.
-        queues (dict): The current queues for each workshop.
-
-    Returns:
-        float: The hybrid score.
-    """
-    lateness_score = get_lateness_score(workshop, batch, queues)
-    defect_score = get_defect_score(workshop, batch)
-
-    hybrid_score = defect_score if lateness_score <= 0 else 10000
-    return hybrid_score
+    cfg = config["configurable"]
+    return agent_operations.compute_plan(
+        cfg["connection"], cfg["session"], cfg["as_of"], allocation_input=cfg.get("allocation_input"))

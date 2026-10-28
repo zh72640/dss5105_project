@@ -4,16 +4,16 @@ import json
 import tempfile
 from pathlib import Path
 from app.db.database import Database
-from app.pipeline import process_request
+from app.services.allocation.dispatch import seed_allocation
 
 DEMO = "Allocate ORD-045 using the cheapest available workshops. Do not use W03 and use at most two workshops."
 
 
-def run(backend="offline"):
+def run():
     with tempfile.TemporaryDirectory(prefix="sweaterco-week6-") as directory:
         path = Path(directory) / "demo.sqlite3"
-        first = process_request(DEMO, request_id="week6-demo-1", backend=backend, db_path=path)
-        replay = process_request(DEMO, request_id="week6-demo-1", backend=backend, db_path=path)
+        first = seed_allocation(DEMO, request_id="week6-demo-1", db_path=path)
+        replay = seed_allocation(DEMO, request_id="week6-demo-1", db_path=path)
         with Database(path) as db:
             tables = ("orders", "workshops", "requests", "request_parsing_history", "working_order", "decision_log", "unassigned_order")
             counts = {t: db.connection.execute("SELECT COUNT(*) FROM " + t).fetchone()[0] for t in tables}
@@ -21,8 +21,10 @@ def run(backend="offline"):
 
 
 def main():
-    parser = argparse.ArgumentParser(); parser.add_argument("--backend", choices=["offline", "llm"], default="offline")
-    args = parser.parse_args(); result = run(args.backend)
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--backend", choices=["offline"], default="offline",
+                        help="Offline seed only; LLM allocation uses Chat v2")
+    parser.parse_args(); result = run()
     print(json.dumps(result, ensure_ascii=False, indent=2))
     return 0 if result["first_request"]["result"]["success"] and result["replay_is_idempotent"] else 1
 

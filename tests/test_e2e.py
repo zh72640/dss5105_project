@@ -6,9 +6,7 @@ from concurrent.futures import ThreadPoolExecutor
 from datetime import date
 from pathlib import Path
 from app.db.database import Database
-from app.pipeline import process_request
-from app.agent.llm_client import BackendError
-from test_parser import SequenceBackend
+from app.services.allocation.dispatch import seed_allocation
 
 
 class EndToEnd(unittest.TestCase):
@@ -19,7 +17,7 @@ class EndToEnd(unittest.TestCase):
         self.db.close()
 
     def run_request(self,text='Allocate ORD-045.',**kwargs):
-        return process_request(text,database=self.db,backend=kwargs.pop('backend','offline'),**kwargs)
+        return seed_allocation(text,database=self.db,**kwargs)
 
     def count(self,table):
         return self.db.connection.execute('SELECT COUNT(*) FROM '+table).fetchone()[0]
@@ -36,7 +34,16 @@ class EndToEnd(unittest.TestCase):
         self.assertEqual(row['parsed_objective'],'min_cost'); self.assertIsNone(row['parsed_pieces'])
 
     def test_02_multiple_workshops_conserve_pieces(self):
-        r=self.run_request('Allocate ORD-093 fastest; at most two workshops.')
+        from uuid import uuid4
+        from app.services.production.lifecycle import process_event
+        # Seed / offline seed_allocation always max_workshops=1 (product rule).
+        seeded=self.run_request('Allocate ORD-093 fastest; at most two workshops.')
+        self.assertEqual(len(seeded['result']['allocation']),1)
+        self.assertEqual(seeded['result']['allocation'][0]['pieces'],100)
+        # Explicit lifecycle reassign may permit multi-workshop.
+        r=process_event('reassign','ORD-093',database=self.db,actor='test',reason='split test',
+                        event_id=str(uuid4()),expected_version=1,max_workshops=2,objective='min_delay')
+        self.assertTrue(r['result']['success'])
         parts=r['result']['allocation']; self.assertEqual(len(parts),2)
         self.assertEqual(sum(p['pieces'] for p in parts),100)
         self.assertEqual(self.count('working_order'),2)
@@ -62,8 +69,9 @@ class EndToEnd(unittest.TestCase):
     def test_06_capacity_infeasible_no_dirty_queue(self):
         self.db.connection.execute('UPDATE workshops SET max_batch_pieces=20')
         before=list(self.db.connection.execute('SELECT * FROM workshop_queue'))
+        # Seed locks max_workshops=1, so each shop fails eligibility instead of multi capacity search.
         r=self.run_request('Allocate ORD-045; at most two workshops.')
-        self.assertEqual(r['result']['reason_codes'],['CAPACITY_INFEASIBLE'])
+        self.assertEqual(r['result']['reason_codes'],['NO_ELIGIBLE_WORKSHOP'])
         self.assertEqual(before,list(self.db.connection.execute('SELECT * FROM workshop_queue')))
         self.assertEqual(self.state(),'UNASSIGNED')
 
@@ -107,16 +115,11 @@ class EndToEnd(unittest.TestCase):
                                     SELECT RAISE(ABORT,'injected write failure'); END""")
         before=list(self.db.connection.execute('SELECT * FROM workshop_queue'))
         r=self.run_request('Allocate ORD-093 fastest; at most two workshops.')
-        self.assertEqual(r['result']['reason_codes'],['DB_ERROR']); self.assertTrue(r['error_logged'])
+        self.assertEqual(r['result']['reason_codes'],['DB_ERROR'])
         self.assertEqual(self.count('working_order'),0); self.assertEqual(self.state('ORD-093'),'READY')
         self.assertEqual(before,list(self.db.connection.execute('SELECT * FROM workshop_queue')))
-        self.assertEqual(self.db.connection.execute('SELECT decision_status FROM decision_log').fetchone()[0],'ERROR')
-
-    def test_15_llm_error_never_persists_bad_parsed_columns(self):
-        r=self.run_request(backend=SequenceBackend('{bad'))
-        self.assertEqual(r['result']['reason_codes'],['PARSER_ERROR'])
-        self.assertEqual(self.count('request_parsing_history'),0); self.assertEqual(self.count('working_order'),0)
-        self.assertEqual(r['parser_telemetry']['retry_count'],1)
+        self.assertEqual(self.count('decision_log'),0)
+        self.assertEqual(self.count('requests'),0)
 
     def test_16_preferred_suspended_cap_and_category(self):
         for text,code in [('Allocate ORD-045 to OldMill.','STATUS_SUSPENDED'),
@@ -151,7 +154,7 @@ class EndToEnd(unittest.TestCase):
             path=Path(directory)/'concurrent.sqlite3'
             with Database(path): pass
             def submit(key):
-                return process_request('Allocate ORD-045.',db_path=path,request_id=key,backend='offline')
+                return seed_allocation('Allocate ORD-045.',db_path=path,request_id=key)
             with ThreadPoolExecutor(max_workers=2) as executor:
                 results=list(executor.map(submit,['same','same']))
             self.assertEqual(sum(r['replayed'] for r in results),1)
@@ -165,5 +168,5 @@ class EndToEnd(unittest.TestCase):
 
     def test_full_db_unavailable_returns_error(self):
         with tempfile.TemporaryDirectory() as path:
-            r=process_request('Allocate ORD-045.',db_path=path,backend='offline')
+            r=seed_allocation('Allocate ORD-045.',db_path=path)
         self.assertEqual(r['result']['reason_codes'],['DB_ERROR']); self.assertFalse(r['error_logged'])

@@ -1,24 +1,18 @@
-# 已知限制 — MVP v0.5
+# Known limits
 
-- **DeepSeek 接口已实现，真实调用未验收**：读取本机 `DEEPSEEK_API_KEY`，已验证模拟 HTTP、校验、有限重试和错误提示；本轮没有真实模型调用。环境配置不等于账户连通性通过。配置和验收步骤见 [本机接入](docs/DEEPSEEK_SETUP_CN.md)。自然语言摘要由实际分配字段生成，无额外模型调用。
-- **Gemini 真实完整验收未通过**：2026-10-02 冒烟与幂等重放成功；完整评估 14/60 匹配，其余 46 条因 HTTP 429 失败，尝试中另有 503。收到输出的 14 条均匹配，但不能剔除服务失败后宣布验收通过。见 [在线证据](docs/GEMINI_LIVE_ACCEPTANCE_CN.md)。已提供用例间隔参数，生产请求尚无全局限速和有界退避。
-- **Data Schema2 原件缺失**：当前 SQLite 根据两份计划列出的字段/表设计；需要和原始 ERD/DDL 核对。
-- **解析覆盖有限**：离线模式以英文课程请求为主，含少量中文模式；保守证据校验也会限制真实 LLM 可接受的日期、数量和约束表达。复杂否定、金额预算、精确拆分、更多自由表达仍需扩展与 holdout 测试。
-- **多轮语言范围有限**：DeepSeek 会话支持本轮自然语言追加，经校验后在本机合并；离线/Gemini 会话后续仍使用单项快捷命令。所有模式可用 Edit details 表单。预算上限、精确拆分等仍不支持，不能用无关修改清除阻断。Parser v1 的非空 context_messages 仍报错。旧会话保留原 backend，不因服务器重启自动切换。
-- **订单精确检索**：缺 ID 不做客户猜测；消息字段与数据库冲突时澄清，不自动更改订单、日期或数量。
-- **生命周期政策待团队确认**：已实现 complete/cancel/lapse/reassign 及页面/API/CLI；cancel 返回 READY，lapse 终止订单，部分完工后只分配未完工数。未实现恢复 LAPSED、人工改订单主数据、自动完工或自动联系工坊。HTTP 操作人来自本地登录账号；CLI 仍由调用方填写。
-- **逾期是软提示**：原课程中的逾期订单仍可分配；显式 hard deadline 才阻止迟交方案。自动 lapsed 政策需团队确认。
-- **队列和时间简化**：预留按 FIFO 和日历天衰减，预测归零不等于确认完工；迁移假设旧库未在系统外改过队列/产能，不支持直接手工 SQL 调整。日历天、确定性产能，不模拟周日停工或随机返工；UI 交付日期使用 ceil，官方 harness 使用 round，二者需区分。
-- **混合目标为启发式**：小规模 min_delay/min_cost/min_defects 已用穷举验证；hybrid 未声称全局最优。已完成官方单工坊模拟器 14 组比较；拆单、独立数据、多 seed 的稳健性结论待扩展。min_delay 是周转时间目标，团队课程主目标尚待确认。standard/shock 返工样本不同，差值不等于纯停工效应。
-- **预览与确认的时间差**：确认会重算最新队列；其他订单占用工坊可能改变最终方案。目标订单版本变化会拒绝旧确认，需要重新预览。会话业务日期固定于创建时，跨业务日期应新建会话。
-- **课程最终评估尚未齐备**：原始 30 条仅完成行为标签匹配；解释中的数值和理由仍需独立评分，不能把行为 30/30 宣称为解释忠实性 100%。本次 10 个算法不利案例也不等于最终完整失败分析。
-- **初始标注待第二位人工复核**：60 条 parser golden 和原始 30 条行为标签不是独立盲测集。
-- **本地服务**：绑定 127.0.0.1，已提供本地账号登录，所有账号共享工作区，尚无角色/租户隔离及公网部署；只适合当前本机课程 MVP。
-- **数据库错误日志有限**：业务事务回滚后尽量另记审计；整库不可用时 error_logged=false，需要调用方保存返回值。
+- **Live model acceptance:** The DeepSeek transport has tests with mocked HTTP responses, but no live acceptance run is recorded. The Gemini run on 2026-10-02 passed a smoke check but matched only 14 of 60 complete cases; the other 46 received HTTP 429 responses, with additional 503 errors. Service failures are included in the reported outcome. Native tool binding has now been checked locally for OpenAI, Claude, Gemini, and DeepSeek adapters, but this does not establish live provider reliability or answer quality.
+- **Source data:** The original Data Schema2 ERD and DDL have not been compared with this SQLite implementation.
+- **Language and constraints:** The offline parser covers a limited set of request expressions. It does not support budget ceilings, exact quantity splits, and some complex negations. Grounding checks may ask for clarification on valid free-form wording. The dynamic Agent can decide which tool to use, while deterministic tools still reject unsupported constraints and ungrounded values.
+- **Order lookup:** An absent order ID is not guessed from a customer name. Offline mode asks about conflicting supplied facts. LLM allocation preparation uses the registered facts and records supplied/recorded differences in `resolved_differences`; it does not edit order master data. These paths have different conflict-resolution behavior.
+- **Production policy:** `complete`, `cancel`, `lapse`, and `reassign` are implemented. Cancellation returns an order to `READY`; lapse ends it; partial completion leaves only the remaining quantity eligible for reassignment. Restoring a lapsed order, editing order master data, automatic completion, and contacting workshops are outside the current implementation. HTTP production actors come from the authenticated account.
+- **Deadline policy:** Lateness is normally a warning. An explicit hard deadline blocks late solutions. Automatic lapse policy still needs a business decision.
+- **Queue and date model:** FIFO reservations decay in calendar days. A predicted queue reaching zero is not proof of completion. The model assumes workshop queues and capacity are changed through application transactions. It does not simulate weekend shutdowns or random rework. The UI rounds delivery dates up, while the original simulation harness rounds them differently.
+- **Optimization:** Small integer cases for all four planner objectives were checked against exhaustive enumeration. Weighted hybrid now minimizes `0.6 * makespan_days + 40 * weighted_defect_rate` over the current order's bounded workshop subsets and integer completion breakpoints. This is not a global scheduling optimum across future orders. `app/allocator/scoring.py` retains a separate deadline-gated original hybrid score for comparison. Complete candidate plans are the best plan per evaluated subset, deduplicated and capped at five; they are not all possible integer allocations. Large quantities and workshop sets increase computation.
+- **Product scope:** The native LLM allocation subgraph still supports one workshop. Explicit multi-workshop planning is available in Offline mode and the allocator. A named `preferred_workshop` remains a hard required sole workshop; a soft preference is not implemented. Conditional alternatives never modify these requirements or authorize a commit.
+- **Recommendation age:** Confirmation recalculates with the current order, workshop, and queue facts. A changed order version or solution blocks an old recommendation. The session business date is fixed when the session is created; start another session for a different business date.
+- **Evaluation:** The 2026-10-17 Chat v2 offline run completed 30/30 requests and matched 28/30 historical behavior labels. Historical lookup and sales-price questions now clarify or report the scope boundary, while the old labels expect DECLINE. No field labels or independent explanation reviews were supplied, so neither metric is claimed. This is development data, not a holdout result. Real model acceptance was explicitly skipped at the user's request. See the current [review report](docs/SCOPE_FLOW_REVIEW_RESULTS_2026-10-17.md).
+- **Deployment:** The local server binds to `127.0.0.1`. Accounts share one business workspace; tenant separation and public deployment are not implemented. If the entire database is unavailable, a rollback error may not be recorded there, so callers should retain the returned error.
+- **UI verification:** The 2026-10-17 isolated Chromium check covered conditional alternatives, a 390px mobile view, complete split candidates, changed-plan re-review across two sessions, reload persistence, renewed approval and the disabled committed state. Authenticated offline HTTP checks covered 20 previews, 10 confirmations and the corresponding 10 business audit exports. These checks do not cover every production action, browser family, concurrent load or live model latency.
+- **Accounting:** Historical approver identities are not invented. The unauthenticated demo actor is `local-demo`. “Allocated today” counts distinct first allocations by actual UTC day, not simulated business date. Workshop named orders exclude anonymous baseline workload imported from CSV.
 
-- **Gemini SDK 是在线依赖**：固定 google-genai==2.23.0，已安装至项目 .venv；离线模式不需要 SDK。在线模式缺 SDK 会明确报 gemini_sdk_missing，不会静默降级。
-
-- **UI 验收边界**：v0.5 在 Safari 检查了首页、大字号、新请求、具体澄清、表单补订单、实际审批与首页摘要；工具间歇性不可用。手机宽度及生产页、历史导出的完整浏览器点击链尚未验收。203 条 Python 和 7 条控制器测试不替代实机布局验证；既有延迟报告来自 v0.4。详见 [v0.5 验收](docs/V05_ACCEPTANCE_CN.md)。
-- **账号及统计口径**：审批人历史缺失时不补造；无认证演示为 local-demo。Allocated today 统计真实 UTC 日期的不同首次分配订单，不按模拟业务日期计数；工坊具名订单不包含导入的匿名基线工作量。
-
-后续操作入口：[下一阶段交接](docs/NEXT_STAGE_CN.md)。
+The current Agent implementation and verification boundary are described in [Dynamic Agent, Skills, tools, and business state](docs/AGENT_SKILL_ARCHITECTURE.md).

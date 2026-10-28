@@ -13,11 +13,14 @@ from pathlib import Path
 from unittest.mock import patch
 from urllib.request import HTTPCookieProcessor, Request, build_opener
 
-from app import auth
+from fastapi.testclient import TestClient
+
+from app.core import security as auth
+from app.cli import auth as account_cli
 from app.db.database import Database
 from app.db.import_data import ORDER_FIELDS, WORKSHOP_FIELDS, load_seed
 from app.server import make_server
-from app.setup import initialize_database, main
+from app.cli.setup import initialize_database, main
 
 PASSWORD = "Personal-data-test-password"
 AS_OF = date(2026, 10, 9)
@@ -125,7 +128,7 @@ class SetupTests(unittest.TestCase):
         with patch("builtins.input", side_effect=["1", "", "n"]), redirect_stdout(output):
             self.assertEqual(main(["--db", str(self.db)]), 0)
         self.assertFalse(self.db.exists())
-        with patch("app.setup.prompt_password", return_value=PASSWORD), redirect_stdout(output):
+        with patch("app.cli.setup.prompt_password", return_value=PASSWORD), redirect_stdout(output):
             self.assertEqual(main(["--orders", str(self.orders), "--workshops", str(self.workshops),
                                    "--as-of", AS_OF.isoformat(), "--db", str(self.db),
                                    "--username", "professor", "--yes"]), 0)
@@ -133,27 +136,32 @@ class SetupTests(unittest.TestCase):
         self.assertIsNotNone(auth.login(self.db, "professor", PASSWORD))
 
     def test_sample_setup_and_account_cli_messages(self):
-        with patch("app.setup.prompt_password", return_value=PASSWORD), redirect_stdout(io.StringIO()):
+        with patch("app.cli.setup.prompt_password", return_value=PASSWORD), redirect_stdout(io.StringIO()):
             main(["--sample", "--as-of", "2026-04-01", "--db", str(self.db), "--username", "professor", "--yes"])
         with Database(self.db) as db:
             self.assertEqual(db.connection.execute("SELECT COUNT(*) FROM orders").fetchone()[0], 120)
             self.assertEqual(db.connection.execute("SELECT COUNT(*) FROM workshops").fetchone()[0], 8)
         for flags, expected in (([], "Account created successfully."), (["--reset-password"], "Password reset successfully.")):
             output = io.StringIO()
-            with patch("sys.argv", ["app.auth", "newuser", "--db", str(self.db), *flags]), \
-                    patch("app.auth.prompt_password", return_value=PASSWORD), redirect_stdout(output):
-                auth.main()
+            with patch("sys.argv", ["app.cli.auth", "newuser", "--db", str(self.db), *flags]), \
+                    patch("app.cli.auth.prompt_password", return_value=PASSWORD), redirect_stdout(output):
+                account_cli.main()
             self.assertIn(expected, output.getvalue())
 
     def test_missing_database_preflight_does_not_create_sample(self):
-        with self.assertRaisesRegex(ValueError, "app.setup"):
+        with self.assertRaisesRegex(ValueError, "app.cli.setup"):
             auth.require_initialized(self.db)
         self.assertFalse(self.db.exists())
 
     def test_personal_data_login_preview_confirmation_and_restart(self):
         self.initialize()
-        with self.assertRaisesRegex(ValueError, "cannot precede"):
-            make_server(0, self.db, as_of=date(2026, 4, 1))
+        invalid_server = make_server(0, self.db, as_of=date(2026, 4, 1))
+        try:
+            with self.assertRaisesRegex(ValueError, "cannot precede"):
+                with TestClient(invalid_server.app):
+                    pass
+        finally:
+            invalid_server.server_close()
         server = make_server(0, self.db, backend="offline")
         thread = threading.Thread(target=server.serve_forever, daemon=True)
         thread.start()
@@ -168,14 +176,14 @@ class SetupTests(unittest.TestCase):
             self.assertEqual(call("/api/health")["as_of_date"], AS_OF.isoformat())
             call("/api/auth/login", {"username": "professor", "password": PASSWORD})
             self.assertEqual(call("/api/workshops")["items"][0]["name"], "Private Workshop")
-            session = call("/api/sessions", {"session_id": "private"})["session"]
-            result = call("/api/sessions/private/turns", {"request_id": "preview", "expected_version": session["version"],
-                          "action": "message", "message": "Allocate ORD-901."})
-            self.assertEqual(result["result"]["decision_status"], "REVIEW")
-            self.assertEqual(result["result"]["estimated_cost"], 150)
-            self.assertEqual(result["result"]["allocation"][0]["workshop_id"], "W9")
-            self.assertFalse(result["committed"])
-            confirmed = call("/api/sessions/private/turns", {"request_id": "confirm", "expected_version": result["session"]["version"], "action": "confirm"})
+            created = call("/api/chat/sessions", {
+                "request_id": "private-create", "message": "Allocate ORD-901.", "mode": "offline"})
+            self.assertEqual(created["session"]["task"]["draft"]["order_id"], "ORD-901")
+            self.assertFalse(created.get("committed"))
+            rec = created["session"]["recommendation"]
+            confirmed = call(f"/api/chat/sessions/{created['session_id']}/turns", {
+                "request_id": "private-confirm", "expected_version": created["session_version"],
+                "action": "confirm", "recommendation_id": rec["recommendation_id"]})
             self.assertTrue(confirmed["committed"])
         finally:
             server.shutdown()

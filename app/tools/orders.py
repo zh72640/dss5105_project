@@ -1,17 +1,31 @@
-from app.schemas import StructuredRequest
-from .data import load_orders
-from .models import Order
+"""Category 2: order fact Tool → app.db.order_repository."""
+from typing import Annotated
+
+from langchain_core.runnables import RunnableConfig
+from langchain_core.tools import tool
+from pydantic import Field
+
+from app.db.order_repository import get_order as load_order
+from app.schemas.tool import ToolFailure
 
 
-def resolve_order(request: StructuredRequest) -> tuple[Order | None, str | None]:
-    orders = load_orders()
-    if request.order_id:
-        order = orders.get(request.order_id)
-        return (order, None) if order else (None, f"Order {request.order_id} is not in the dataset")
-    matches = [o for o in orders.values() if not request.customer or o.customer.casefold() == request.customer.casefold()]
-    if len(matches) == 1:
-        return matches[0], None
-    if len(matches) > 1:
-        return None, f"{len(matches)} orders match {request.customer or 'the request'}"
-    return None, "No matching order was found"
+@tool
+def get_order(order_id: Annotated[str, Field(min_length=1)], config: RunnableConfig) -> dict:
+    """
+    Read a registered order and its current production state.
 
+    Args:
+        order_id: Exact registered order identifier.
+        config: Trusted runtime config (connection). Not model-supplied.
+
+    Returns:
+        dict: Registered order fields plus remaining_pieces.
+
+    Errors:
+        ORDER_NOT_FOUND when the ID is not registered.
+    """
+    connection = config["configurable"]["connection"]
+    order = load_order(connection, order_id)
+    if order is None:
+        raise ToolFailure("ORDER_NOT_FOUND", "No registered order has that ID.")
+    return {**order, "remaining_pieces": order["pieces"] - order["completed_pieces"]}

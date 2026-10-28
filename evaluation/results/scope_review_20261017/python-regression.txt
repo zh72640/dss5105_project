@@ -1,0 +1,10 @@
+/private/tmp/sweaterco-uv-python/cpython-3.14.6-macos-aarch64-none/lib/python3.14/tempfile.py:484: ResourceWarning: Implicitly cleaning up <HTTPError 401: 'Unauthorized'>
+  _warnings.warn(self.warn_message, ResourceWarning)
+<REPO>/.venv/lib/python3.14/site-packages/google/genai/types.py:42: DeprecationWarning: '_UnionGenericAlias' is deprecated and slated for removal in Python 3.17
+  VersionedUnionType = Union[builtin_types.UnionType, _UnionGenericAlias]
+<frozen codecs>:322: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x112609d50>
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+----------------------------------------------------------------------
+Ran 280 tests in 17.517s
+
+OK

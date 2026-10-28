@@ -1,0 +1,25 @@
+✔ both entry points bind the same recommendation and session version (2.4161ms)
+✔ confirmed or superseded recommendations cannot be accepted (0.3769ms)
+✔ a persisted stale-plan response is delivered for UI synchronization (0.6098ms)
+✔ network failure remains retryable; authorization errors are explicit (1.4017ms)
+✔ an older slow response cannot overwrite the newly selected session (7.0744ms)
+✔ an uncertain confirmation retries the exact same persisted operation (7.1907ms)
+✔ admin badge follows authenticated role and disappears on account switch or expired login (5.0945ms)
+✔ reload restores badge from server identity and demo mode remains regular (2.293ms)
+✔ accept is disabled for missing, blocked, rejected and already closed drafts (1.4385ms)
+✔ uncertain confirmation persists the same key/version and blocks another confirmation (2.8844ms)
+✔ session creation resumes with the original intake after a failed first turn (3.6719ms)
+✔ a rejected HTTP version is not automatically retried as a new confirmation (1.393ms)
+✔ two rapid confirmation clicks create only one in-flight write (1.4484ms)
+✔ text size persists across initialization and invalid storage uses medium (1.2185ms)
+✔ form edits preserve exact changes and idempotency key for a retry (1.6417ms)
+✔ selected model is captured per turn and kept during a safe retry (1.7629ms)
+✔ offline selection omits model and creation keeps its initial model choice (1.5319ms)
+ℹ tests 17
+ℹ suites 0
+ℹ pass 17
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 4830.9148
