@@ -100,8 +100,10 @@ class Workshop:
         lateness_score = eta - allowed_days if self.status == "ACTIVE" else 10000
         return lateness_score
 
+
     def get_defect_score(self, batch):
         return self.defect_rate * batch["pieces"] / self.capacity if self.status == "ACTIVE" else 10000        
+
 
     def get_hybrid_score(self, batch, queue):
         lateness_score = self.get_lateness_score(batch, queue)
@@ -214,22 +216,24 @@ class Simulator:
                 "pieces": batch["pieces"],
                 "turnaround": done_day - day,
                 "late": done_date > batch["due_date"],
+                "late_days": max(0, (done_date - batch["due_date"]).days),
                 "defective": defective,
                 "cost": batch["pieces"] * w.cost,
             })
         self.results[name] = outcomes
         return outcomes
 
-    def report(self):
-        header = f"{'policy':<16}{'mean days':>10}{'p90 days':>10}{'% late':>8}{'% defect':>10}{'cost':>12}{'max share':>11}"
-        print(header)
-        print("-" * len(header))
+    def metrics(self):
+        """name -> (mean days, p90 days, % late, avg late days, % defect, cost, max share)"""
+        res = {}
         for name, out in self.results.items():
             days = sorted(o["turnaround"] for o in out)
             n = len(out)
             mean = sum(days) / n
             p90 = days[int(0.9 * n)]
             late = 100 * sum(o["late"] for o in out) / n
+            late_orders = [o["late_days"] for o in out if o["late"]]
+            avg_late_days = sum(late_orders) / len(late_orders) if late_orders else 0
             defect = 100 * sum(o["defective"] for o in out) / n
             cost = sum(o["cost"] for o in out)
             pieces = sum(o["pieces"] for o in out)
@@ -237,7 +241,16 @@ class Simulator:
             for o in out:
                 by_w[o["workshop"]] = by_w.get(o["workshop"], 0) + o["pieces"]
             share = 100 * max(by_w.values()) / pieces
-            print(f"{name:<16}{mean:>10.1f}{p90:>10.1f}{late:>7.0f}%{defect:>9.0f}%{cost:>12,.0f}{share:>10.0f}%")
+            res[name] = (mean, p90, late, avg_late_days, defect, cost, share)
+        return res
+
+    def report(self, metrics=None):
+        metrics = metrics or self.metrics()
+        header = f"{'policy':<24}{'mean days':>10}{'p90 days':>10}{'% late':>8}{'avg late days':>14}{'% defect':>10}{'cost':>12}{'max share':>11}"
+        print(header)
+        print("-" * len(header))
+        for name, (mean, p90, late, avg_late_days, defect, cost, share) in metrics.items():
+            print(f"{name:<24}{mean:>10.2f}{p90:>10.2f}{late:>7.2f}%{avg_late_days:>14.2f}{defect:>9.2f}%{cost:>12,.0f}{share:>10.2f}%")
 
 
 # ------------------------- the three baselines to beat -------------------------
@@ -280,17 +293,55 @@ def hybrid(batch, workshops, queues):
     ok = eligible_workshops(batch, workshops)
     return min(ok, key=lambda w: w.get_hybrid_score(batch, queues)).workshop_id
 
+def weighted_hybrid_score(batch, workshops, queues, w_late=0.8, w_defect=0.2):
+    """Weighted mix of lateness (80%) and defect (20%) scores, each min-max scaled to 0-1
+    across the eligible workshops so they are on a common scale."""
+    ok = eligible_workshops(batch, workshops)
+    late = [w.get_lateness_score(batch, queues) for w in ok]
+    defect = [w.get_defect_score(batch) for w in ok]
+
+    def scale(vals):
+        lo, hi = min(vals), max(vals)
+        return [0.0 if hi == lo else (v - lo) / (hi - lo) for v in vals]
+
+    scores = [w_late * l + w_defect * d for l, d in zip(scale(late), scale(defect))]
+    return ok[scores.index(min(scores))].workshop_id
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--shock", action="store_true",
                         help="close a random workshop for two weeks mid-run")
+    parser.add_argument("--multi", action="store_true",
+                        help="run 10 times with different random seeds and print the averaged metrics")
     args = parser.parse_args()
 
-    sim = Simulator(shock=args.shock)
-    sim.run(random_choice, "random")
-    sim.run(greedy_biggest, "greedy_biggest")
-    sim.run(cheapest, "cheapest")
-    sim.run(minimum_lateness, "minimum_lateness")
-    sim.run(minimum_defect, "minimum_defect")
-    sim.run(hybrid, "hybrid")
-    sim.report()
+    policies = [
+        (random_choice, "random"),
+        (greedy_biggest, "greedy_biggest"),
+        (cheapest, "cheapest"),
+        (minimum_lateness, "minimum_lateness"),
+        (minimum_defect, "minimum_defect"),
+        # (hybrid, "hybrid"),
+        (weighted_hybrid_score, "weighted_hybrid"),
+    ]
+
+    if args.multi:
+        n_runs = 10
+        seeds = [5105 + i for i in range(n_runs)]
+        total = {}
+        for seed in seeds:
+            sim = Simulator(shock=args.shock, seed=seed)
+            for fn, name in policies:
+                sim.run(fn, name)
+            for name, vals in sim.metrics().items():
+                acc = total.setdefault(name, [0.0] * len(vals))
+                for i, v in enumerate(vals):
+                    acc[i] += v
+        print(f"Average over {n_runs} runs (seeds {seeds[0]}-{seeds[-1]})")
+        sim.report({name: tuple(v / n_runs for v in acc) for name, acc in total.items()})
+    else:
+        sim = Simulator(shock=args.shock)
+        for fn, name in policies:
+            sim.run(fn, name)
+        sim.report()
