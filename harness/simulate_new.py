@@ -93,7 +93,7 @@ class Workshop:
     max_batch: int       # max pieces per batch (None = no cap)
     queue0: float        # days of work already in hand at the start of the run
     notes: str
-
+            
     def get_lateness_score(self, batch, queue):
         eta = batch["pieces"] / self.capacity + self.lead_days + queue[self.workshop_id]
         allowed_days = (batch["due_date"] - batch["sent_date"]).days
@@ -102,7 +102,7 @@ class Workshop:
 
 
     def get_defect_score(self, batch):
-        return self.defect_rate * batch["pieces"] / self.capacity if self.status == "ACTIVE" else 10000
+        return self.defect_rate * batch["pieces"] / self.capacity if self.status == "ACTIVE" else 10000        
 
 
     def get_hybrid_score(self, batch, queue):
@@ -184,9 +184,9 @@ class Simulator:
 
         outcomes = []
         for batch in self.batches:
-            day = (batch["sent_date"] - day0).days
-            queues = {w: max(0.0, queue_free[w] - day) for w in self.workshops}
-            choice = allocator(dict(batch), self.workshops, queues)
+            day = (batch["sent_date"] - day0).days            
+            queues = {w: max(0.0, queue_free[w] - day) for w in self.workshops}            
+            choice = allocator(dict(batch), self.workshops, queues)            
 
             ok = {w.workshop_id for w in eligible_workshops(batch, self.workshops)}
             if choice not in ok:
