@@ -26,11 +26,15 @@ def prepare(*, db_path, session_id, owner, request_id, interpretation, as_of, se
                 return {"ready": False, "task": task, "issues": [{
                     "code": "TASK_CLOSED", "field": "task", "severity": "blocking",
                     "question": "Create a new request for another allocation."}]}
-            if interpretation.patch_operations or interpretation.ambiguity_reason or interpretation.unsupported_constraints:
+            if (interpretation.patch_operations or interpretation.ambiguity_reason or
+                    interpretation.unsupported_constraints or interpretation.answered_question_ids):
                 task = apply_interpretation(task, interpretation, sequence)
                 task["task_version"] += 1
                 chat_repository.supersede_current(connection, session_id)
-            differences = []
+            # Keep the original disclosure through constraint-only revisions.
+            changed_facts = {p.field for p in interpretation.patch_operations if p.field in FACT_FIELDS}
+            differences = [d for d in task.get('report', {}).get('resolved_differences', [])
+                           if d['field'] not in changed_facts]
             order_id = task["draft"].get("order_id")
             order = get_order(connection, order_id) if order_id else None
             if order:

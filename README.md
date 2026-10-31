@@ -1,5 +1,7 @@
 # SweaterCo Dispatch Desk — MVP v0.6
 
+**2026-10-31 fixes:** Incremental constraints, grounded date/name normalization, visible registered-order differences, shorter checked explanations with fallback, persistent message feedback, and current evaluation/CI. See [changes and verification](docs/REMEDIATION_RESULTS_2026-10-31.md) and [safe demo reset](docs/DEMO_RESET.md).
+
 **2026-10-27 allocation explanations:** The `weighted_hybrid` objective integrates zhen's normalized 80% lateness / 20% defect-exposure policy for single-workshop plans. LLM replies now present the plan, method, saved comparison evidence and human review step using the supplied explanation templates. DeepSeek reads `DEEPSEEK_API_KEY` at startup. See [integration and validation notes](docs/STRATEGY_EXPLANATION_INTEGRATION.md).
 
 **2026-10-27 UI redesign:** The supplied UI prototypes now drive the shared knit-inspired login, top navigation, dashboard, three-column Requests view, order register and workshop queue dialogs. Real Chat v2 confirmation and production controls are preserved. See the [implementation and verification notes](docs/UI_REDESIGN_2026-10-27.md).

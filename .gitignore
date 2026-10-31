@@ -12,3 +12,6 @@ runtime/*
 evaluation/live_results/
 
 .cache/
+
+# Local read-only upstream branch checkouts
+remote-checkouts/

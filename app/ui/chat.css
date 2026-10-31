@@ -27,3 +27,16 @@
 
 @media(max-width:650px){#chat-app .chat-shell{flex:none}.conversation-main,.request-review{flex:none}.request-review{overflow:visible}#chat-content{flex:none;min-height:180px;max-height:65dvh}.conversation-main{min-height:0}#chat-composer{margin-top:auto}}
 .review-actions{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0}.review-actions button{flex:1;font-size:.85rem}.request-review .review-actions{margin-bottom:22px}
+
+/* Keep the submitted message visible while the server prepares its response. */
+.pending-message.user>div{border-color:var(--indigo);background:var(--indigo-tint)}
+.reply-progress-label{display:flex;align-items:center;gap:12px;color:var(--ink-2);min-height:28px}
+.reply-progress-help{font-size:.85rem;color:var(--muted);margin:4px 0 0;line-height:1.6}
+.reply-dots{display:inline-flex;align-items:center;gap:5px;height:20px}
+.reply-dots i{display:block;width:6px;height:6px;background:var(--indigo);border-radius:50%;animation:reply-pulse 1.2s ease-in-out infinite}
+.reply-dots i:nth-child(2){animation-delay:.16s}.reply-dots i:nth-child(3){animation-delay:.32s}
+.is-typing .chat-message-body:after{content:'';display:inline-block;width:2px;height:1em;margin-left:3px;vertical-align:-.12em;background:var(--indigo);animation:reply-cursor .8s steps(2,start) infinite}
+.show-full-reply{margin-top:10px;padding:4px 9px;font-size:.78rem;color:var(--ink-2);background:var(--surface);border:1px solid var(--line);border-radius:6px}
+@keyframes reply-pulse{0%,70%,100%{transform:translateY(0);opacity:.4}35%{transform:translateY(-4px);opacity:1}}
+@keyframes reply-cursor{to{opacity:0}}
+@media(prefers-reduced-motion:reduce){.reply-dots i,.is-typing .chat-message-body:after{animation:none}}

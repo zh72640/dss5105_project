@@ -4,6 +4,8 @@ from pydantic import ValidationError
 from app.schemas.allocation import AllocationFields
 from app.schemas.chat import AllocationExtraction
 from app.services.chat.interpretation import InterpretationValidationError, validate_interpretation
+from app.services.intake.evidence import normalize_patch, pending_due_date
+from app.services.intake.normalization import order_ids
 
 
 class ExtractionValidationError(ValueError):
@@ -45,8 +47,11 @@ def validate_candidate(candidate, *, message, conversation):
     except ValidationError as error:
         raise ExtractionValidationError('format', format_details(
             error, candidate, message, sequence)) from error
+    extracted.patch_operations = [normalize_patch(p, message, conversation) for p in extracted.patch_operations]
+    if pending_due_date(message):
+        extracted.ambiguity_reason = ','.join(filter(None, [extracted.ambiguity_reason, 'unconfirmed_due_date']))
     for index, patch in enumerate(extracted.patch_operations):
-        if patch.field in AllocationFields.model_fields:
+        if patch.field in AllocationFields.model_fields and patch.op == 'set':
             try:
                 AllocationFields.model_validate({patch.field: patch.value})
             except ValidationError as error:
@@ -80,3 +85,15 @@ def failure_message(stage, detail):
     if reason == 'STALE_EVIDENCE':
         return f"The extracted {label} references an earlier message without an explicit request to reuse it."
     return f"The extracted {label} could not be verified against the user message."
+
+
+def recovery_hint(message, field):
+    """Report recognized references without applying a partially valid request."""
+    ids = order_ids(message, allow_short=True)
+    reference = (' Order reference ' + ids[0] + ' is present in your message.') if len(ids) == 1 else ''
+    help_text = {'due_date': ' Please restate the due date including its year.',
+                 'order_date': ' Please restate the order date including its year.',
+                 'preferred_workshop': ' Please name the required workshop or its ID.',
+                 'exclusion': ' Please specify which workshops to exclude or allow again.',
+                 'objective': ' Choose earliest completion, lowest cost, lowest defects, or a supported hybrid.'}
+    return reference + help_text.get(field, ' Please restate the affected requirement.') + ' This message has not changed the allocation requirements.'

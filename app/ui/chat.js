@@ -3,6 +3,8 @@
   const C=ChatV2,$=id=>document.getElementById(id);
   let user=null,session=null,listCursor=0,epoch=0,listEpoch=0,scope=null,activeId=null,starting=false,loading=false;
   const executing=new Set();
+  const outgoing=new Map();
+  let transcript=[],replyAnimation=null;
   const stateNames={COLLECTING:'Collecting requirements',BLOCKED:'Needs clarification',READY:'Ready to calculate',RECOMMENDED:'Awaiting confirmation',CONFIRMED:'Committed',CANCELLED:'Cancelled'};
   const objectiveNames={min_delay:'Earliest completion',min_cost:'Lowest cost',min_defects:'Lowest defect rate',hybrid:'Weighted time and quality',weighted_hybrid:'Normalized lateness and defect exposure (80/20)'};
   const key=()=>`sweaterco.chat.v2.${user?.username||''}`;
@@ -52,11 +54,73 @@
     url.searchParams.set('session',sid);history.replaceState(null,'',url);
   }
   function clearConversation(){
-    session=null;loading=false;epoch++;$('chat-input').value='';$('chat-messages').replaceChildren();
+    stopTyping(false);transcript=[];
+    session=null;loading=false;epoch++;$('chat-input').value='';$('chat-messages').replaceChildren();$('chat-pending').replaceChildren();$('chat-announcement').textContent='';
     $('chat-validation').hidden=true;$('chat-plan').replaceChildren();$('chat-plan').hidden=true;
     $('review-placeholder').hidden=false;$('chat-decision-timeline').replaceChildren(C.text('li','Start a request to begin the record.'));$('chat-empty').hidden=false;$('chat-title').textContent='New request';$('chat-subtitle').textContent='Enter your request to begin.';status('');
   }
   function status(value){$('chat-status').textContent=value||'';}
+  function nearLatest(){const n=$('chat-content');return n.scrollHeight-n.scrollTop-n.clientHeight<100;}
+  function followLatest(){const n=$('chat-content');if(n.scrollTo)n.scrollTo({top:n.scrollHeight,behavior:'instant'});else n.scrollTop=n.scrollHeight;}
+  function messageText(operation){return operation&&(operation.body.action==='message'||operation.url==='/api/chat/sessions')?operation.body.message||'':'';}
+  function renderPending(){
+    const target=$('chat-pending'),follow=nearLatest();target.replaceChildren();
+    const operation=scope&&(outgoing.get(runningKey(scope,activeId))||pending());
+    $('chat-empty').hidden=transcript.length>0||!!operation;
+    if(!operation)return;
+    const working=busy(),message=messageText(operation),floor=(operation.body.expected_version||0)*2;
+    const saved=transcript.some(m=>m.role==='user'&&m.sequence>floor&&m.content===message);
+    if(message&&!saved){
+      const row=C.text('article',null,'chat-message user pending-message');
+      row.append(C.text('small',working?'You · Sent':operation.received?'You · Delivered':'You · Saved locally'),C.text('div',message));target.append(row);
+    }
+    const row=C.text('article',null,'chat-message assistant reply-progress');
+    row.append(C.text('small','Assistant'));
+    const progress=C.text('div',null,'reply-progress-label');progress.setAttribute('role','status');
+    const label=working?(operation.received?'Loading your reply':operation.body.action==='confirm'?'Saving your decision':operation.body.action==='archive'?'Closing the request':'Preparing your reply'):
+      operation.received?'Reply received':operation.error_message?'Reply interrupted':'Reply not yet received';
+    progress.append(C.text('span',label));
+    if(working){const dots=C.text('span',null,'reply-dots');dots.setAttribute('aria-hidden','true');for(let i=0;i<3;i++)dots.append(C.text('i'));progress.append(dots);}
+    row.append(progress);
+    if(!working)row.append(C.text('p',operation.received?'Refresh the page to view the saved reply.':pending()?'Your message is saved. Use the request controls below to continue.':'Your message is still here. Edit it below and send again.','reply-progress-help'));
+    target.append(row);if(follow)followLatest();
+  }
+  function stopTyping(reveal=true){
+    const animation=replyAnimation;if(!animation)return;
+    cancelAnimationFrame(animation.frame);replyAnimation=null;
+    if(reveal){animation.body.textContent=animation.content;$('chat-announcement').textContent=animation.content;}
+    animation.body.removeAttribute('aria-hidden');animation.article.classList.remove('is-typing');animation.button.remove();
+  }
+  function typeReply(article,body,content){
+    if(!content||window.matchMedia?.('(prefers-reduced-motion: reduce)').matches){$('chat-announcement').textContent=content;return;}
+    const chars=Array.from(content),duration=Math.min(6000,Math.max(600,chars.length*14));
+    const button=C.text('button','Show full reply','show-full-reply');button.type='button';
+    const animation={article,body,content,button,frame:null,start:null,ownerScope:scope,slot:activeId};replyAnimation=animation;
+    article.classList.add('is-typing');body.setAttribute('aria-hidden','true');body.textContent=chars[0];
+    button.addEventListener('click',()=>stopTyping());article.append(button);
+    const step=now=>{
+      if(replyAnimation!==animation)return;
+      if(!isCurrent(animation.ownerScope,animation.slot)){stopTyping(false);return;}
+      if(animation.start===null)animation.start=now;
+      const follow=nearLatest(),count=Math.min(chars.length,Math.max(1,Math.ceil(chars.length*(now-animation.start)/duration)));
+      body.textContent=chars.slice(0,count).join('');
+      if(count===chars.length)stopTyping();else animation.frame=requestAnimationFrame(step);
+      if(follow)followLatest();
+    };
+    animation.frame=requestAnimationFrame(step);
+  }
+  function renderMessages(messages,reply){
+    stopTyping(false);transcript=messages;$('chat-messages').replaceChildren();
+    if(reply)$('chat-announcement').textContent='';
+    const latest=messages.filter(m=>m.role==='assistant').at(-1);
+    messages.forEach(m=>{
+      const row=C.text('article',null,'chat-message '+m.role),body=C.text('div',m.content,'chat-message-body');
+      row.append(C.text('small',m.role==='user'?'You':'Assistant'),body);
+      if(m.metadata?.review_changes)row.append(C.reviewChanges(m.metadata.review_changes));
+      $('chat-messages').append(row);
+      if(reply&&m===latest&&(reply.message_id?m.message_id===reply.message_id:m.content===reply.content))typeReply(row,body,m.content);
+    });
+  }
   function endTarget(){
     const operation=pending();if(!operation)return null;
     const isMessage=operation.body.action==='message'||(operation.url==='/api/chat/sessions'&&operation.body.message);
@@ -81,9 +145,10 @@
     $('chat-new').disabled=starting||(!session&&working&&activeId?.startsWith('create:'));
     $('chat-input').disabled=blocked||session?.status==='ARCHIVED';
     $('chat-archive').disabled=blocked||!session||session.status==='ARCHIVED';
-    $('chat-retry').hidden=!operation;$('chat-retry').disabled=working||operation?.run?.retryable===false;
+    $('chat-retry').hidden=!operation||working;$('chat-retry').disabled=working||operation?.run?.retryable===false;
     $('chat-end-request').hidden=!endTarget();$('chat-end-request').disabled=working;$('chat-working').hidden=!working;
     document.querySelectorAll('.chat-recommendation button').forEach(n=>n.disabled=blocked||!C.canConfirm(session?.recommendation));
+    renderPending();
   }
   async function allPages(url){let out=[],cursor=0;do{const data=await C.request(`${url}${url.includes('?')?'&':'?'}after=${cursor}&limit=100`);out.push(...data.items);cursor=data.next_cursor;}while(cursor!=null);return out;}
   async function sessionList(){
@@ -119,14 +184,15 @@
     const dl=C.text('dl');const values={'Order':report.resolved_fields?.order_id,'Category':({TOPS:'Tops',ACCESSORIES:'Accessories'}[report.resolved_fields?.category]||report.resolved_fields?.category),'Remaining pieces':report.resolved_fields?.pieces!=null?report.resolved_fields.pieces-report.resolved_fields.completed_pieces:undefined,'Registered due date':report.resolved_fields?.due_date,'Objective':objectiveNames[report.effective_constraints?.objective],'Workshop limit':report.effective_constraints?.num_workshop_allowed,'Excluded':report.effective_constraints?.exclusion?.join(', ')||'None','Hard deadline':report.effective_constraints?.deadline_required?'Yes':'No'};
     Object.entries(values).forEach(([k,v])=>{const n=C.text('div');n.append(C.text('dt',k),C.text('dd',v??'Pending'));dl.append(n);});target.append(dl);
     const required=C.text('div');required.append(C.text('dt','Required sole workshop'),C.text('dd',report.effective_constraints?.preferred_workshop||'None'));dl.append(required);
+    if(report.resolved_differences?.length)target.append(C.registeredDifferences(report.resolved_differences));
     (report.blocking_issues||[]).forEach(p=>target.append(C.text('p',p.question,'chat-notice')));
     if(report.alternatives?.length)target.append(C.alternatives(report.alternatives));
     else if(report.alternatives_status==='no_known_feasible_alternative')target.append(C.text('p','No known feasible alternative preserves capability, status and your exclusions.','chat-notice'));
   }
-  async function load(sid,followLatest=false){
-    const ownerScope=scope,oldId=session?.session_id;
+  async function load(sid,followLatest=false,reply=null){
+    const ownerScope=scope,oldId=session?.session_id,sameView=activeId===sid;
     activeId=sid;
-    if(oldId!==sid)clearConversation();
+    if(oldId!==sid&&!sameView)clearConversation();
     const token=++epoch;loading=true;controls();status(pending()?pendingNotice():'');
     const scroll=$('chat-content');const nearBottom=scroll.scrollHeight-scroll.scrollTop-scroll.clientHeight<100;
     try{
@@ -135,7 +201,8 @@
       session=snapshot;session.recommendation&&Object.assign(session.recommendation,{session_version:session.version,task_state:session.task.state});
       $('chat-empty').hidden=messages.length>0;$('chat-title').textContent=session.title==='New request'&&session.task.report?.resolved_fields?.order_id?session.task.report.resolved_fields.order_id+' · Dispatch request':session.title;document.querySelectorAll('#chat-session-list button').forEach(b=>{const selected=b.dataset.sessionId===sid;b.classList.toggle('selected',selected);b.setAttribute('aria-current',String(selected));});
       $('chat-subtitle').textContent=`Business date ${session.business_date} · ${stateNames[session.task.state]} · ${session.mode==='offline'?'Offline rules demo':session.model_key}`;
-      $('chat-messages').replaceChildren();messages.forEach(m=>{const n=C.text('article',null,'chat-message '+m.role);n.append(C.text('small',m.role==='user'?'You':'Assistant'),C.text('div',m.content));if(m.metadata?.review_changes)n.append(C.reviewChanges(m.metadata.review_changes));$('chat-messages').append(n);});
+      renderMessages(messages,reply);
+      if(outgoing.get(runningKey(ownerScope,sid))?.received)outgoing.delete(runningKey(ownerScope,sid));
       renderReport();$('chat-plan').replaceChildren();$('chat-plan').hidden=!session.recommendation;
       if(session.recommendation)$('chat-plan').append(C.card(session.recommendation,confirm));renderTimeline(messages);$('chat-business-date').textContent=typeof DispatchUI!=='undefined'?DispatchUI.date(session.business_date):session.business_date;
       persist();sessionURL(sid);controls();status(pending()?pendingNotice():'');if(followLatest||nearBottom||oldId!==sid)scroll.scrollTop=scroll.scrollHeight;return true;
@@ -145,15 +212,19 @@
   async function deliver(){
     const operation=pending(),ownerScope=scope,slot=activeId;
     if(!operation||busy()||operation.run?.retryable===false)return;
-    const execution=runningKey(ownerScope,slot);executing.add(execution);controls();status('');
+    stopTyping();
+    const execution=runningKey(ownerScope,slot);let displayExecution=execution;
+    outgoing.set(execution,operation);executing.add(execution);controls();followLatest();status('');
     let acknowledged=false,responseSid=null;
     try{
       const data=await C.request(operation.url,operation.body);acknowledged=true;responseSid=data.session_id;
       saveOperation(ownerScope,slot,null,operation.url==='/api/chat/sessions'?{request_id:operation.body.request_id,session_id:data.session_id}:null);
       // A result belongs to its original conversation, even after navigation.
-      if(!isCurrent(ownerScope,slot))return;
+      if(!isCurrent(ownerScope,slot)){outgoing.delete(execution);return;}
+      operation.received=true;outgoing.delete(execution);displayExecution=runningKey(ownerScope,data.session_id);
+      outgoing.set(displayExecution,operation);executing.add(displayExecution);
       activeId=data.session_id;sessionURL(data.session_id);persist();
-      if(await load(data.session_id,true)){
+      if(await load(data.session_id,nearLatest(),data.assistant_message)){
         await sessionList();
         if(isCurrent(ownerScope,data.session_id)&&!pending())status(data.http_status>=400?'The issue is shown in the conversation.':data.assistant_message?'':'Session created. Enter your request.');
       }
@@ -174,14 +245,17 @@
       if(sid&&sid!==slot){
         saveOperation(ownerScope,sid,operation,{request_id:operation.body.request_id,session_id:sid});
         saveOperation(ownerScope,slot,null);
+        outgoing.delete(execution);outgoing.set(runningKey(ownerScope,sid),operation);
       }
       if(!wasCurrent)return;
+      if(rejected&&messageText(operation)&&!$('chat-input').value)$('chat-input').value=messageText(operation);
       if(sid){activeId=sid;sessionURL(sid);}
       const displaySlot=activeId;
       if(sid||session)try{await load(sid||session.session_id);}catch{}
       if(isCurrent(ownerScope,displaySlot))status(pending()?pendingNotice():e.message);
     }finally{
-      executing.delete(execution);if(scope===ownerScope)controls();
+      executing.delete(execution);executing.delete(displayExecution);if(scope===ownerScope)controls();
+      if(isCurrent(ownerScope,responseSid||slot)&&!pending()&&!loading&&messageText(operation)&&session?.status!=='ARCHIVED'&&document.activeElement===document.body)$('chat-input').focus();
     }
   }
   async function endRequest(){
@@ -189,7 +263,7 @@
     const execution=runningKey(ownerScope,slot);executing.add(execution);controls();status('Ending the request…');let result=null;
     try{
       const data=await C.request(`/api/chat/sessions/${encodeURIComponent(target.session_id)}/requests/${encodeURIComponent(target.request_id)}/end`,{expected_version:target.expected_version});
-      result=data;saveOperation(ownerScope,slot,null);
+      result=data;saveOperation(ownerScope,slot,null);outgoing.delete(execution);
       if(!isCurrent(ownerScope,slot))return;
       if(session?.session_id===data.session_id)session.version=data.session_version;
       activeId=data.session_id;sessionURL(data.session_id);persist();
@@ -267,7 +341,7 @@
   async function synchronize(){
     const me=await C.request('/api/auth/me');
     if(me.username!==user?.username){epoch++;scope=null;activeId=null;clearConversation();await boot();return;}
-    if(!starting&&!loading&&!busy()&&!pending()&&session)await load(session.session_id);
+    if(!starting&&!loading&&!busy()&&!pending()&&!replyAnimation&&session)await load(session.session_id);
   }
   window.addEventListener('focus',()=>synchronize().catch(e=>status(e.message)));
   setInterval(()=>{if(document.visibilityState==='visible')synchronize().catch(()=>{});},12000);

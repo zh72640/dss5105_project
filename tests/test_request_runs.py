@@ -106,11 +106,11 @@ class RequestEnding(unittest.TestCase):
                     db_path=self.path, as_of=date(2026, 4, 1), mode="llm")["session_id"]
                 request_id = "failed-" + phase
                 with self.assertRaises(chat.ChatError) as failed:
-                    self.turn(FailureScript(phase), request_id)
+                    self.turn(FailureScript(phase, error=ProviderFailure(400 if phase == "explanation" else 503)), request_id)
                 details = failed.exception.details
                 self.assertEqual(details["phase"], phase)
-                self.assertEqual(details["model_error"]["upstream_status"], 503)
-                self.assertTrue(details["retryable"])
+                self.assertEqual(details["model_error"]["upstream_status"], 400 if phase == "explanation" else 503)
+                self.assertEqual(details["retryable"], phase != "explanation")
                 old_tools = self.rows("SELECT invocation_key FROM chat_agent_tool_calls")
                 old_recs = self.rows("SELECT recommendation_id,status FROM chat_recommendations")
                 result = self.end(request_id)

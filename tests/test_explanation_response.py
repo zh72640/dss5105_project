@@ -97,7 +97,7 @@ class ExplanationResponseBehavior(unittest.TestCase):
         self.assertEqual([item['stage'] for item in calls],
                          ['intent', 'extract', 'tool_loop', 'tool_loop', 'tool_loop', 'explanation'])
         self.assertEqual(calls[-1]['prompt']['id'], 'allocation.explain')
-        self.assertEqual(calls[-1]['prompt']['version'], 'v3')
+        self.assertEqual(calls[-1]['prompt']['version'], 'v4')
 
     def test_gemini_explanation_contains_user_content_without_a_network_call(self):
         from langchain_core.messages import convert_to_messages
@@ -170,7 +170,8 @@ class ExplanationResponseBehavior(unittest.TestCase):
         model = ExplanationScript(pieces='150')
         result = self.turn(model, text='Allocate ORD-045, 150 pieces.')
         self.assertEqual(result['issues'][0]['code'], 'EXTRACTION_FORMAT_INVALID')
-        self.assertEqual(result['explanation'], 'Extracted field format validation failed for pieces.')
+        self.assertIn('Extracted field format validation failed for pieces.', result['explanation'])
+        self.assertIn('This message has not changed', result['explanation'])
         self.assertIsNone(result['allocation'])
         self.assertFalse(model.explanation_prompts)
 
@@ -178,15 +179,9 @@ class ExplanationResponseBehavior(unittest.TestCase):
         def unavailable():
             raise BackendError('temporary_failure')
         model = ExplanationScript(actions=actions(), before_explanation=unavailable)
-        with self.assertRaises(chat.ChatError) as failed:
-            self.turn(model)
-        self.assertEqual(failed.exception.code, 'MODEL_UNAVAILABLE')
-        state = self.checkpoint()
-        self.assertEqual(state.next, ('explanation',))
-        self.assertIsNone(state.values['response'])
-        self.assertEqual(len(self.trace()['tool_calls']), 3)
-        model.before_explanation = None
         result = self.turn(model)
+        self.assertIn('Verified summary', result['explanation'])
+        self.assertTrue(any(e['event_type'] == 'explanation_fallback' for e in self.trace()['events']))
         replay = self.turn(ExplanationScript())
         self.assertTrue(replay['replayed'])
         self.assertEqual(replay['allocation'], result['allocation'])
@@ -217,7 +212,7 @@ class ExplanationResponseBehavior(unittest.TestCase):
         self.assertEqual(errors[-1]['code'], 'explanation_unexpected_tools')
 
     def test_unusable_explanations_remain_model_errors_and_never_become_business_failures(self):
-        for text in ('', '这是推荐。'):
+        for text in ('这是推荐。',):
             with self.subTest(text=text):
                 request_id = 'unusable-' + str(len(text))
                 model = ExplanationScript(actions=[*actions()[:3], AIMessage(content=text)])
@@ -229,6 +224,17 @@ class ExplanationResponseBehavior(unittest.TestCase):
                 self.assertIsNotNone(result['allocation'])
                 self.sid = chat.create(owner='alice', request_id='next-' + str(len(text)),
                     db_path=self.path, as_of=date(2026, 4, 1), mode='llm')['session_id']
+
+    def test_truncated_explanation_uses_summary_without_repeating_saved_plan(self):
+        model = ExplanationScript(actions=[*actions()[:3], AIMessage(content='Partial text',
+            response_metadata={'finish_reason':'length'})])
+        result = self.turn(model)
+        self.assertIn('Verified summary', result['explanation'])
+        self.assertFalse(result['committed'])
+        replay = self.turn(ExplanationScript())
+        self.assertEqual(replay['allocation'], result['allocation'])
+        self.assertEqual(replay['explanation'], result['explanation'])
+        self.assertEqual(len(self.trace()['tool_calls']), 3)
 
     def test_changed_facts_during_explanation_remove_old_text_result_and_card(self):
         def change_queue():

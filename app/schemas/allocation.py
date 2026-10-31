@@ -60,6 +60,12 @@ class AllocationExplanationEvidence(Input):
     candidates: list[AllocationCandidateEvidence]
 
 
+class RegisteredDifference(Input):
+    field: str
+    supplied: str | int
+    recorded: str | int
+
+
 class AllocationRecommendationResult(AllocationSkillInput):
     recommendation_id: str
     task_version: Annotated[int, Field(ge=0)]
@@ -73,6 +79,7 @@ class AllocationRecommendationResult(AllocationSkillInput):
     objective: str
     warnings: list[str]
     explanation_evidence: AllocationExplanationEvidence | None = None
+    resolved_differences: list[RegisteredDifference] = Field(default_factory=list)
 
     @field_validator("estimated_delivery_date")
     @classmethod

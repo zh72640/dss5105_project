@@ -2,6 +2,12 @@ from datetime import date
 from app.schemas.business import Workshop
 
 
+def names(connection):
+    """Registered aliases, independent of queue availability."""
+    return {row['workshop_id']: row['name'] for row in
+            connection.execute('SELECT workshop_id,name FROM workshops ORDER BY workshop_id')}
+
+
 def get_all(connection, as_of):
     rows = connection.execute("""SELECT w.*, q.current_queue_days, q.as_of_date FROM workshops w
                                LEFT JOIN workshop_queue q USING(workshop_id) ORDER BY workshop_id""").fetchall()
