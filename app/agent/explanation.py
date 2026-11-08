@@ -7,9 +7,19 @@ from app.llm.errors import BackendError, check_response, text_content, translate
 from app.prompts import get_registry
 from app.schemas.agent import ExplanationInput
 from app.services.chat.presentation import allocation_payload, issue_text
+from app.services.chat.explanation_guard import claim_problem, fallback
 
 
 EXPLANATION_PROMPTS = {('allocation', 'allocation'): 'allocation.explain'}
+
+
+def _fallback(context, payload, reason):
+    from app.db.database import Database
+    from app.db import agent_repository
+    with Database(context.db_path) as db, db.transaction() as connection:
+        agent_repository.record_event(connection, session_id=context.session_id,
+            request_id=context.request_id, event_type='explanation_fallback', detail={'reason': reason})
+    return {'explanation': {'text': fallback(payload)}}
 
 
 def explain(state, runtime):
@@ -34,14 +44,30 @@ def explain(state, runtime):
     try:
         raw = model.invoke(bundle.as_messages())
     except Exception as error:
-        raise translate_error(error, spec.provider) from error
+        translated = translate_error(error, spec.provider)
+        if isinstance(translated, BackendError) and translated.retryable:
+            return _fallback(context, payload, str(translated))
+        raise translated from error
     record_model_response(context, 'explanation', raw, bundle.metadata)
-    check_response(raw, require_text=False)
+    try:
+        check_response(raw, require_text=False)
+    except BackendError as error:
+        if error.retryable:
+            return _fallback(context, payload, str(error))
+        raise
     if (getattr(raw, 'tool_calls', None) or getattr(raw, 'invalid_tool_calls', None) or
             (getattr(raw, 'additional_kwargs', {}) or {}).get('tool_calls')):
         raise BackendError('explanation_unexpected_tools', retryable=False)
-    check_response(raw)
+    try:
+        check_response(raw)
+    except BackendError as error:
+        if error.retryable:
+            return _fallback(context, payload, str(error))
+        raise
     text = text_content(raw).strip()
     if re.search(r'[\u4e00-\u9fff]', text):
         raise BackendError('explanation_not_english', retryable=False)
+    problem = claim_problem(text, payload)
+    if problem:
+        return _fallback(context, payload, problem)
     return {'explanation': {'text': text}}

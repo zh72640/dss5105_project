@@ -5,22 +5,32 @@ const fs=require('node:fs');
 const vm=require('node:vm');
 const path=require('node:path');
 function controller(fetch,options={}){
-  const nodes=new Map(),storage=options.storage||new Map();let sequence=0;
+  const nodes=new Map(),storage=options.storage||new Map(),frames=new Map();let sequence=0,frameSequence=0;
   const location={href:options.href||'http://127.0.0.1/chat'};
-  function node(id){if(!nodes.has(id))nodes.set(id,{id,value:'',textContent:'',hidden:false,disabled:false,children:[],scrollTop:0,scrollHeight:200,clientHeight:100,
-    append(...items){this.children.push(...items);},replaceChildren(...items){this.children=items;},listeners:{},addEventListener(name,callback){this.listeners[name]=callback;},querySelectorAll(){return [];},classList:{toggle(){},remove(){}}});return nodes.get(id);}
+  function node(id){if(!nodes.has(id)){
+    const n={id,value:'',textContent:'',className:'',dataset:{},attributes:{},hidden:false,disabled:false,children:[],scrollTop:0,scrollHeight:200,clientHeight:100,
+      append(...items){items.forEach(item=>{item.parent=this;this.children.push(item);});},replaceChildren(...items){this.children.forEach(item=>item.parent=null);this.children=[];this.append(...items);},
+      remove(){if(this.parent)this.parent.children=this.parent.children.filter(item=>item!==this);this.parent=null;},
+      setAttribute(k,v){this.attributes[k]=String(v);},removeAttribute(k){delete this.attributes[k];},
+      listeners:{},addEventListener(name,callback){this.listeners[name]=callback;},querySelectorAll(){return [];}};
+    n.classList={add(...names){n.className=[...new Set([...n.className.split(' ').filter(Boolean),...names])].join(' ');},remove(...names){n.className=n.className.split(' ').filter(name=>!names.includes(name)).join(' ');},toggle(){}};
+    nodes.set(id,n);
+  }return nodes.get(id);}
   const context=vm.createContext({document:{getElementById:node,createElement:tag=>node('element-'+nodes.size),querySelectorAll:()=>[],documentElement:{dataset:{}},body:{classList:{toggle(){},remove(){}}}},
     localStorage:{getItem:k=>storage.get(k),setItem:(k,v)=>storage.set(k,v),removeItem:k=>storage.delete(k)},
-    storage,window:{addEventListener(){}},setInterval(){},location,history:{replaceState(_state,_title,url){location.href=String(url);}},URL,
+    storage,window:{addEventListener(){},matchMedia:()=>({matches:!!options.reducedMotion})},setInterval(){},
+    requestAnimationFrame:callback=>{frames.set(++frameSequence,callback);return frameSequence;},cancelAnimationFrame:id=>frames.delete(id),
+    location,history:{replaceState(_state,_title,url){location.href=String(url);}},URL,
     crypto:{randomUUID:()=> sequence++?'client-key-'+sequence:'fixed-client-key'},console,fetch});
   vm.runInContext(fs.readFileSync(path.join(__dirname,'../app/ui/chat-common.js'),'utf8'),context);
   let source=fs.readFileSync(path.join(__dirname,'../app/ui/chat.js'),'utf8');
   source=source.replace('boot().catch(e=>status(e.message));',`globalThis.controller={boot,load,confirm,deliver,send,newSession,endRequest,controls,synchronize,button:id=>$(id),storage,location,
     restorePending:p=>{saveOperation(scope,activeId,p);},
-    state:()=>({session,pending:pending(),busy:busy(),operations:scope?.operations,activeId}),
+    state:()=>({session,pending:pending(),busy:busy(),operations:scope?.operations,activeId,typing:!!replyAnimation}),
     setSession:s=>{user={username:'alice'};if(!scope)scope={key:key(),operations:{...(savedState(key()).operations||{})}};session=s;activeId=s?.session_id||null;}};`);
   vm.runInContext(source,context);
   context.controller.setSession(null);
+  context.controller.frame=now=>{const callbacks=[...frames.values()];frames.clear();callbacks.forEach(callback=>callback(now));};
   return context.controller;
 }
 const snapshot=id=>({session_id:id,title:id,version:1,business_date:'2026-04-01',mode:'offline',status:'OPEN',task:{state:'RECOMMENDED',report:{}},recommendation:null});
@@ -401,4 +411,124 @@ test('a legacy failed first turn without a selected session remains accessible o
   const api=controller(chatServer(()=>{throw Error('Must not auto retry');}),{storage});
   await api.boot();assert.equal(api.state().session.session_id,'old');assert.ok(api.state().pending);
   assert.equal(api.button('chat-end-request').hidden,false);
+});
+
+const visibleText=n=>[n.textContent,...n.children.map(visibleText)].join(' ');
+const replyText='I have checked the order requirements. Please review the workshop recommendation before confirming. '.repeat(5);
+const messagePair=(message,sequence=1)=>[
+  {message_id:'user-new',sequence,role:'user',content:message},
+  {message_id:'reply-new',sequence:sequence+1,role:'assistant',content:replyText}
+];
+
+test('a first submission stays visible during the POST and session handoff, then reveals only its new reply',async()=>{
+  const post=deferred(),snapshotReady=deferred(),message='Allocate ORD-045 at the lowest cost.';
+  const base=chatServer(()=>post.promise);
+  const api=controller(async(url,options)=>{
+    if(url==='/api/chat/sessions/created')return snapshotReady.promise;
+    if(url.includes('/messages'))return response({items:messagePair(message),next_cursor:null});
+    return base(url,options);
+  });
+  api.button('chat-input').value=message;
+  const work=api.button('chat-composer').listeners.submit({preventDefault(){}});
+  assert.equal(api.button('chat-input').value,'');assert.equal(api.button('chat-empty').hidden,true);
+  assert.match(visibleText(api.button('chat-pending')),/Allocate ORD-045.*Preparing your reply/);
+  assert.equal(api.button('chat-retry').hidden,true);
+  post.resolve(response({session_id:'created',assistant_message:{message_id:'reply-new',content:replyText}}));
+  await new Promise(setImmediate);
+  assert.equal(api.state().busy,true);assert.equal(api.button('chat-input').disabled,true);
+  assert.match(visibleText(api.button('chat-pending')),/Allocate ORD-045.*Loading your reply/);
+  snapshotReady.resolve(response(snapshot('created')));await work;
+  assert.equal(api.button('chat-pending').children.length,0);
+  assert.equal(api.button('chat-messages').children.filter(n=>n.className.includes('user')).length,1);
+  const body=api.button('chat-messages').children[1].children[1];
+  assert.equal(api.state().typing,true);assert.ok(body.textContent.length<replyText.length);
+  api.frame(0);api.frame(120);
+  assert.ok(body.textContent.length>1&&body.textContent.length<replyText.length);
+  api.frame(7000);assert.equal(body.textContent,replyText);assert.equal(api.state().typing,false);
+  assert.equal(api.button('chat-announcement').textContent,replyText);
+  await api.load('created');assert.equal(api.state().typing,false);
+  assert.equal(api.button('chat-messages').children[1].children[1].textContent,replyText);
+});
+
+test('a repeated message is still shown as a new pending submission',async()=>{
+  const gate=deferred(),message='Use the fastest workshop.';
+  const api=controller(async(url,options)=>{
+    if(options?.method==='POST')return gate.promise;
+    if(url.includes('/messages'))return response({items:messagePair(message),next_cursor:null});
+    if(url.startsWith('/api/chat/sessions?'))return response({items:[],next_cursor:null});
+    return response(snapshot('s'));
+  });
+  await api.load('s');const work=api.send('message',message);
+  assert.match(visibleText(api.button('chat-pending')),/Use the fastest workshop/);
+  gate.resolve(response({session_id:'s'}));await work;
+});
+
+test('a lost reply retains the message across reload and retries the same request without duplicate bubbles',async()=>{
+  let fail=true,delivered=false;const calls=[],message='Allocate order 45';
+  const base=chatServer((url,body)=>{calls.push(body);if(fail)throw Error('Connection lost');delivered=true;return response({session_id:'old',assistant_message:{message_id:'reply-new',content:replyText}});});
+  const fetch=(url,options)=>url.includes('/messages')?response({items:delivered?messagePair(message,3):[],next_cursor:null}):base(url,options);
+  const api=controller(fetch);await api.load('old');await api.send('message',message);
+  assert.match(visibleText(api.button('chat-pending')),/Allocate order 45.*Reply interrupted/);
+  const restored=controller(fetch,{storage:api.storage,href:api.location.href});await restored.boot();
+  assert.match(visibleText(restored.button('chat-pending')),/Allocate order 45.*Reply interrupted/);
+  fail=false;await restored.deliver();assert.deepEqual(calls[0],calls[1]);
+  assert.equal(restored.button('chat-pending').children.length,0);
+  assert.equal(restored.button('chat-messages').children.filter(n=>n.className.includes('user')).length,1);
+});
+
+test('an explicitly rejected submission remains visible and restores editable input',async()=>{
+  const api=controller(chatServer(()=>({ok:false,status:400,json:async()=>({error:'INVALID_REQUEST',message:'Please revise the request.'})})));
+  api.setSession(snapshot('old'));await api.send('message','Keep this message');
+  assert.equal(api.state().pending,null);assert.equal(api.button('chat-input').disabled,false);
+  assert.equal(api.button('chat-input').value,'Keep this message');
+  assert.match(visibleText(api.button('chat-pending')),/Keep this message.*Reply interrupted/);
+});
+
+test('show full reply completes the text and reduced motion skips the animation',async()=>{
+  for(const reducedMotion of [false,true]){
+    const base=chatServer(()=>response({session_id:'old',assistant_message:{message_id:'reply-new',content:replyText}}));
+    const api=controller((url,options)=>url.includes('/messages')?response({items:messagePair('Hello',3),next_cursor:null}):base(url,options),{reducedMotion});
+    api.setSession(snapshot('old'));await api.send('message','Hello');
+    const article=api.button('chat-messages').children[1];
+    assert.equal(api.state().typing,!reducedMotion);
+    if(!reducedMotion)article.children.find(n=>n.className==='show-full-reply').listeners.click();
+    assert.equal(api.state().typing,false);assert.equal(article.children[1].textContent,replyText);
+    api.frame(9000);assert.equal(article.children[1].textContent,replyText);
+  }
+});
+
+test('switching conversations cancels the old animation and never displays its pending message',async()=>{
+  let delivered=false;
+  const base=chatServer(()=>{delivered=true;return response({session_id:'old',assistant_message:{message_id:'reply-new',content:replyText}});});
+  const api=controller((url,options)=>url.includes('/old/messages')?response({items:delivered?messagePair('Old request',3):[],next_cursor:null}):base(url,options));
+  api.setSession(snapshot('old'));await api.send('message','Old request');assert.equal(api.state().typing,true);
+  await api.load('new');api.frame(8000);
+  assert.equal(api.state().typing,false);assert.equal(api.button('chat-messages').children.length,0);
+  assert.equal(api.button('chat-pending').children.length,0);assert.equal(api.button('chat-announcement').textContent,'');
+});
+
+test('reading older messages is not interrupted by typing or background synchronization',async()=>{
+  let snapshots=0;
+  const base=chatServer(()=>response({session_id:'old',assistant_message:{message_id:'reply-new',content:replyText}}));
+  const api=controller((url,options)=>{
+    if(url==='/api/chat/sessions/old')snapshots++;
+    return url.includes('/messages')?response({items:messagePair('Hello',3),next_cursor:null}):base(url,options);
+  });
+  api.setSession(snapshot('old'));await api.send('message','Hello');
+  const scroll=api.button('chat-content');scroll.scrollHeight=2000;scroll.clientHeight=200;scroll.scrollTop=100;
+  api.frame(0);api.frame(200);assert.equal(scroll.scrollTop,100);
+  await api.synchronize();assert.equal(snapshots,1);assert.equal(api.state().typing,true);
+});
+
+
+test('registered fact differences are visible before confirmation',async()=>{
+  const view=snapshot('difference');
+  view.task.report={ready_for_planning:true,resolved_differences:[{field:'pieces',supplied:1200,recorded:800}]};
+  const ui=controller(async url=>response(url.includes('/messages')?{items:[]}:view));
+  await ui.load('difference');
+  const flatten=node=>[node.textContent,...node.children.map(flatten)].join(' ');
+  const content=flatten(ui.button('chat-validation'));
+  assert.match(content,/Registered order details used/);
+  assert.match(content,/your message 1200; registered value 800/);
+  assert.match(content,/before confirming/);
 });

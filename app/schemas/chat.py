@@ -42,9 +42,9 @@ PatchField = Literal['order_id', 'customer', 'product', 'category', 'pieces',
 
 class AllocationPatch(Input):
     """Current-message extraction; Runtime supplies the evidence sequence."""
-    op: Literal['set']
+    op: Literal['set', 'unset', 'add', 'remove', 'undo']
     field: PatchField
-    value: Any
+    value: Any = None
     quote: str = Field(min_length=1, max_length=10000)
 
 
@@ -53,10 +53,12 @@ class AllocationExtraction(Input):
     patch_operations: list[AllocationPatch] = Field(default_factory=list)
     ambiguity_reason: str | None = None
     unsupported_constraints: list[str] = Field(default_factory=list)
+    answered_question_ids: list[Literal['unsupported_constraint', 'AMBIGUOUS_MESSAGE', 'soft_workshop_preference']] = Field(default_factory=list)
 
     def with_evidence(self, sequence):
         return TurnInterpretation(intent=self.intent, ambiguity_reason=self.ambiguity_reason,
-            unsupported_constraints=self.unsupported_constraints, patch_operations=[{
+            unsupported_constraints=self.unsupported_constraints,
+            answered_question_ids=self.answered_question_ids, patch_operations=[{
                 'op': patch.op, 'field': patch.field, 'value': patch.value,
                 'evidence': {'message_sequence': sequence, 'quote': patch.quote}}
                 for patch in self.patch_operations])

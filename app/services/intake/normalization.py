@@ -17,9 +17,9 @@ def number(value):
     return NUMBERS[value.lower()] if value.lower() in NUMBERS else float(value) if "." in value else int(value)
 
 
-def workshop_mentions(text):
+def workshop_mentions(text, names=None):
     found = [(m.start(), m.end(), f"W{int(m.group(1))}") for m in re.finditer(r"\bW0*(\d+)\b", text, re.I)]
-    for wid, name in WORKSHOPS.items():
+    for wid, name in (WORKSHOPS if names is None else names).items():
         found.extend((m.start(), m.end(), wid) for m in re.finditer(r"\b" + re.escape(name) + r"\b", text, re.I))
     return sorted(found)
 

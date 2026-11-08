@@ -39,7 +39,7 @@ def preflight(connection, draft, as_of, pending=(), sources=None):
     else:
         row = get_order(connection, draft['order_id'])
         if row is None:
-            problems.append(issue('ORDER_NOT_FOUND', 'order_id', 'Order not found. Check the order ID.', draft['order_id']))
+            problems.append(issue('ORDER_NOT_FOUND', 'order_id', 'Order not found in the register. Check the ID or register the order through the order-data import workflow first. A new chat request does not create an order.', draft['order_id']))
         else:
             order = row
             report['resolved_fields'] = order

@@ -40,7 +40,7 @@ def extract(message: str, reference_date: date) -> dict:
         out["customer"] = customer.group(1).strip()
     for field, prefix in (("order_date", r"(?:order[ _]date|ordered(?: on)?)"),
                           ("due_date", r"(?:due(?:[ _]date)?(?: on| by)?|by|back by|deadline|ship(?: date)?|make|交期|截止)")):
-        matches = re.findall(prefix + r"\s*[:=]?\s*(\d{4}-\d{2}-\d{2}|(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+\d{1,2}(?:,?\s+\d{4})?)", text, re.I)
+        matches = re.findall(prefix + r"\s*(?:is\s+)?[:=]?\s*(\d{4}-\d{2}-\d{2}|(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+\d{1,2}(?:,?\s+\d{4})?)", text, re.I)
         dates = []
         for value in matches:
             try:
@@ -64,7 +64,7 @@ def extract(message: str, reference_date: date) -> dict:
     if re.search(r"will confirm|details to follow|date.*moved|usual quantities", low):
         ambiguities.append("unconfirmed_details")
     cost_ignored = bool(re.search(r"cost (?:doesn't|does not) matter|cost is not important|ignore cost|成本不重要", low))
-    cheap = bool(re.search(r"cheap(?:est)?|cheepest|lowest cost|min(?:imum)?[ _]cost|最便宜|最低成本", low))
+    cheap = bool(re.search(r"cheap(?:est)?|cheepest|lowest cost|min(?:imum|imun|inum)?[ _]cost|最便宜|最低成本", low))
     speed = bool(re.search(r"fast(?:est)?|quick(?:est)?|earliest|speed|asap|urgent|min[ _]delay|最快|优先速度", low))
     quality = bool(re.search(r"lowest defect|min(?:imum)?[ _]defects?|quality first|best quality|最低缺陷", low))
     objectives = (["min_cost"] if cheap else []) + (["min_delay"] if speed else []) + (["min_defects"] if quality else [])

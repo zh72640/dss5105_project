@@ -54,7 +54,11 @@ def extract_fields(state: AllocationState, runtime: Runtime[AgentContext]):
         saved = agent_repository.latest_extraction(db.connection, context.request_id)
     prompt = get_registry().snapshot("allocation.extract",
         version=saved.get('prompt_version') if saved else None)
-    variables = {"context": {"business_date": conversation['business_date']},
+    variables = {"context": {"business_date": conversation['business_date'],
+                 "current_constraints": {k: conversation['draft'].get(k) for k in
+                     ('order_id', 'objective', 'exclusion', 'preferred_workshop', 'deadline_required', 'num_workshop_allowed')},
+                 "workshop_names": conversation.get('workshop_names', {}),
+                 "pending_questions": conversation.get('pending_questions', [])},
                  "output_schema": AllocationExtraction.model_json_schema()}
     spec = context.registry.resolve("llm", context.model_key)
     model = context.registry.get_model("llm", context.model_key)
@@ -79,7 +83,8 @@ def extract_fields(state: AllocationState, runtime: Runtime[AgentContext]):
                 _record_extraction_event(context, 'extraction_validation_failed', detail)
             if attempt == MAX_EXTRACTION_ATTEMPTS:
                 failure = _failed('EXTRACTION_FORMAT_INVALID' if error.stage == 'format' else
-                    'EXTRACTION_EVIDENCE_INVALID', extraction.failure_message(error.stage, detail),
+                    'EXTRACTION_EVIDENCE_INVALID', extraction.failure_message(error.stage, detail) +
+                    extraction.recovery_hint(context.user_message, detail.get('field')),
                     session['task']['task_id'])
                 failure['issues'][0].update(field=detail.get('field') or 'workflow',
                                            reason=detail['reason'], attempts=attempt)

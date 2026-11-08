@@ -17,6 +17,7 @@
     const result=recommendation.committed_result||recommendation.result;
     const node=text('article',null,'chat-recommendation');
     node.append(text('strong','Allocation plan · '+stateLabel(recommendation.status)));
+    if(recommendation.result.resolved_differences?.length)node.append(registeredDifferences(recommendation.result.resolved_differences));
     (result.allocation||[]).forEach(p=>node.append(text('p',`Workshop ${p.workshop_id} · ${p.workshop_name}: ${p.pieces} pieces`)));
     if(node.dataset)node.dataset.status=recommendation.status;
     if(root.DispatchUI){
@@ -60,6 +61,14 @@
     node.append(text('p','Your requirements have not changed. Send the changes you authorize, then review and confirm a new recommendation.','chat-notice'));
     return node;
   }
+  function registeredDifferences(differences){
+    const node=text('section',null,'chat-notice');
+    node.append(text('strong','Registered order details used'));
+    const labels={customer:'Customer',product:'Product',category:'Category',pieces:'Quantity',order_date:'Order date',due_date:'Due date'};
+    differences.forEach(d=>node.append(text('p',`${labels[d.field]||d.field}: your message ${d.supplied}; registered value ${d.recorded}.`)));
+    node.append(text('p','This plan uses the registered values. Check that this is the intended order before confirming.'));
+    return node;
+  }
   function reviewChanges(changes){
     const node=text('details');node.append(text('summary','What changed since your review?'));
     const labels={allocation:'Workshop allocation',objective:'Objective',estimated_days:'Estimated days',estimated_delivery_date:'Completion date',estimated_cost:'Cost',expected_defect_rate:'Weighted defect rate',deadline_met:'Due date met',warnings:'Warnings',business_facts:'Business data'};
@@ -87,7 +96,7 @@
     if(session.status==='ARCHIVED')events.push({title:'Request archived',when:session.updated_at});
     return events;
   }
-  const api={confirmation,canConfirm,stateLabel,text,request,card,alternatives,reviewChanges,decisionEvents};
+  const api={confirmation,canConfirm,stateLabel,text,request,card,alternatives,registeredDifferences,reviewChanges,decisionEvents};
   if(typeof module!=='undefined'&&module.exports)module.exports=api;
   else root.ChatV2=api;
 })(typeof globalThis!=='undefined'?globalThis:this);

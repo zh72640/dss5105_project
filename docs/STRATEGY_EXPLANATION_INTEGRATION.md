@@ -59,7 +59,7 @@ work-calendar experiment files belong in this change.
   [the source template extract](requirements/Track2_Reasoning_Explanation_Templates.csv).
   The original fourth column contained question marks and was not used. Source
   sentences that hard-code minimum lateness or claim approval are conditional,
-  not universal instructions. The active prompt is `allocation.explain` v3.
+  not universal instructions. The active prompt is `allocation.explain` v4.
 - Real testing found an existing reply guard treating “No allocation has been
   committed” as a success claim and replacing the whole explanation. The guard
   now distinguishes explicit negative claims while still rejecting a later
@@ -105,9 +105,9 @@ uv run --locked python evaluation/verify_deepseek_live.py
 uv run --locked python evaluation/verify_deepseek_live.py --workflow
 ```
 
-For this machine's existing environment, validation used system Python 3.14
-with `PYTHONPATH=.venv/lib/python3.14/site-packages` because the virtualenv's
-Python executable lacks its original standard-library installation.
+The October 29 validation used a system-Python workaround for an expired temporary
+interpreter. The environment was repaired on October 31; use `.venv/bin/python`
+or `uv run --locked` now. See [the current remediation report](REMEDIATION_RESULTS_2026-10-31.md).
 
 New Requests sessions can use LLM / DeepSeek. Existing sessions retain their
 original model/mode. Example: `Allocate ORD-045 using weighted hybrid to one

@@ -1,5 +1,6 @@
 """Bounded recent turns plus complete authoritative task facts and change sources."""
 from app.db import context_repository
+from app.db.workshop_repository import names
 
 
 def build_context(connection, session):
@@ -20,7 +21,8 @@ def build_context(connection, session):
             if row and size+len(row['content'])<=18000:
                 history.append(dict(row))
                 size+=len(row['content'])
-    return {'business_date': session['business_date'], 'history': sorted(history, key=lambda m:m['sequence']),
+    return {'business_date': session['business_date'], 'workshop_names': names(connection),
+        'history': sorted(history, key=lambda m:m['sequence']),
         'current_sequence': session['version'] * 2 + 1, 'draft': task['draft'], 'field_sources': task['sources'],
         'recent_changes': task['changes'][-12:], 'pending_questions': task['issues'],
         'order_facts': task['report'].get('resolved_fields', {}), 'recommendation': session['recommendation']}

@@ -177,6 +177,7 @@ def save_recommendation(connection, session, as_of, plan, *, allocation_input=No
             facts_hash != plan["facts_hash"] or task["task_version"] != plan["task_version"]):
         block_plan(connection, session, report, "STALE_PLAN",
                    "Business facts, requirements, or the computed plan changed; recompute before saving.")
+    result = {**result, 'resolved_differences': report.get('resolved_differences', [])}
     rec = chat_repository.insert_recommendation(connection, session, result, facts_hash, plan_hash)
     task["state"] = "RECOMMENDED"
     task["report"] = report
