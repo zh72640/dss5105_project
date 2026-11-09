@@ -8,6 +8,7 @@ from app.schemas.parser_schema import OBJECTIVES, ParseResult
 from app.db.workshop_repository import get_all
 from app.db.order_repository import get_order
 from app.allocator import exclusion_reason
+from app.services.allocation.messages import workshop_refusal, planning_failure_text
 
 
 def digest(value):
@@ -21,8 +22,14 @@ def issue(code, field, question, user_value=None, database_value=None, source=No
 
 
 def preflight(connection, draft, as_of, pending=(), sources=None):
+    """Validate fresh facts and return report, effective order, resources and hash.
+
+    Evidenced pending/replacement dates affect this task's planning snapshot only.
+    Missing dates permit soft-deadline previews, never a hard-deadline claim.
+    """
     problems = list(pending)
     order = None
+    registered_order = None
     workshops = []
     constraints = {key: draft.get(key) for key in ('objective', 'exclusion', 'num_workshop_allowed',
         'preferred_workshop', 'deadline_required')}
@@ -41,7 +48,17 @@ def preflight(connection, draft, as_of, pending=(), sources=None):
         if row is None:
             problems.append(issue('ORDER_NOT_FOUND', 'order_id', 'Order not found in the register. Check the ID or register the order through the order-data import workflow first. A new chat request does not create an order.', draft['order_id']))
         else:
-            order = row
+            registered_order = row
+            order = dict(row)
+            date_source = (sources or {}).get('due_date', {})
+            if date_source.get('pending'):
+                order['due_date'] = None
+                if not date_source.get('allow_without_due_date'):
+                    problems.append(issue('DUE_DATE_UNCONFIRMED', 'due_date',
+                        'The new due date is unconfirmed. Provide the new date or ask me to recommend a workshop without a due date.'))
+            elif date_source.get('replacement'):
+                order['due_date'] = draft.get('due_date')
+            order['due_date'] = order['due_date'] or None
             report['resolved_fields'] = order
             if order['state'] not in ('READY', 'UNASSIGNED'):
                 problems.append(issue('ORDER_ALREADY_' + order['state'], 'order_id',
@@ -51,7 +68,7 @@ def preflight(connection, draft, as_of, pending=(), sources=None):
                     problems.append(issue('ORDER_FIELD_CONFLICT', field,
                         f'{field} conflicts with the registered order: supplied {draft[field]}, registered {order[field]}. Use the registered value or correct the order record.',
                         draft[field], order[field], (sources or {}).get(field)))
-                if order[field] is None or (isinstance(order[field], str) and not order[field].strip()):
+                if field != 'due_date' and (order[field] is None or (isinstance(order[field], str) and not order[field].strip())):
                     problems.append(issue('ORDER_DATA_MISSING', field, f'The registered order lacks {field}. Correct the order record first.'))
             if order['category'] not in ('TOPS', 'ACCESSORIES'):
                 problems.append(issue('INVALID_CATEGORY', 'category', 'The registered category is unsupported. Correct the order record.'))
@@ -59,10 +76,16 @@ def preflight(connection, draft, as_of, pending=(), sources=None):
                     not 0 <= order['completed_pieces'] < order['pieces']):
                 problems.append(issue('INVALID_REMAINING_PIECES', 'pieces', 'Remaining pieces must be a positive integer.'))
             try:
-                if date.fromisoformat(order['due_date']) < date.fromisoformat(order['order_date']):
+                placed = date.fromisoformat(order['order_date'])
+                if order['due_date'] and date.fromisoformat(order['due_date']) < placed:
                     problems.append(issue('INVALID_ORDER_DATES', 'due_date', 'The due date precedes the order date.'))
             except (ValueError, TypeError):
                 problems.append(issue('INVALID_ORDER_DATES', 'due_date', 'The registered order dates are invalid.'))
+            if not order['due_date']:
+                report['warnings'].append('DUE_DATE_UNCONFIRMED')
+                if constraints['deadline_required']:
+                    problems.append(issue('DUE_DATE_REQUIRED_FOR_DEADLINE', 'due_date',
+                        'A hard deadline requires a confirmed due date. Provide the date or explicitly allow planning without a hard deadline.'))
     if constraints['objective'] not in OBJECTIVES:
         problems.append(issue('INVALID_OBJECTIVE', 'objective', 'Choose speed, cost, defect rate, or the weighted time and quality objective.'))
     limit = constraints['num_workshop_allowed']
@@ -89,7 +112,9 @@ def preflight(connection, draft, as_of, pending=(), sources=None):
         if preferred and order and type(order['pieces']) is int:
             reason = exclusion_reason(preferred, order['category'], order['pieces'] - order['completed_pieces'], constraints['exclusion'])
             if reason:
-                problems.append(issue('PREFERRED_INELIGIBLE', 'preferred_workshop', f'Required sole workshop {preferred.workshop_id} cannot take the full batch: {reason}.'))
+                problem = issue('PREFERRED_INELIGIBLE', 'preferred_workshop', workshop_refusal(preferred, reason))
+                problem.update(workshop_id=preferred.workshop_id, rejection_reason=reason)
+                problems.append(problem)
     except (ValueError, TypeError):
         problems.append(issue('RESOURCE_DATA_ERROR', 'workshop', 'Workshop queue data is missing or the business date is invalid.'))
     report['blocking_issues'] = list({(p['code'], p['field'], p['question']): p for p in problems}.values())
@@ -100,15 +125,21 @@ def preflight(connection, draft, as_of, pending=(), sources=None):
         attach(report, order, workshops, as_of, max_workshops=planned_limit)
     facts_hash = None
     if report['ready_for_planning']:
-        facts_hash = digest({'order': order, 'constraints': constraints, 'business_date': as_of.isoformat(),
-            'workshops': [{**asdict(w), 'makes': sorted(w.makes)} for w in workshops]})
+        facts = {'order': order, 'constraints': constraints, 'business_date': as_of.isoformat(),
+            'workshops': [{**asdict(w), 'makes': sorted(w.makes)} for w in workshops]}
+        date_source = (sources or {}).get('due_date', {})
+        if date_source.get('pending') or date_source.get('replacement'):
+            # Preserve old hashes for ordinary recommendations while including both
+            # registered and effective facts when a user replaces an obsolete date.
+            facts.update(registered_order=registered_order, due_date_policy=date_source)
+        facts_hash = digest(facts)
     return report, order, workshops, facts_hash
 
 
 def check_solution(result, order, workshops, draft, report, as_of):
     if not result['success']:
         for code in result['reason_codes']:
-            report['blocking_issues'].append(issue(code, 'constraints', 'No feasible plan satisfies the current constraints: ' + code + '. Revise the relevant constraint.'))
+            report['blocking_issues'].append(issue(code, 'constraints', planning_failure_text(code)))
         from app.services.allocation.alternatives import attach
         attach(report, order, workshops, as_of, max_workshops=report.get('planning_max_workshops', 1))
         return report

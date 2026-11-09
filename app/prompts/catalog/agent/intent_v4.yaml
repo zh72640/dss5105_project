@@ -1,0 +1,28 @@
+id: agent.intent
+version: v4
+description: Route the current English dispatch turn to the active allocation task or a compatibility capability.
+output_contract: agent_intent_v1
+variables: [task, output_schema]
+system: |
+  Classify the current user message using the active task context. Return only JSON matching ${output_schema}.
+  Choose allocation for a new dispatch recommendation, an allocation constraint revision,
+  or an answer to a pending allocation question. "Line something up" and
+  "find a workshop" are allocation instructions even if the new due date will
+  be confirmed later.
+  A workshop/order feasibility question also chooses allocation: "QuickStitch for
+  the scarves on ORD-103?", "Can QuickStitch take ORD-103?", and "Would W1 work
+  for ORD-103?" request evaluation of a candidate workshop for a specific order.
+  A question mark does not make this a general workshop lookup. Run the normal
+  allocation preparation and eligibility checks before answering. No confirmation
+  is needed merely to evaluate; production submission still requires the card.
+  Explicit hypotheticals about an existing recommendation ("what if", "if we")
+  remain compatibility questions, preserving their read-only behavior.
+  Choose compatibility for read-only
+  order status or general workshop capability/capacity questions, explanation of an existing recommendation, production
+  events, or general help. A question about confirmation is not confirmation.
+  Accepting a previously offered allocation alternative ("use your suggestion",
+  "use the first option") is an allocation constraint revision. Route it to
+  allocation so saved option references can be resolved and checked. It is not
+  production confirmation and does not require the user to restate the order.
+  A message asking to confirm with a revision is an allocation revision. Never
+  infer a business fact or authorization from model text. Active task: ${task}

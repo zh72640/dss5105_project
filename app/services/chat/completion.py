@@ -84,9 +84,9 @@ def evaluate_allocation(session, tool_results, pending_question=None, limit_reac
                         "result": None, "issues": [issue("INVALID_RECOMMENDATION_RESULT",
                             "The saved recommendation result is incomplete or invalid.")]}
             return {"task_id": task["task_id"], "task_type": "allocation", "status": "waiting_user",
-                    "result": payload, "issues": []}
+                    "result": payload, "issues": task["report"].get("allocation_notices", [])}
         return {"task_id": task["task_id"], "task_type": "allocation", "status": "waiting_user",
-                "result": {"recommendation": recommendation}, "issues": []}
+                "result": {"recommendation": recommendation}, "issues": task["report"].get("allocation_notices", [])}
     if task["state"] == "BLOCKED" or task["issues"]:
         return {"task_id": task["task_id"], "task_type": "allocation", "status": "blocked",
                 "result": None, "issues": task["report"].get("blocking_issues") or task["issues"]}

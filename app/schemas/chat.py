@@ -5,6 +5,7 @@ from app.schemas.api import Input, Output, Identifier, Version, Objective
 from app.schemas.allocation import AllocationRecommendationResult
 
 Intent = Literal['new_request', 'allocate_request', 'answer_clarification', 'modify_constraints',
+    'request_alternatives', 'select_workshop',
     'undo_change', 'query_order', 'query_workshop', 'explain_recommendation', 'reject_recommendation',
     'confirm_allocation', 'cancel_task', 'help_or_chat', 'unsupported_or_ambiguous']
 
@@ -48,15 +49,26 @@ class AllocationPatch(Input):
     quote: str = Field(min_length=1, max_length=10000)
 
 
+UnsupportedAllocationConstraint = Literal['unsupported_constraint', 'soft_workshop_preference', 'optional_split']
+
+
+class AlternativeAcceptance(Input):
+    """Current-message authorization to apply one saved alternative's changes."""
+    alternative_id: str | None = Field(default=None, min_length=1, max_length=128)
+    quote: str = Field(min_length=1, max_length=10000)
+    resolved_reference_issue_ids: list[str] = Field(default_factory=list, max_length=24)
+
+
 class AllocationExtraction(Input):
     intent: Intent
+    accept_alternative: AlternativeAcceptance | None = None
     patch_operations: list[AllocationPatch] = Field(default_factory=list)
     ambiguity_reason: str | None = None
-    unsupported_constraints: list[str] = Field(default_factory=list)
+    unsupported_constraints: list[UnsupportedAllocationConstraint] = Field(default_factory=list)
     answered_question_ids: list[Literal['unsupported_constraint', 'AMBIGUOUS_MESSAGE', 'soft_workshop_preference']] = Field(default_factory=list)
 
     def with_evidence(self, sequence):
-        return TurnInterpretation(intent=self.intent, ambiguity_reason=self.ambiguity_reason,
+        return TurnInterpretation(intent=self.intent, accept_alternative=self.accept_alternative, ambiguity_reason=self.ambiguity_reason,
             unsupported_constraints=self.unsupported_constraints,
             answered_question_ids=self.answered_question_ids, patch_operations=[{
                 'op': patch.op, 'field': patch.field, 'value': patch.value,
@@ -78,8 +90,13 @@ class PatchOperation(Input):
 
 class TurnInterpretation(Input):
     intent: Intent
+    accept_alternative: AlternativeAcceptance | None = None
     candidate_intents: list[str] = Field(default_factory=list)
     ambiguity_reason: str | None = None
+    # Derived from current-message evidence by intake, never supplied by the LLM.
+    due_date_pending: bool = False
+    recommend_without_due_date: bool = False
+    allocation_notices: list[dict[str, Any]] = Field(default_factory=list)
     referenced_order_id: str | None = None
     referenced_recommendation_id: str | None = None
     patch_operations: list[PatchOperation] = Field(default_factory=list)
@@ -94,6 +111,7 @@ class AllocationResponseBody(Input):
     allocation: AllocationRecommendationResult | None = None
     issues: list[dict[str, Any]] = Field(default_factory=list)
     recommendation_id: str | None = None
+    alternatives: list[dict[str, Any]] = Field(default_factory=list)
 
 
 class ChatOutput(Output):
@@ -106,3 +124,4 @@ class ChatOutput(Output):
     explanation: str | None = None
     allocation: AllocationRecommendationResult | None = None
     issues: list[dict[str, Any]] = Field(default_factory=list)
+    alternatives: list[dict[str, Any]] = Field(default_factory=list)

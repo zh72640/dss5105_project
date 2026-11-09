@@ -26,7 +26,7 @@
       const metrics=text('dl',null,'plan-metrics');
       [['Completion',U.date(result.estimated_delivery_date)],['Estimated cost',`${U.number(result.estimated_cost,2)} units`],['Expected defects',typeof result.expected_defect_rate==='number'?`${U.number(result.expected_defect_rate*100,2)}%`:'—']].forEach(([label,value])=>{const item=text('div');item.append(text('dt',label),text('dd',value));metrics.append(item);});node.append(metrics);
     }else node.append(text('p',`Estimated completion ${result.estimated_delivery_date} · Estimated cost ${result.estimated_cost}`));
-    if(result.warnings?.length)node.append(text('p',result.warnings.map(w=>({ESTIMATED_DEADLINE_MISS:'Estimated date exceeds the registered due date; the deadline is currently soft.'}[w]||w)).join('; '),'chat-notice'));
+    if(result.warnings?.length)node.append(text('p',result.warnings.map(w=>({ESTIMATED_DEADLINE_MISS:'Estimated date exceeds the registered due date; the deadline is currently soft.',DUE_DATE_UNCONFIRMED:'No confirmed due date is available. Lateness and on-time delivery cannot be assessed.'}[w]||w)).join('; '),'chat-notice'));
     if(result.candidate_plans?.length){
       const details=text('details');details.append(text('summary','Compare complete candidate plans'));
       details.append(text('p',result.candidate_plan_scope||'Plans calculated under the current requirements.'));
@@ -34,7 +34,7 @@
         const item=text('section');item.append(text('strong',index===0?'Recommended plan':'Alternative plan '+(index+1)));
         item.append(text('p',plan.allocation.map(p=>`${p.workshop_id} (${p.pieces} pieces)`).join(' + ')));
         item.append(text('p',`Completion ${plan.estimated_delivery_date} · Cost ${plan.estimated_cost} · Weighted defect rate ${(100*plan.expected_defect_rate).toFixed(2)}%`));
-        item.append(text('p',plan.deadline_met?'Meets the registered due date.':'Exceeds the registered due date.'));
+        item.append(text('p',plan.deadline_met==null?'No confirmed due date; deadline compliance cannot be assessed.':plan.deadline_met?'Meets the registered due date.':'Exceeds the registered due date.'));
         details.append(item);
       });
       details.append(text('p','These plans satisfy the current requirements. To choose another plan, revise your request and review its new recommendation.'));
@@ -47,18 +47,63 @@
     node.append(button);
     return node;
   }
-  function alternatives(options){
+  function inlineText(node,content){
+    // Create text nodes only: model-supplied HTML and URLs are never executable.
+    const parts=String(content).split(/(\*\*[^*\n]+\*\*|`[^`\n]+`)/g);
+    parts.forEach(part=>node.append(part.startsWith('**')&&part.endsWith('**')?text('strong',part.slice(2,-2)):part.startsWith('`')&&part.endsWith('`')?text('code',part.slice(1,-1)):text('span',part)));
+  }
+  /** Render supported Markdown into a container; supplied HTML stays literal text. */
+  function richText(node,content){
+    content=String(content??'');
+    node.replaceChildren();node.textContent='';
+    if(!/[|]|\*\*|`/.test(content)){node.textContent=content;return;}
+    const lines=String(content).split('\n'),cells=line=>line.trim().replace(/^\||\|$/g,'').split('|').map(v=>v.trim());
+    const separator=line=>/^\s*\|?\s*:?-{3,}:?\s*(?:\|\s*:?-{3,}:?\s*)+\|?\s*$/.test(line||'');
+    for(let i=0;i<lines.length;i++){
+      if(lines[i].includes('|')&&separator(lines[i+1])){
+        const wrap=text('div',null,'chat-table-scroll'),table=text('table'),head=text('thead'),row=text('tr');
+        table.setAttribute('aria-label','Comparison');
+        cells(lines[i]).forEach(value=>{const cell=text('th');cell.setAttribute('scope','col');inlineText(cell,value);row.append(cell);});
+        head.append(row);table.append(head);const body=text('tbody');i+=2;
+        while(i<lines.length&&lines[i].includes('|')&&lines[i].trim()){
+          const tr=text('tr');cells(lines[i]).forEach(value=>{const cell=text('td');inlineText(cell,value);tr.append(cell);});body.append(tr);i++;
+        }
+        i--;table.append(body);wrap.append(table);node.append(wrap);
+      }else{const line=text('div');inlineText(line,lines[i]||'\u00a0');node.append(line);}
+    }
+  }
+  /** Display verified offers; selection requests a fresh preview, never commitment. */
+  function workshopOptions(options,onSelect){
+    const node=text('section'),wrap=text('div',null,'chat-table-scroll'),table=text('table',null,'chat-options-table');
+    node.append(text('h3','Other workshop options'));table.setAttribute('aria-label','Workshop alternatives');
+    const head=text('thead'),header=text('tr');
+    ['Option / workshop','Pieces','Estimated delivery','Against due date','Cost','Defect rate','Required changes',''].forEach(label=>{const th=text('th',label);th.setAttribute('scope','col');header.append(th);});
+    head.append(header);table.append(head);const body=text('tbody');
+    options.forEach((option,index)=>{
+      const p=option.plan,part=p.allocation[0],row=text('tr');
+      const changes=Object.entries(option.required_changes).map(([field,value])=>({preferred_workshop:value?`Use ${value} as the sole workshop`:'Remove the sole-workshop requirement',deadline_required:'Allow late delivery',objective:'Use earliest completion',num_workshop_allowed:`Allow up to ${value} workshops`}[field]||'Review this requirement')).join('; ');
+      const timing=p.delay_days==null?'Due date unconfirmed':p.delay_days===0?'On time':`${Math.abs(p.delay_days)} day(s) ${p.delay_days<0?'early':'late'}`;
+      [`Option ${index+1}: ${part.workshop_name||part.workshop_id} (${part.workshop_id})`,part.pieces,p.estimated_delivery_date,timing,Number(p.estimated_cost).toFixed(2),`${(100*p.expected_defect_rate).toFixed(2)}%`,changes].forEach(value=>row.append(text('td',value)));
+      const action=text('td'),button=text('button',`Use option ${index+1}`,'secondary');button.type='button';button.disabled=!onSelect;
+      button.addEventListener('click',()=>onSelect?.(option,index));action.append(button);row.append(action);body.append(row);
+    });
+    table.append(body);wrap.append(table);node.append(wrap);
+    node.append(text('p','Your requirements have not changed. Select an option to generate a fresh recommendation, then review and confirm it.','chat-notice'));
+    return node;
+  }
+  function alternatives(options,onSelect){
+    if(options.length&&options.every(o=>o.offer_type==='workshop_candidate'))return workshopOptions(options,onSelect);
     const node=text('section');node.append(text('h3','Options requiring your authorization'));
     const labels={preferred_workshop:()=> 'Remove the required sole workshop',deadline_required:()=> 'Allow late delivery',num_workshop_allowed:value=>`Allow up to ${value} workshops`,objective:()=> 'Use earliest completion'};
-    options.forEach(option=>{
+    options.forEach((option,index)=>{
       const plan=option.plan,item=text('section');
-      item.append(text('strong',Object.entries(option.required_changes).map(([field,value])=>labels[field]?.(value)||field).join('; ')));
+      item.append(text('strong',`Option ${index+1}: `+Object.entries(option.required_changes).map(([field,value])=>labels[field]?.(value)||field).join('; ')));
       item.append(text('p',plan.allocation.map(p=>`${p.workshop_id}: ${p.pieces} pieces`).join(' + ')));
       item.append(text('p',`Estimated completion ${plan.estimated_delivery_date} · Cost ${plan.estimated_cost} · Weighted defect rate ${(100*plan.expected_defect_rate).toFixed(2)}%`));
       if(option.supported_mode==='offline')item.append(text('p','Split planning is currently supported in Offline mode only.'));
       node.append(item);
     });
-    node.append(text('p','Your requirements have not changed. Send the changes you authorize, then review and confirm a new recommendation.','chat-notice'));
+    node.append(text('p','Your requirements have not changed. Accept a specific option to generate a fresh recommendation, then review and confirm it.','chat-notice'));
     return node;
   }
   function registeredDifferences(differences){
@@ -96,7 +141,7 @@
     if(session.status==='ARCHIVED')events.push({title:'Request archived',when:session.updated_at});
     return events;
   }
-  const api={confirmation,canConfirm,stateLabel,text,request,card,alternatives,registeredDifferences,reviewChanges,decisionEvents};
+  const api={richText,confirmation,canConfirm,stateLabel,text,request,card,alternatives,registeredDifferences,reviewChanges,decisionEvents};
   if(typeof module!=='undefined'&&module.exports)module.exports=api;
   else root.ChatV2=api;
 })(typeof globalThis!=='undefined'?globalThis:this);

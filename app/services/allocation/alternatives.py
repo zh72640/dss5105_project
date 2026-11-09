@@ -1,5 +1,6 @@
 """Read-only, explicitly conditional alternatives for an infeasible request."""
 from copy import deepcopy
+from app.services.allocation.messages import clarification_questions
 
 from app.allocator import AllocationRequest, allocate
 
@@ -92,10 +93,8 @@ def attach(report, order, workshops, as_of, *, max_workshops=1):
 
 def issue_messages(issues):
     """Ground refusal prose in the same conditional options used by the UI."""
-    messages = []
+    messages = clarification_questions(issues)
     for item in issues:
-        if item.get("question"):
-            messages.append(item["question"])
         messages.extend(describe(option) for option in item.get("alternatives", [])[:2])
         if item.get("alternatives_status") == "no_known_feasible_alternative":
             messages.append("No known feasible alternative preserves workshop capability, status and your exclusions.")

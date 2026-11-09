@@ -2,6 +2,7 @@
 from app.prompts import get_registry
 from app.llm.errors import check_response, text_content, translate_error
 from app.llm.registry import selection_metadata
+from app.services.allocation.messages import eligibility_reason_text
 
 OBJECTIVES = {"min_delay": "earliest completion", "min_cost": "lowest cost",
               "min_defects": "lowest defect rate", "hybrid": "weighted time and quality", "weighted_hybrid": "normalized 80/20 lateness and defect exposure"}
@@ -13,6 +14,8 @@ def solution_reply(result, order_id, committed=False):
     total = sum(p["pieces"] for p in result["allocation"])
     tail = ("The allocation has been committed." if committed else
             "Confirm this recommendation to commit it. The order and queues have not changed.")
+    if result.get('due_date') is None and 'DUE_DATE_UNCONFIRMED' in result.get('warnings', []):
+        tail += ' No confirmed due date is available; lateness and on-time delivery cannot be assessed.'
     return (f"{'Committed' if committed else 'Recommend'} {total} pieces of {order_id} to {parts}. "
             f"Estimated completion: {result['estimated_delivery_date']}; estimated cost: "
             f"{result['estimated_cost']:.2f}. {tail}")
@@ -31,17 +34,16 @@ def explain(session, message):
     result = rec["committed_result"] or rec["result"]
     status = {"confirmed": "Committed result", "valid": "Current recommendation",
               "superseded": "Superseded recommendation"}[rec["status"]]
-    reasons = {"excluded_by_user": "excluded by your requirement", "cannot_make_tops": "cannot make tops",
-               "cannot_make_accessories": "cannot make accessories", "status_suspended": "suspended",
-               "status_closed": "closed", "invalid_capacity_or_queue": "invalid capacity or queue"}
-    rejected = "; ".join(f"{wid}: {reasons.get(reason, 'ineligible for this batch')}"
+    rejected = "; ".join(f"{wid}: {eligibility_reason_text(reason)}"
                          for wid, reason in result.get("rejected", {}).items())
-    deadline = "meets" if result.get("deadline_met") else "misses"
+    deadline = ("Due-date compliance cannot be assessed without a confirmed due date."
+                if result.get('deadline_met') is None else
+                "The estimated date " + ("meets" if result['deadline_met'] else "misses") + " the registered due date.")
     summary = solution_reply(result, session["task"]["draft"]["order_id"], rec["status"] == "confirmed")
     if rec["status"] == "superseded":
         summary += " This historical recommendation cannot be confirmed."
     return (summary + "\n" + f"{status} uses the {OBJECTIVES.get(result['objective'], result['objective'])} objective. "
-            f"The estimated date {deadline} the registered due date. Estimated completion: "
+            f"{deadline} Estimated completion: "
             f"{result['estimated_delivery_date']}; estimated cost: {result['estimated_cost']:.2f}."
             + (f" Other workshop rejections: {rejected}." if rejected else ""))
 

@@ -134,7 +134,8 @@ def _turn(sid, *, owner, request_id, expected_version, db_path, message, registr
                 sequence=sequence, user_message=message, assistant_message=reply,
                 feedback_id=feedback_id, recommendation_id=(visible_rec_id if body is not None else
                     rec['recommendation_id'] if rec else None),
-                workflow=state.get("workflow_version", "dynamic_agent_v1"))
+                workflow=state.get("workflow_version", "dynamic_agent_v1"),
+                alternatives=(body or {}).get("alternatives"))
             response = {**(body or {}), "session_id": sid, "session_version": expected_version + 1, "turn_id": turn_id,
                         "intent": "agent", "task_state": task["state"], "validation_report": task["report"],
                         "assistant_message": {"message_id": feedback_id, "content": reply, "role": "assistant"},

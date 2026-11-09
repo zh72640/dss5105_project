@@ -532,3 +532,87 @@ test('registered fact differences are visible before confirmation',async()=>{
   assert.match(content,/your message 1200; registered value 800/);
   assert.match(content,/before confirming/);
 });
+
+
+test('undated recommendation cards disclose missing dates without deadline claims',async()=>{
+  const view=snapshot('undated');
+  view.recommendation={session_id:'undated',session_version:1,recommendation_id:'r',status:'valid',result:{
+    due_date:null,delay_days:null,deadline_met:null,estimated_delivery_date:'2026-04-05',estimated_cost:100,
+    expected_defect_rate:.02,warnings:['DUE_DATE_UNCONFIRMED'],
+    allocation:[{workshop_id:'W1',workshop_name:'One',pieces:100}],
+    candidate_plans:[{allocation:[{workshop_id:'W1',pieces:100}],estimated_delivery_date:'2026-04-05',
+      estimated_cost:100,expected_defect_rate:.02,deadline_met:null}]
+  }};
+  const ui=controller(async url=>response(url.includes('/messages')?{items:[]}:view));
+  await ui.load('undated');
+  const flatten=node=>[node.textContent,...node.children.map(flatten)].join(' ');
+  const content=flatten(ui.button('chat-plan'));
+  assert.match(content,/No confirmed due date/);
+  assert.match(content,/deadline compliance cannot be assessed/);
+  assert.doesNotMatch(content,/Exceeds the registered due date|Meets the registered due date|DUE_DATE_UNCONFIRMED/);
+});
+
+
+test('pending alternatives stay visible and numbered during selection clarification',async()=>{
+  const option=id=>({alternative_id:id,required_changes:{preferred_workshop:null},
+    plan:{allocation:[{workshop_id:'W6',pieces:2000}],estimated_delivery_date:'2026-04-23',
+          estimated_cost:2400,expected_defect_rate:.05}});
+  const view=snapshot('alternatives');
+  view.task={state:'BLOCKED',report:{ready_for_planning:false,
+    blocking_issues:[{question:'There are multiple alternatives. Specify the option number to use.'}],
+    pending_alternatives:[option('alt-one'),option('alt-two')]}};
+  const ui=controller(async url=>response(url.includes('/messages')?{items:[]}:view));
+  await ui.load('alternatives');
+  const flatten=node=>[node.textContent,...node.children.map(flatten)].join(' ');
+  const content=flatten(ui.button('chat-validation'));
+  assert.match(content,/Option 1: Remove the required sole workshop/);
+  assert.match(content,/Option 2: Remove the required sole workshop/);
+  assert.match(content,/Accept a specific option to generate a fresh recommendation/);
+  assert.doesNotMatch(content,/alt-one|alt-two/);
+});
+
+
+test('assistant Markdown tables render safely with bold text after reload and animation',async()=>{
+  const markdown='For **ORD-008**\n\n| Workshop | Delivery |\n|---|---|\n| **QuickStitch** | Apr 8 |\n| <img src=x onerror=alert(1)> | <script>alert(1)</script> |';
+  const view=snapshot('markdown'),message={message_id:'reply',role:'assistant',content:markdown};
+  const ui=controller(async url=>response(url.includes('/messages')?{items:[message]}:view));
+  await ui.load('markdown',true,message);
+  ui.frame(0);ui.frame(3000);ui.frame(7000);
+  const all=node=>[node,...node.children.flatMap(all)];
+  const nodes=all(ui.button('chat-messages'));
+  assert.equal(nodes.filter(n=>n.attributes['aria-label']==='Comparison').length,1);
+  assert.equal(nodes.filter(n=>n.attributes.scope==='col').length,2);
+  assert.ok(nodes.some(n=>n.textContent==='QuickStitch'));
+  assert.ok(nodes.some(n=>n.textContent==='<script>alert(1)</script>'));
+  assert.ok(nodes.every(n=>!Object.hasOwn(n.attributes,'onerror')));
+  assert.ok(nodes.every(n=>!Object.hasOwn(n,'innerHTML')));
+  await ui.load('markdown');
+  assert.equal(all(ui.button('chat-messages')).filter(n=>n.attributes['aria-label']==='Comparison').length,1);
+});
+
+test('structured candidates persist as tables and selection sends a message rather than confirmation',async()=>{
+  const option={alternative_id:'alt-w1',offer_type:'workshop_candidate',required_changes:{preferred_workshop:'W1'},
+    plan:{allocation:[{workshop_id:'W1',workshop_name:'QuickStitch',pieces:600}],estimated_delivery_date:'2026-04-08',
+      due_date:'2026-04-09',delay_days:-1,estimated_cost:900,expected_defect_rate:.12}};
+  const view=snapshot('candidates');view.task={state:'BLOCKED',report:{pending_alternatives:[option]}};
+  const posts=[];
+  const ui=controller(async(url,options)=>{
+    if(options?.method==='POST'){posts.push(JSON.parse(options.body));return response({session_id:'candidates',assistant_message:{content:'Review the recommendation.'}});}
+    return response(url.includes('/messages')?{items:[{role:'assistant',content:'Other options.',metadata:{alternatives:[option]}}]}:url.startsWith('/api/chat/sessions?')?{items:[]}:view);
+  });
+  await ui.load('candidates');
+  const all=node=>[node,...node.children.flatMap(all)],nodes=all(ui.button('chat-messages'));
+  assert.equal(nodes.filter(n=>n.attributes['aria-label']==='Workshop alternatives').length,1);
+  assert.ok(nodes.some(n=>n.textContent==='2026-04-08'));
+  assert.ok(nodes.some(n=>n.textContent==='1 day(s) early'));
+  await nodes.find(n=>n.textContent==='Use option 1').listeners.click();
+  assert.equal(posts.length,1);assert.equal(posts[0].action,'message');
+  assert.match(posts[0].message,/QuickStitch, W1/);
+  assert.equal(posts[0].recommendation_id,undefined);
+  view.task.report.pending_alternatives=[];
+  await ui.load('candidates');
+  const stale=all(ui.button('chat-messages')).find(n=>n.textContent==='Use option 1');
+  assert.equal(stale.disabled,true);
+  await stale.listeners.click();
+  assert.equal(posts.length,1);
+});

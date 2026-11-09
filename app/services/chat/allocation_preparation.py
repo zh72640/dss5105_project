@@ -6,12 +6,15 @@ from app.db.database import Database
 from app.db.order_repository import get_order
 from app.services.allocation.preflight import preflight
 from app.services.chat.constraint_patches import apply_interpretation
+from app.services.chat.optional_requirements import recover_legacy_split_issues
 from app.services.allocation.contracts import inspect_input, single_workshop_issues
+
+from app.services.chat.alternative_acceptance import pending_options, prepare_acceptance, track_report
 
 FACT_FIELDS = ("customer", "product", "category", "pieces", "order_date", "due_date")
 
 
-def prepare(*, db_path, session_id, owner, request_id, interpretation, as_of, sequence):
+def prepare(*, db_path, session_id, owner, request_id, interpretation, as_of, sequence, user_message=None):
     """Apply grounded extraction once, then check database facts without tools."""
     with Database(db_path) as db:
         with db.transaction() as connection:
@@ -26,8 +29,19 @@ def prepare(*, db_path, session_id, owner, request_id, interpretation, as_of, se
                 return {"ready": False, "task": task, "issues": [{
                     "code": "TASK_CLOSED", "field": "task", "severity": "blocking",
                     "question": "Create a new request for another allocation."}]}
+            recover_legacy_split_issues(task, interpretation)
+            acceptance_requested = interpretation.accept_alternative is not None
+            previous_report = deepcopy(task['report'])
+            previous_report['pending_alternatives'] = pending_options(connection, task)
+            task, interpretation = prepare_acceptance(connection, task, interpretation, sequence,
+                                                       session['mode'], user_message or '')
+            # Acceptance metadata is added by the Service, never trusted from the model.
+            if interpretation.accept_alternative and task['report'].get('accepted_alternative'):
+                previous_report['accepted_alternative'] = task['report']['accepted_alternative']
+                previous_report['pending_alternatives'] = []
             if (interpretation.patch_operations or interpretation.ambiguity_reason or
-                    interpretation.unsupported_constraints or interpretation.answered_question_ids):
+                    interpretation.unsupported_constraints or interpretation.answered_question_ids or
+                    interpretation.due_date_pending or interpretation.allocation_notices or acceptance_requested):
                 task = apply_interpretation(task, interpretation, sequence)
                 task["task_version"] += 1
                 chat_repository.supersede_current(connection, session_id)
@@ -39,8 +53,11 @@ def prepare(*, db_path, session_id, owner, request_id, interpretation, as_of, se
             order = get_order(connection, order_id) if order_id else None
             if order:
                 for field in FACT_FIELDS:
+                    if field == 'due_date' and any(task['sources'].get(field, {}).get(key)
+                                                for key in ('pending', 'replacement')):
+                        continue
                     supplied = task["draft"].get(field)
-                    recorded = order[field]
+                    recorded = (order[field] or None) if field == 'due_date' else order[field]
                     if supplied is not None and str(supplied).casefold() != str(recorded).casefold():
                         differences.append({"field": field, "supplied": supplied, "recorded": recorded})
                     task["draft"][field] = recorded
@@ -51,6 +68,11 @@ def prepare(*, db_path, session_id, owner, request_id, interpretation, as_of, se
             report["blocking_issues"] = input_issues + report["blocking_issues"]
             report["ready_for_planning"] = not report["blocking_issues"]
             report["resolved_differences"] = differences
+            revised_limit = any(p.field == 'num_workshop_allowed' for p in interpretation.patch_operations)
+            notices = interpretation.allocation_notices or ([] if revised_limit else previous_report.get('allocation_notices', []))
+            if notices:
+                report['allocation_notices'] = deepcopy(notices)
+            report = track_report(task, report, previous_report, sequence + 1)
             task["report"] = report
             current = chat_repository.latest_recommendation(connection, session_id)
             current_valid = bool(current and current["status"] == "valid" and

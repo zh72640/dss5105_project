@@ -88,7 +88,7 @@
   function stopTyping(reveal=true){
     const animation=replyAnimation;if(!animation)return;
     cancelAnimationFrame(animation.frame);replyAnimation=null;
-    if(reveal){animation.body.textContent=animation.content;$('chat-announcement').textContent=animation.content;}
+    if(reveal){C.richText(animation.body,animation.content);$('chat-announcement').textContent=animation.content;}
     animation.body.removeAttribute('aria-hidden');animation.article.classList.remove('is-typing');animation.button.remove();
   }
   function typeReply(article,body,content){
@@ -103,7 +103,7 @@
       if(!isCurrent(animation.ownerScope,animation.slot)){stopTyping(false);return;}
       if(animation.start===null)animation.start=now;
       const follow=nearLatest(),count=Math.min(chars.length,Math.max(1,Math.ceil(chars.length*(now-animation.start)/duration)));
-      body.textContent=chars.slice(0,count).join('');
+      C.richText(body,chars.slice(0,count).join(''));
       if(count===chars.length)stopTyping();else animation.frame=requestAnimationFrame(step);
       if(follow)followLatest();
     };
@@ -115,7 +115,13 @@
     const latest=messages.filter(m=>m.role==='assistant').at(-1);
     messages.forEach(m=>{
       const row=C.text('article',null,'chat-message '+m.role),body=C.text('div',m.content,'chat-message-body');
+      if(m.role==='assistant')C.richText(body,m.content);
       row.append(C.text('small',m.role==='user'?'You':'Assistant'),body);
+      if(m.metadata?.alternatives?.length){
+        const currentIds=new Set((session?.task?.report?.pending_alternatives||[]).map(o=>o.alternative_id));
+        const current=m.metadata.alternatives.every(o=>currentIds.has(o.alternative_id));
+        row.append(C.alternatives(m.metadata.alternatives,current?selectCandidate:null));
+      }
       if(m.metadata?.review_changes)row.append(C.reviewChanges(m.metadata.review_changes));
       $('chat-messages').append(row);
       if(reply&&m===latest&&(reply.message_id?m.message_id===reply.message_id:m.content===reply.content))typeReply(row,body,m.content);
@@ -181,12 +187,13 @@
   function renderReport(){
     const target=$('chat-validation'),report=session.task.report;target.replaceChildren();target.hidden=!Object.keys(report).length;
     if(target.hidden)return;target.append(C.text('h2',report.ready_for_planning?'Requirements checked':'Review required'));
-    const dl=C.text('dl');const values={'Order':report.resolved_fields?.order_id,'Category':({TOPS:'Tops',ACCESSORIES:'Accessories'}[report.resolved_fields?.category]||report.resolved_fields?.category),'Remaining pieces':report.resolved_fields?.pieces!=null?report.resolved_fields.pieces-report.resolved_fields.completed_pieces:undefined,'Registered due date':report.resolved_fields?.due_date,'Objective':objectiveNames[report.effective_constraints?.objective],'Workshop limit':report.effective_constraints?.num_workshop_allowed,'Excluded':report.effective_constraints?.exclusion?.join(', ')||'None','Hard deadline':report.effective_constraints?.deadline_required?'Yes':'No'};
+    const dl=C.text('dl');const values={'Order':report.resolved_fields?.order_id,'Category':({TOPS:'Tops',ACCESSORIES:'Accessories'}[report.resolved_fields?.category]||report.resolved_fields?.category),'Remaining pieces':report.resolved_fields?.pieces!=null?report.resolved_fields.pieces-report.resolved_fields.completed_pieces:undefined,'Due date':report.resolved_fields?.due_date||'Not confirmed','Objective':objectiveNames[report.effective_constraints?.objective],'Workshop limit':report.effective_constraints?.num_workshop_allowed,'Excluded':report.effective_constraints?.exclusion?.join(', ')||'None','Hard deadline':report.effective_constraints?.deadline_required?'Yes':'No'};
     Object.entries(values).forEach(([k,v])=>{const n=C.text('div');n.append(C.text('dt',k),C.text('dd',v??'Pending'));dl.append(n);});target.append(dl);
     const required=C.text('div');required.append(C.text('dt','Required sole workshop'),C.text('dd',report.effective_constraints?.preferred_workshop||'None'));dl.append(required);
     if(report.resolved_differences?.length)target.append(C.registeredDifferences(report.resolved_differences));
     (report.blocking_issues||[]).forEach(p=>target.append(C.text('p',p.question,'chat-notice')));
-    if(report.alternatives?.length)target.append(C.alternatives(report.alternatives));
+    const alternatives=report.alternatives?.length?report.alternatives:report.pending_alternatives;
+    if(alternatives?.length)target.append(C.alternatives(alternatives,selectCandidate));
     else if(report.alternatives_status==='no_known_feasible_alternative')target.append(C.text('p','No known feasible alternative preserves capability, status and your exclusions.','chat-notice'));
   }
   async function load(sid,followLatest=false,reply=null){
@@ -285,6 +292,13 @@
     if(busy()||pending()||starting||loading)return;
     if(!session)return newSession(message);
     saveOperation(scope,activeId,{url:`/api/chat/sessions/${session.session_id}/turns`,body:{request_id:crypto.randomUUID(),expected_version:session.version,action,message}});await deliver();
+  }
+  async function selectCandidate(option,index){
+    const current=session?.task?.report?.pending_alternatives||[];
+    const selectedIndex=current.findIndex(o=>o.alternative_id===option.alternative_id);
+    if(selectedIndex<0){status('This option is no longer current. Ask for other options again.');return;}
+    const part=option.plan.allocation[0];
+    await send('message',`Use option ${selectedIndex+1} (${part.workshop_name||part.workshop_id}, ${part.workshop_id}), including its listed requirement changes.`);
   }
   async function confirm(rec){
     if(busy()||pending()||starting||loading||rec.session_id!==session?.session_id)return;

@@ -25,10 +25,35 @@ def workshop_mentions(text, names=None):
 
 
 def order_ids(text, *, allow_short=False):
-    identifiers = [m.group().upper() for m in re.finditer(r"\b(?:ORD-\d{3}|O\d+)\b", text, re.I)]
+    """Return distinct references in text order, optionally expanding labeled lists.
+
+    Short numbers require an order label or a list anchored by an explicit ID.
+    List separators never extend across prose; quantities, dates and ranges are
+    not order references. This recognizes vocabulary only, without selecting an
+    order or looking up registered facts.
+    """
+    canonical = r"(?:ORD(?:-\s*|\s+)\d{1,3}(?!\w|[./-]\d)|O\d+\b)"
+
+    def normalized(value):
+        # ORD spacing and zero padding describe the same registered reference.
+        if value.upper().startswith('ORD'):
+            return f"ORD-{int(re.search(r'\d+', value).group()):03d}"
+        return f"ORD-{int(value):03d}" if value.isdigit() else value.upper()
+
+    identifiers = [(m.start(), normalized(m.group())) for m in re.finditer(r"\b" + canonical, text, re.I)]
     if allow_short:
-        # Evidence normalization only: never infer an order from a bare quantity.
-        references = re.finditer(
-            r"\border(?:\s+(?:id|number|no\.?))?\s*#?\s*(\d{1,3})(?!\w|\.\d|-\d)", text, re.I)
-        identifiers.extend(f"ORD-{int(match.group(1)):03d}" for match in references)
-    return list(dict.fromkeys(identifiers))
+        # Test the whole numeric phrase before consuming a list member. Reuse
+        # product vocabulary so quantities like "300 vests" and "1,200 scarves"
+        # cannot become order IDs, including the first group of a comma quantity.
+        units = rf"(?:pieces?|units?|workshops?|shops?|days?|percent|{'|'.join(PRODUCTS)})\b|%"
+        quantity = rf"\d+(?:,\d{{3}})*(?:\.\d+)?\s*(?:{units})"
+        short = rf"(?!{quantity})\d{{1,3}}(?!\w|[./-]\d)"
+        token = rf"(?:{canonical}|{short})"
+        label = r"\borders?(?:\s+(?:ids?|numbers?|nos?\.?))?\s*[:#]?\s*"
+        separator = r"(?:\s*,\s*(?:(?:and|or)\s+)?|\s+(?:and|or)\s+)"
+        references = re.finditer(rf"(?:{label}{token}|\b{canonical})(?:{separator}{token})*", text, re.I)
+        for match in references:
+            for item in re.finditer(rf"\b{token}", match.group(), re.I):
+                value = normalized(item.group())
+                identifiers.append((match.start() + item.start(), value))
+    return list(dict.fromkeys(value for _, value in sorted(identifiers)))

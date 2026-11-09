@@ -29,7 +29,12 @@ class ClarificationRecovery(unittest.TestCase):
         blocked = chat.turn(self.sid, owner='alice', request_id='missing', expected_version=0,
             db_path=self.db, message='Please allocate an order.', registry=missing)
         self.assertIsNone(blocked['recommendation_id'])
-        self.assertIn('Which order would you like to allocate?', blocked['assistant_message']['content'])
+        self.assertIn("I don't yet have the order number, product type, and quantity",blocked['assistant_message']['content'])
+        self.assertIn('No order reference was provided; specify which order to allocate.',blocked['assistant_message']['content'])
+        self.assertIn('Which order would you like to allocate?',blocked['assistant_message']['content'])
+        self.assertNotIn('Provide the order ID, such as ORD-045.',blocked['assistant_message']['content'])
+        self.assertNotIn('Required information is incomplete',blocked['assistant_message']['content'])
+        self.assertTrue(any(p['code']=='MISSING_ORDER_ID' for p in blocked['issues']))
         self.assertFalse(missing.offered)
         model = NativeScript(actions=actions())
         args = dict(owner='alice', request_id='answer', expected_version=blocked['session_version'],

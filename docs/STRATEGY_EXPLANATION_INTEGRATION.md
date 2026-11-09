@@ -59,11 +59,22 @@ work-calendar experiment files belong in this change.
   [the source template extract](requirements/Track2_Reasoning_Explanation_Templates.csv).
   The original fourth column contained question marks and was not used. Source
   sentences that hard-code minimum lateness or claim approval are conditional,
-  not universal instructions. The active prompt is `allocation.explain` v4.
+  not universal instructions. The active prompt is `allocation.explain` v5. Undated previews use nullable deadline metrics and an explicit missing-date notice; normalized 80/20 scoring uses completion time when signed lateness is unavailable.
 - Real testing found an existing reply guard treating “No allocation has been
   committed” as a success claim and replacing the whole explanation. The guard
   now distinguishes explicit negative claims while still rejecting a later
   unsupported affirmative claim in the same reply.
+
+## Explanation date checks
+
+The explanation guard checks ISO dates and English full/abbreviated month dates
+in either month-first or day-first order against the saved recommendation.
+For example, `April 10, 2026`, `Apr 10 2026`, and `10 April 2026` are equivalent
+to `2026-04-10`. Yearless month/day references are accepted only when exactly
+one saved date matches. Invalid, unsupported, or ambiguous dates still trigger
+`unsupported_date`. Only validated date spans are removed from numeric scanning;
+other numbers retain the existing checks. User-visible explanation text is
+preserved, including the model's chosen date format.
 
 ## Verification on 2026-10-27
 

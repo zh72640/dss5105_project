@@ -112,6 +112,12 @@ flowchart TD
     R --> EX[explanation：解释保存结果或返回阻塞原因]
     EX --> A[response：确定性组装响应]
     A --> F[finish]
+    I -->|followup| FU[followup: contextual LLM interpretation]
+    FU -->|accept or revise| P
+    FU -->|explain or query| C
+    FU -->|clarify without task mutation| F
+    FU -->|other options| OP[alternatives: verified candidate previews]
+    OP --> R
     I -->|compat| C[兼容任务 Executor]
     C --> F
     I -->|识别失败| F
@@ -120,17 +126,177 @@ flowchart TD
 
 `compat` 当前承接订单查询、工坊查询、已有推荐问答和受控生产操作等通用任务，复用动态 Executor；这些任务尚未分别拆成独立业务子图。
 
+The active `agent.intent` v6 routes named-workshop/specific-order feasibility
+questions, such as "QuickStitch for the scarves on ORD-103?", through Allocation
+preparation. Extraction v9 retains the order, stated product, and candidate workshop
+as the evaluated sole workshop. The Service then returns actual eligibility or a
+saved preview; it does not ask for confirmation merely to check feasibility.
+General status/capacity lookups and explicit hypotheticals about recommendations
+remain on the compatibility route. Production submission still requires explicit
+recommendation-card confirmation.
+
 ### 4.2 字段提取与固定准备
 
 派单子图首先执行固定节点，此时尚未让模型自由选择业务 Tools。
 
 1. **提取**：`allocation.extract` 要求模型返回当前消息中的 `set` patches 和原文引用。Runtime 填入消息序号，校验字段格式、引用和字段值的用户输入依据。
-2. **有限修复**：格式或证据校验失败时最多进行两次提取尝试。供应商或网络失败走请求恢复机制，不伪装成缺失信息。
+2. **Extraction repair**: format, evidence, and explicit-reference completeness failures allow at most two attempts. An unambiguous order reference must be retained or already bound to the task. Supported hard workshop assignments must retain the required workshop and cannot be relabeled as an unsupported capability. Model/provider failures retain the request-recovery behavior.
 3. **事实补全**：`allocation_preparation.prepare()` 根据订单号读取登记订单，补齐产品、数量、交期等。LLM 路径遇到输入与登记事实不同时采用登记值，并保存 `resolved_differences`。
 4. **预检**：检查订单状态、工坊状态、产品能力、批量限制、排除项、指定工坊和交期要求；需要澄清时返回具体阻塞原因。
-5. **Skill 输入**：必须形成完整的 `order_id`、`product`、`pieces`、`due_date` 四字段输入，才能进入推荐阶段。
+5. **Skill input**: `order_id`, `product`, and `pieces` are required; `due_date` may be null. A pending replacement date is retained in task sources instead of reusing the old registered date. An explicit planning instruction such as "line something up" permits a preview without that date. Informational pending-date messages still require clarification. Hard deadline constraints always require a confirmed date.
+
+Without a due date, completion, cost and defect estimates remain available, while
+`delay_days` and `deadline_met` are null. Every saved plan and candidate carries
+`DUE_DATE_UNCONFIRMED`; response assembly and the card disclose the missing date.
+A later evidenced date replaces the pending task date, supersedes the old preview,
+and recalculates the plan without changing the registered order record. Normal
+registered-fact precedence remains unchanged for unrelated intake. Explicit card
+confirmation, owner/version checks, fresh-fact validation and replay rules remain
+in force for both dated and undated previews.
 
 最新修复区分缺少订单号与真正的歧义：补充订单号后清除对应缺失提示，其他未解决约束继续保留；已验证的单个排除工坊统一保存为列表。
+
+Order-reference normalization recognizes labeled lists such as `order 024, 035
+and 040`, including plural labels and lists anchored by a canonical ID. Each
+allocation request still handles exactly one order. Both LLM intake (including
+contextual follow-ups) and Offline interpretation require order selection before
+applying patches from a multi-order turn; the model cannot silently choose the
+first ID. Existing requirements and unsupported blockers remain in force. The
+selection question is scoped to `order_id`, so a later grounded single-order
+answer clears it, including legacy `multiple_order_ids` questions, while unrelated
+issues and the existing order-switch guard remain intact. No batch planning or
+automatic production submission is added.
+
+The active extraction prompt is `allocation.extract` v12. Outsourcing is the normal
+allocation domain; factory-capacity background does not add a routing constraint.
+The prompt preserves real unsupported requirements and does not authorize capacity
+or queue changes. Existing saved blockers are not automatically rewritten.
+A request such as
+"OldMill is free right now — give them ORD-008" means a recommendation preview
+with `order_id=ORD-008` and a hard `preferred_workshop` constraint. The user's
+availability claim does not override registered status or queues. Extraction
+uses the existing bounded repair loop for omitted references. The model-facing
+unsupported-constraint list accepts only `unsupported_constraint` and
+`soft_workshop_preference`; arbitrary model prose cannot become a business issue
+code. Legacy direct-assignment refusals can be cleared by a new, fully evidenced
+order/workshop request while real unsupported constraints remain in force.
+
+Eligibility refusals use shared English descriptions from
+`app/services/allocation/messages.py`, including the registered workshop name/ID,
+capability, status, exclusion and batch-limit reasons. The preflight issue retains
+`workshop_id` and `rejection_reason` for audit; allocator reason codes are unchanged.
+Both LLM blocked responses and Offline replies use readable text without a model
+call. Planning-failure explanations also translate codes into English, and Offline
+recommendation explanations reuse the same eligibility descriptions.
+
+Missing-information replies use the shared presentation helper
+`clarification_questions()` in `app/services/allocation/messages.py`. It replaces
+raw field diagnostics with one natural English statement listing only the
+reported missing fields. Known fields are never added to a fixed three-field list. It
+preserves the original LLM clarification and business explanations. Only the
+fixed trailing sentence `Provide the order ID, such as ORD-045.` is removed from
+`MISSING_ORDER_ID` template messages; the preceding order-selection question and
+model-authored wording remain. Structured issues, readiness checks and audit
+records are unchanged. Both LLM blocked replies and Offline clarifications use
+this formatter without an additional model call.
+
+### Accepting conditional alternatives
+
+The Main Graph's `agent.intent` v6 selects `followup` for contextual replies.
+`app/agent/followup.py` uses `agent.followup` v2 to interpret bounded history,
+current questions and authoritative saved offers. The LLM distinguishes acceptance,
+explanation, questions, negation and revisions by meaning. For example, "sure, use
+your suggested workshop" follows `identify → followup → allocation`; it is not
+matched against a phrase whitelist. Explanations enter the compatibility executor;
+unresolved references ask a dialogue question without persisting a business blocker.
+The Main Graph and Allocation subgraph pass the validated interpretation and sequence
+forward, avoiding a second extraction that could lose the resolved reference.
+
+`app/agent/intake.py` provides the shared model invocation, current-message evidence
+validation, two-attempt repair and persisted attempt recovery. Follow-up attempts use
+separate `followup_interpretation` / `followup_validation_failed` audit events and
+record model usage under the `followup` stage. A retry reuses the saved model output.
+Existing `main_v1` / `main_v2` node names remain available for checkpoint recovery;
+new-turn initialization clears resolved follow-up state. No Tool or Skill is added.
+
+Every offer has an ID bound to the task/order and requirements. The LLM resolves
+option numbers, ordinals and workshop references to that saved ID. A unique offer
+may omit its ID; multiple offers without one require selection. The Service does
+not parse acceptance sentences or ordinals in LLM mode. It validates the entire
+current-message quote, the current owned task, ID freshness, mode restrictions and
+whitelisted `required_changes`. It preserves exclusions and other requirements,
+recomputes against fresh business facts and saves a normal preview. Acceptance
+never commits production or reuses the historical plan. Explicit card confirmation
+and its identity, version and freshness checks remain required.
+
+Pending offers survive dialogue-only turns. Existing sessions can recover matching
+offers from bounded preparation audit snapshots. To resolve legacy reference errors,
+the LLM can name pending question IDs in `resolved_reference_issue_ids`; the Service
+allows only current `AMBIGUOUS_MESSAGE` issues with field `message`. It never resolves
+business-field or unsupported-constraint issues through this channel. This replaces
+hardcoded matching of old error prose. Resolved IDs remain in acceptance provenance.
+
+A consumed offer normally stays consumed. A narrow legacy recovery covers an old
+acceptance that never reached successful preparation because a dialogue error
+remained, followed by restoration of its original requirements. Recovery requires
+matching task/requirements and an audited prior offer, exposes the required dialogue
+question IDs, and needs a new acceptance resolving those references. An acceptance
+that reached ready-for-planning, a closed task, or changed requirements cannot use
+this recovery. Existing JSON report/audit storage is reused; no migration is needed.
+
+Offline mode retains a deliberately limited deterministic grammar, including option
+numbers. It does not participate in LLM follow-up routing. Split-only alternatives
+remain restricted to Offline mode.
+
+Short order-reference lists exclude quantity phrases using the shared product
+vocabulary, including comma-grouped quantities such as `1,200 scarves`. Thus
+`ORD-024, 300 vests` contains one order reference; explicit IDs and genuine lists
+such as `orders 024, 035 and 040` remain supported. This vocabulary guard does not
+look up orders or change date/dispatch semantics. Correctly extracted current
+facts can clear an older false multiple-order clarification through normal intake.
+
+### Contextual candidate previews and selection
+
+`agent.followup` v4 distinguishes `request_alternatives`, `explain_recommendation`
+and `select_workshop`. The Main Graph adds an `alternatives` node for the first;
+explanations use the compatibility executor with a `followup_readonly` Tool
+allowlist enforced at binding and invocation; selections enter Allocation with
+current-message evidence. A named choice such as "W1 then" sets that exact sole
+workshop. An ordinal choice resolves the saved candidate ID. A mismatching concrete
+workshop/option reference is rejected by intake repair and independently by Service.
+
+Implementation responsibilities:
+
+| Files | Responsibility |
+| --- | --- |
+| `app/schemas/chat.py`, versioned Agent prompts | Separate query, explanation and selection semantics; expose structured alternatives. |
+| `app/agent/followup.py`, `main_graph.py` | Interpret once and route to preview, read-only explanation or allocation. |
+| `app/services/chat/candidate_options.py` | Owner-checked, request-cached candidate preparation using the existing planner. |
+| `alternative_acceptance.py`, `interpretation.py` | Validate current references and apply only a saved candidate's exact authorized changes. |
+| `preparation_repository.py`, `agent_repository.py`, `agent_turns.py` | Audit/cache previews and preserve candidate snapshots in assistant-message metadata. |
+| `presentation.py`, `app/ui/chat-common.js`, `chat.js`, `chat.css` | Return typed candidate data and render safe, selectable tables with history recovery. |
+
+Candidate preparation relaxes the existing sole workshop only on a comparison copy.
+It preserves exclusions, hard deadlines and unresolved requirements, and uses the
+same `allocate()` candidate plans and rounded calendar dates as normal recommendations.
+Each single-workshop offer pins `preferred_workshop` to its displayed workshop;
+selecting it cannot silently clear that condition and choose a different workshop.
+The original draft, task version, valid recommendation, queues and production rows
+are unchanged by viewing. Only report/audit/message metadata is saved. No options
+clears the old offer list. A selected offer is freshly checked and recomputed before
+saving a confirmable recommendation; production still requires explicit confirmation.
+
+The response exposes an `alternatives` list and persists the same snapshot in the
+assistant message, so historical tables survive reload and pagination. The review
+panel shares the same renderer. Buttons send an ordinary selection message, never
+a confirm operation, and check current offer IDs before sending. Historical stale
+options have disabled selection buttons and cannot be applied by clicking. Unknown due dates show no lateness claim.
+
+Historical model-authored Markdown tables and bold/code spans render through a
+small DOM-only formatter. It inserts model text with `textContent`, never raw HTML,
+and supports horizontal scrolling. New candidate tables are built from structured
+Service data instead of model-generated numbers or Markdown. Typing completion and
+"Show full reply" use the same formatter. No new Tool, Skill or DB migration is needed.
 
 ### 4.3 受控推荐执行
 
@@ -163,7 +329,7 @@ check_requirements → compute_plan → save_recommendation
 
 单工坊推荐保存 `explanation_evidence`，包括实际方法、公式、所选分数、候选对比、排队/生产/运输时间、排除原因和硬交期约束。解释读取已保存证据，不使用稍后变化的工坊资料重新编造选择理由。
 
-当前 `allocation.explain` v4 参考项目提供的 Explanation Template，按以下顺序组织：
+当前 `allocation.explain` v5 参考项目提供的 Explanation Template，按以下顺序组织：
 
 1. **Allocation plan**：订单、工坊、件数、交付、成本和缺陷率。
 2. **Allocation method**：实际分配目标与评分规则。
@@ -393,3 +559,52 @@ uv run --locked python -m app.server --db runtime/demo.sqlite3 --mode llm --mode
 ## October 31 remediation
 
 See [the remediation report](REMEDIATION_RESULTS_2026-10-31.md) for incremental patches, date/name grounding, registered-fact disclosure, conservative explanation checks, current evaluation layers, and the portable backed-up demo reset. The environment now uses a working local Python interpreter; the old PYTHONPATH workaround is no longer required.
+
+### Partial facts and order-reference clarification
+
+Allocation extraction v11 preserves explicit product/customer facts even if the
+order reference or quantity is unknown. The evidence/completeness validator retries
+an omitted unambiguous product before preparation; it never supplies a guessed
+quantity or customer. `ord 34`, `ORD-34`, and `ORD-034` refer to ORD-034. A model's
+bare `34` value is normalized only when its exact current quote contains one
+matching labeled reference; an unlabeled number, quantity, or different ID fails.
+
+Follow-up v3 returns current field patches for missing-fact answers. The shared
+clarification scope also recognizes the older order-reference question about usual
+quantity, allowing saved sessions to recover. A legacy `answered_question_ids`
+AMBIGUOUS_MESSAGE marker is accepted without withdrawal only when every pending
+ambiguity covered by that code is a recognized order-reference question answered
+by a validated order_id patch. Legacy substring heuristics cannot authorize this
+resolution. Mixed or unrelated ambiguities remain blocking. Preparation retrieves
+registered quantities, discloses supplied/registered differences under the existing
+policy, and enforces order status. Identifying an already completed order does not
+make it eligible for allocation. Regression tests use scripted models and isolated
+SQLite fixtures, including both the reported completed-order case and a matching
+unassigned-order fixture; no live model reliability is implied.
+
+### Optional split requests without blocking allocation
+
+The LLM allocation workflow still supports one workshop per preview. Extraction
+v12 and follow-up v4 use the specific `optional_split` category for a secondary
+request to split only if it yields faster completion. The intake policy in
+`app/services/chat/optional_requirements.py` checks current conditional split
+evidence, keeps all normal patches and unrelated blockers, and derives an
+`allocation_notices` entry. It never sets a multi-workshop limit from that optional
+clause. Mandatory exact counts/ratios, budgets and quality thresholds keep their
+existing blocking behavior; this change does not implement split allocation.
+
+Preparation persists notices in the task report, separately from blocking issues.
+Allocation tools retain them as preparation provenance, completion returns them as
+warning issues, and presentation appends the unsupported-split disclosure and an
+explicit statement that the split was not applied. Generated explanations and
+fallbacks cannot omit that disclosure. A later explicit workshop-limit revision
+clears the earlier notice; ordinary revisions and missing-fact answers retain it.
+Notices do not change recommendation confirmation or production state rules.
+
+The exact legacy two-shop refusal from the reported case is normalized only with
+current optional-split evidence and no other unsupported requirement detected by
+the evidence baseline. An existing task can clear its isolated legacy refusal pair
+only upon new optional authorization; any additional saved issue prevents that
+recovery. Historical audit events and business records remain unchanged. Tests use
+scripted models and temporary SQLite fixtures, including successful preview,
+missing information, unsupported hard constraints, replay, and saved-task recovery.

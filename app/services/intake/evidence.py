@@ -2,7 +2,7 @@
 import re
 from datetime import date
 
-from app.services.intake.normalization import PRODUCTS, WORKSHOPS, workshop_mentions
+from app.services.intake.normalization import PRODUCTS, WORKSHOPS, workshop_mentions, order_ids
 
 DATE_TOKEN = re.compile(
     r'\b(?:(?P<iso>\d{4}-\d{2}-\d{2})|'
@@ -78,7 +78,54 @@ def clears_exclusions(text):
 def pending_due_date(text):
     """An explicitly pending replacement date cannot be satisfied by old DB facts."""
     return bool(re.search(r'(?:due date|deadline|ship date|交期|截止日期)', text, re.I) and
-                re.search(r'will confirm|confirm[^.!?]*later|date[^.!?]*to follow|待确认|稍后确认', text, re.I))
+                re.search(r'will confirm|confirm[^.!?]*later|date[^.!?]*to follow|'
+                          r'unconfirmed|not (?:yet )?confirmed|to be confirmed|\b(?:TBD|TBC)\b|no (?:confirmed )?due date|待确认|稍后确认', text, re.I))
+
+
+def requests_recommendation(text):
+    """Recognize affirmative planning instructions without authorizing submission.
+
+    These bounded phrases cover proceeding while a replacement date is pending.
+    Negated and hypothetical instructions cannot waive the clarification.
+    """
+    if re.search(r'\b(?:what if|if we|if you|suppose)\b', text, re.I):
+        return False
+    pattern = (r'\b(?:allocate|assign|dispatch|recommend)\b|'
+               r'\bline\s+(?:something|it|this|a workshop)\s+up\b|'
+               r'\b(?:find|choose|select)\s+(?:me\s+)?(?:a\s+)?(?:suitable\s+)?workshop\b|'
+               r'\b(?:go ahead|proceed)\b')
+    for match in re.finditer(pattern, text, re.I):
+        prefix = text[max(0, match.start() - 60):match.start()]
+        clause = re.split(r'[.!?;,]|\b(?:but|however)\b', prefix, flags=re.I)[-1]
+        if not re.search(r"\b(?:not|no|don't|cannot|can't|won't|never|hold off(?: on)?|wait (?:to|before))\s+(?:\w+\s+){0,3}$", clause, re.I):
+            return True
+    return False
+
+
+def candidate_workshop_question(text, names=None):
+    """Return the sole named candidate for a specific-order feasibility question.
+
+    This only recognizes the requested evaluation target; it makes no claim
+    about capability, capacity, availability, or permission to submit allocation.
+    Status lookups, multiple candidates/orders and explicit hypotheticals stay
+    outside this bounded evidence helper.
+    """
+    if len(order_ids(text, allow_short=True)) != 1 or re.search(
+            r'\b(?:what if|if we|if you|suppose)\b', text, re.I):
+        return None
+    mentions = workshop_mentions(text, names)
+    if len({wid for _, _, wid in mentions}) != 1:
+        return None
+    for start, end, wid in mentions:
+        prefix, suffix = text[:start].strip(), text[end:]
+        terse = (text.rstrip().endswith('?') and
+                 re.fullmatch(r'(?:(?:how|what) about)?', prefix, re.I) and
+                 re.match(r'\s+for\b', suffix, re.I))
+        modal = (re.search(r'\b(?:can|could|would)\b', prefix, re.I) and
+                 re.search(r'\b(?:take|handle|make|produce|work)\b', suffix, re.I))
+        if terse or modal:
+            return wid
+    return None
 
 
 def exclusion_operations(text, names=None):
@@ -121,6 +168,13 @@ def normalize_patch(patch, message, context):
                 operation = 'add'
         else:
             value = canonical_workshop(value, names)
+    elif patch.field == 'order_id' and operation == 'set' and isinstance(value, str):
+        ids = order_ids(patch.quote, allow_short=True)
+        candidates = order_ids(value, allow_short=True)
+        if len(ids) == 1 and (candidates == ids or
+                (value.isdigit() and ids[0] == f'ORD-{int(value):03d}')):
+            # A bare model value is usable only with one matching labeled quote.
+            value = ids[0]
     elif patch.field == 'product' and operation == 'set':
         value = canonical_product(value)
     elif patch.field in ('due_date', 'order_date') and operation == 'set' and isinstance(value, str):

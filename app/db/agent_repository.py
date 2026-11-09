@@ -83,14 +83,15 @@ def record_turn_start(connection, *, turn_id, session_id, request_id, fingerprin
 
 def record_message_pair(connection, *, session_id, turn_id, sequence, user_message,
                         assistant_message, feedback_id, recommendation_id,
-                        workflow="dynamic_agent_v1"):
+                        workflow="dynamic_agent_v1", alternatives=None):
     import uuid
     now = utc_now()
     for offset, role, content, mid in ((1, "user", user_message, uuid.uuid4().hex),
                                        (2, "assistant", assistant_message, feedback_id)):
         connection.execute("INSERT INTO chat_messages VALUES (?,?,?,?,?,?,?,?)",
             (mid, session_id, turn_id, sequence + offset, role, content,
-             json.dumps({"workflow": workflow, "recommendation_id": recommendation_id}), now))
+             json.dumps({"workflow": workflow, "recommendation_id": recommendation_id,
+                         **({"alternatives": alternatives} if role == "assistant" and alternatives else {})}), now))
     connection.execute("UPDATE chat_sessions SET version=version+1,updated_at=? WHERE session_id=?",
                        (now, session_id))
 
@@ -121,14 +122,17 @@ def latest_model_stage(connection, request_id):
     return json.loads(row["detail_json"]).get("stage") if row else None
 
 
-def latest_extraction(connection, request_id):
+def latest_extraction(connection, request_id, event_type='allocation_extraction'):
+    """Recover the latest attempt for one interpretation stage of this request."""
     row = connection.execute("""SELECT event_id,detail_json FROM chat_agent_events
-        WHERE request_id=? AND event_type='allocation_extraction'
-        ORDER BY event_id DESC LIMIT 1""", (request_id,)).fetchone()
+        WHERE request_id=? AND event_type=?
+        ORDER BY event_id DESC LIMIT 1""", (request_id, event_type)).fetchone()
     if row is None:
         return None
     result = json.loads(row['detail_json'])
+    validation = ('extraction_validation_failed' if event_type == 'allocation_extraction'
+                  else 'followup_validation_failed')
     result['validation_recorded'] = connection.execute("""SELECT 1 FROM chat_agent_events
-        WHERE request_id=? AND event_type='extraction_validation_failed' AND event_id>?
-        LIMIT 1""", (request_id, row['event_id'])).fetchone() is not None
+        WHERE request_id=? AND event_type=? AND event_id>?
+        LIMIT 1""", (request_id, validation, row['event_id'])).fetchone() is not None
     return result
