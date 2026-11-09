@@ -36,11 +36,11 @@ class PromptCatalogTests(unittest.TestCase):
 
     def test_active_catalog_and_no_parser_v1(self):
         entries = self.registry.list()
-        self.assertEqual(len(entries), 27)
-        self.assertEqual(len(self.registry.list(kind="prompt")), 25)
+        self.assertEqual(len(entries), 34)
+        self.assertEqual(len(self.registry.list(kind="prompt")), 32)
         self.assertTrue(all(len(item["content_hash"]) == 64 for item in entries))
         self.assertEqual({(item['id'], item['version']) for item in entries if not item['active']},
-                         {('allocation.extract', 'v1'), ('allocation.extract', 'v2'), ('allocation.extract', 'v3'), ('allocation.extract', 'v4'), ('allocation.extract', 'v5'), ('allocation.extract', 'v6'), ('allocation.extract', 'v7'), ('allocation.extract', 'v8'), ('agent.intent', 'v1'), ('agent.intent', 'v2'), ('agent.intent', 'v3'), ('agent.intent', 'v4'),
+                         {('allocation.extract', 'v1'), ('allocation.extract', 'v2'), ('allocation.extract', 'v3'), ('allocation.extract', 'v4'), ('allocation.extract', 'v5'), ('allocation.extract', 'v6'), ('allocation.extract', 'v7'), ('allocation.extract', 'v8'), ('allocation.extract', 'v9'), ('allocation.extract', 'v10'), ('allocation.extract', 'v11'), ('agent.intent', 'v1'), ('agent.intent', 'v2'), ('agent.intent', 'v3'), ('agent.intent', 'v4'), ('agent.intent', 'v5'), ('agent.followup', 'v1'), ('agent.followup', 'v2'), ('agent.followup', 'v3'),
                           ('allocation.extract_retry', 'v1'), ('allocation.explain', 'v1'), ('allocation.explain', 'v2'), ('allocation.explain', 'v3'), ('allocation.explain', 'v4')})
         self.assertFalse(any(item["id"].startswith("parsing.") for item in entries))
 
@@ -78,9 +78,9 @@ class PromptCatalogTests(unittest.TestCase):
     def test_snapshot_is_pinned(self):
         snapshot = self.registry.snapshot("agent.intent")
         before = snapshot.metadata
-        definition = self.read("agent/intent_v5.yaml")
+        definition = self.read("agent/intent_v6.yaml")
         definition["system"] = "Changed locally: ${task} ${output_schema}"
-        self.write("agent/intent_v5.yaml", definition)
+        self.write("agent/intent_v6.yaml", definition)
         self.assertEqual(snapshot.metadata, before)
         self.assertNotEqual(PromptRegistry(self.root).snapshot("agent.intent").metadata, before)
 
@@ -100,9 +100,9 @@ class PromptCatalogTests(unittest.TestCase):
         self.write("agent/retry_v1.yaml", {"id": "agent.retry", "version": "v1", "kind": "fragment",
             "description": "Retry a failed classification.", "variables": ["feedback"],
             "system": "Correct the previous output: ${feedback}"})
-        definition = self.read("agent/intent_v5.yaml")
+        definition = self.read("agent/intent_v6.yaml")
         definition["retry"] = {"id": "agent.retry", "version": "v1"}
-        self.write("agent/intent_v5.yaml", definition)
+        self.write("agent/intent_v6.yaml", definition)
         registry = PromptRegistry(self.root)
         snapshot = registry.snapshot("agent.intent")
         variables = {"task": {}, "output_schema": {"type": "object"}}
@@ -118,7 +118,7 @@ class PromptCatalogTests(unittest.TestCase):
             self.render()
 
     def test_bad_catalog_entries_are_rejected(self):
-        self.write("agent/duplicate.yaml", self.read("agent/intent_v5.yaml"))
+        self.write("agent/duplicate.yaml", self.read("agent/intent_v6.yaml"))
         with self.assertRaisesRegex(PromptCatalogError, "Duplicate"):
             PromptRegistry(self.root)
         (self.root / "agent/duplicate.yaml").unlink()
@@ -130,15 +130,15 @@ class PromptCatalogTests(unittest.TestCase):
                 (self.root / "invalid.yaml").unlink()
 
     def test_invalid_definitions_and_manifest_are_rejected(self):
-        original = self.read("agent/intent_v5.yaml")
+        original = self.read("agent/intent_v6.yaml")
         for update in ({"variables": ["undeclared"]}, {"variables": ["task", "task"]},
                        {"system": "${value.__class__}"}, {"version": True},
-                       {"profiles": {"default": [{"id": "agent.intent", "version": "v5"}]}}):
+                       {"profiles": {"default": [{"id": "agent.intent", "version": "v6"}]}}):
             with self.subTest(update=update):
-                self.write("agent/intent_v5.yaml", {**original, **update})
+                self.write("agent/intent_v6.yaml", {**original, **update})
                 with self.assertRaises(PromptCatalogError):
                     PromptRegistry(self.root)
-        self.write("agent/intent_v5.yaml", original)
+        self.write("agent/intent_v6.yaml", original)
         manifest = self.read("manifest.yaml")
         manifest["active"]["agent.intent"] = "missing"
         self.write("manifest.yaml", manifest)

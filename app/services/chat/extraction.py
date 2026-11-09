@@ -6,9 +6,10 @@ from pydantic import ValidationError
 from app.schemas.allocation import AllocationFields
 from app.schemas.chat import AllocationExtraction
 from app.services.chat.interpretation import (InterpretationValidationError, validate_interpretation,
-                                              apply_due_date_context, pending_fields, rule_interpret, is_hypothetical)
+                                              apply_due_date_context, pending_fields, rule_interpret, is_hypothetical,
+                                              clarify_multiple_orders)
 from app.services.intake.evidence import normalize_patch
-from app.services.intake.normalization import order_ids, workshop_mentions
+from app.services.intake.normalization import PRODUCTS, order_ids, workshop_mentions
 
 
 class ExtractionValidationError(ValueError):
@@ -55,8 +56,6 @@ def _validate_explicit_references(interpretation, message, conversation):
     if re.search(r"\b(?:do not|don't|never|must not|should not)\s+(?:give|send|assign|allocate|use|dispatch)\b", message, re.I):
         return
     ids = order_ids(message, allow_short=True)
-    if len(ids) != 1:
-        return
     draft = conversation.get('draft', {})
     supplied = {p.field: p.value for p in interpretation.patch_operations if p.op == 'set'}
 
@@ -69,7 +68,13 @@ def _validate_explicit_references(interpretation, message, conversation):
     if not expected and interpretation.intent not in (
             'allocate_request', 'modify_constraints', 'answer_clarification', 'unsupported_or_ambiguous'):
         return
-    expected_fields = {'order_id': ids[0]}
+    expected_fields = {'order_id': ids[0]} if len(ids) == 1 else {}
+    products = {name for pattern, (name, _) in PRODUCTS.items()
+                if re.search(r'\b' + pattern + r'\b', message, re.I)}
+    # Missing order/quantity must not erase an explicit product. Negated or
+    # conditional references stay with the model rather than this bounded guard.
+    if len(products) == 1 and not re.search(r"\b(?:not|instead of|except|rather than)\b", message, re.I):
+        expected_fields['product'] = products.pop()
     if expected:
         expected_fields['preferred_workshop'] = expected
     missing = [field for field, value in expected_fields.items()
@@ -78,7 +83,9 @@ def _validate_explicit_references(interpretation, message, conversation):
         field = missing[0]
         # Report every omitted reference together: there is only one repair attempt.
         raise ExtractionValidationError('evidence', {
-            'reason': 'OMITTED_EXPLICIT_ORDER_ID' if field == 'order_id' else 'OMITTED_REQUIRED_WORKSHOP',
+            'reason': {'order_id': 'OMITTED_EXPLICIT_ORDER_ID',
+                       'product': 'OMITTED_EXPLICIT_PRODUCT',
+                       'preferred_workshop': 'OMITTED_REQUIRED_WORKSHOP'}[field],
             'field': field, 'expected_value': expected_fields[field],
             'expected_fields': expected_fields, 'missing_fields': missing,
             'source_message': message, 'quote': message,
@@ -95,12 +102,23 @@ def _validate_explicit_references(interpretation, message, conversation):
 
 
 def validate_candidate(candidate, *, message, conversation):
+    """Return grounded current-turn extraction or an order-selection question.
+
+    Validate the model envelope first. A multi-order allocation turn applies no
+    patches; other turns must pass format, evidence, and completeness checks.
+    """
     sequence = conversation['current_sequence']
     try:
         extracted = AllocationExtraction.model_validate(candidate)
     except ValidationError as error:
         raise ExtractionValidationError('format', format_details(
             error, candidate, message, sequence)) from error
+    interpretation = extracted.with_evidence(sequence)
+    clarified = clarify_multiple_orders(interpretation, message)
+    if clarified is not interpretation:
+        # Ambiguous order selection is a user question, not an extraction failure.
+        # Do not bind whichever order the model happened to choose from the list.
+        return clarified
     extracted.patch_operations = [normalize_patch(p, message, conversation) for p in extracted.patch_operations]
     for index, patch in enumerate(extracted.patch_operations):
         if patch.field in AllocationFields.model_fields and patch.op == 'set':
@@ -118,6 +136,8 @@ def validate_candidate(candidate, *, message, conversation):
         raise ExtractionValidationError('evidence', {'reason': str(error),
             'error_type': type(error).__name__, 'source_message': message,
             'expected_message_sequence': sequence}) from error
+    from app.services.chat.optional_requirements import normalize_optional_split
+    interpretation = normalize_optional_split(interpretation, message, conversation)
     _validate_explicit_references(interpretation, message, conversation)
     answered = {patch.field for patch in interpretation.patch_operations}
     if answered & pending_fields(conversation):
@@ -160,6 +180,8 @@ def failure_message(stage, detail):
         return 'The order reference in your message was omitted during extraction. Please retry.'
     if reason == 'OMITTED_REQUIRED_WORKSHOP':
         return 'The required workshop in your message was omitted during extraction. Please retry.'
+    if reason == 'OMITTED_EXPLICIT_PRODUCT':
+        return 'The product in your message was omitted during extraction. Please retry.'
     if reason == 'MISCLASSIFIED_WORKSHOP_ASSIGNMENT':
         return 'The requested workshop assignment could not be interpreted reliably. Please retry.'
     if reason == 'UNKNOWN_FIELD':

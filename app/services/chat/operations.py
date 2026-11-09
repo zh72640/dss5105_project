@@ -32,7 +32,7 @@ def _retain_preparation_provenance(task, report):
     differences = task.get("report", {}).get("resolved_differences")
     if differences:
         report["resolved_differences"] = differences
-    for key in ('pending_alternatives', 'accepted_alternative'):
+    for key in ('pending_alternatives', 'accepted_alternative', 'allocation_notices'):
         if key in task.get('report', {}):
             report[key] = task['report'][key]
     return report

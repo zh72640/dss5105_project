@@ -2,20 +2,7 @@
 from copy import deepcopy
 import re
 from app.services.allocation.preflight import issue
-from app.services.chat.interpretation import readable_ambiguity
-
-
-def _ambiguity_field(reason):
-    # A missing order reference is resolved by an evidenced order_id patch.
-    # Full matching prevents a mixed or unrelated ambiguity being discarded.
-    missing_order = (r"(?:no(?: specific)? order (?:id|identifier|reference)(?: (?:was |is )?provided)?|"
-                     r"(?:the )?order (?:id|identifier|reference) (?:is )?(?:missing|not provided))"
-                     r"(?:[.;]\s*(?:please )?(?:provide|specify) (?:the order (?:id|identifier|reference)|which order to allocate))?[.!]?")
-    if re.fullmatch(missing_order, reason.strip(), re.I):
-        return 'order_id'
-    return next((field for code, field in (('objective', 'objective'),
-        ('workshop_limit', 'num_workshop_allowed'), ('pieces', 'pieces'),
-        ('order_ids', 'order_id'), ('date', 'due_date')) if code in reason), 'message')
+from app.services.chat.interpretation import readable_ambiguity, ambiguity_field as _ambiguity_field
 
 
 def _resolved_legacy_assignment_issue(problem, interpretation):

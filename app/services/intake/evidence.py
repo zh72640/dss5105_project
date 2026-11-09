@@ -168,6 +168,13 @@ def normalize_patch(patch, message, context):
                 operation = 'add'
         else:
             value = canonical_workshop(value, names)
+    elif patch.field == 'order_id' and operation == 'set' and isinstance(value, str):
+        ids = order_ids(patch.quote, allow_short=True)
+        candidates = order_ids(value, allow_short=True)
+        if len(ids) == 1 and (candidates == ids or
+                (value.isdigit() and ids[0] == f'ORD-{int(value):03d}')):
+            # A bare model value is usable only with one matching labeled quote.
+            value = ids[0]
     elif patch.field == 'product' and operation == 'set':
         value = canonical_product(value)
     elif patch.field in ('due_date', 'order_date') and operation == 'set' and isinstance(value, str):

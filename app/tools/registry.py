@@ -51,8 +51,17 @@ ALLOCATION_TOOLS = frozenset({
 BASIC_ALLOCATION_TOOLS = frozenset({"check_requirements", "compute_plan", "save_recommendation"})
 
 
+READ_ONLY_FOLLOWUP_TOOLS = frozenset({
+    "load_skill", "get_order", "list_workshops", "get_queue", "score_workshop",
+    "get_estimated_completion_time", "get_lateness_score", "get_defect_score",
+    "get_hybrid_score", "inspect_recommendation", "ask_user",
+})
+
+
 def allowed_for_task(name: str, task_type: str) -> bool:
     """Code-owned authorization independent of Skill text."""
+    if task_type == "followup_readonly":
+        return name in TOOLS and name in READ_ONLY_FOLLOWUP_TOOLS
     return name in TOOLS and (task_type != "allocation" or name in ALLOCATION_TOOLS)
 
 

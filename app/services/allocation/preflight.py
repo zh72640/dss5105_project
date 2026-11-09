@@ -8,6 +8,7 @@ from app.schemas.parser_schema import OBJECTIVES, ParseResult
 from app.db.workshop_repository import get_all
 from app.db.order_repository import get_order
 from app.allocator import exclusion_reason
+from app.services.allocation.messages import workshop_refusal, planning_failure_text
 
 
 def digest(value):
@@ -111,7 +112,9 @@ def preflight(connection, draft, as_of, pending=(), sources=None):
         if preferred and order and type(order['pieces']) is int:
             reason = exclusion_reason(preferred, order['category'], order['pieces'] - order['completed_pieces'], constraints['exclusion'])
             if reason:
-                problems.append(issue('PREFERRED_INELIGIBLE', 'preferred_workshop', f'Required sole workshop {preferred.workshop_id} cannot take the full batch: {reason}.'))
+                problem = issue('PREFERRED_INELIGIBLE', 'preferred_workshop', workshop_refusal(preferred, reason))
+                problem.update(workshop_id=preferred.workshop_id, rejection_reason=reason)
+                problems.append(problem)
     except (ValueError, TypeError):
         problems.append(issue('RESOURCE_DATA_ERROR', 'workshop', 'Workshop queue data is missing or the business date is invalid.'))
     report['blocking_issues'] = list({(p['code'], p['field'], p['question']): p for p in problems}.values())
@@ -136,7 +139,7 @@ def preflight(connection, draft, as_of, pending=(), sources=None):
 def check_solution(result, order, workshops, draft, report, as_of):
     if not result['success']:
         for code in result['reason_codes']:
-            report['blocking_issues'].append(issue(code, 'constraints', 'No feasible plan satisfies the current constraints: ' + code + '. Revise the relevant constraint.'))
+            report['blocking_issues'].append(issue(code, 'constraints', planning_failure_text(code)))
         from app.services.allocation.alternatives import attach
         attach(report, order, workshops, as_of, max_workshops=report.get('planning_max_workshops', 1))
         return report

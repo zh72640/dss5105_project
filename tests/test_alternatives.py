@@ -38,6 +38,8 @@ class RefusalOptions(unittest.TestCase):
             self.assertTrue(all(part['workshop_id'] not in ('W3', 'W7') for part in option['plan']['allocation']))
             self.assertEqual(sum(part['pieces'] for part in option['plan']['allocation']), 150)
         self.assertIn('suggestion only', result['assistant_message']['content'])
+        self.assertIn('OldMill (W7) cannot handle this order because it is currently suspended.',result['assistant_message']['content'])
+        self.assertNotIn('status_suspended',result['assistant_message']['content'])
         with Database(self.path) as db:
             self.assertEqual(db.connection.execute('SELECT COUNT(*) FROM working_order').fetchone()[0], 0)
         revised = chat.turn(result['session_id'], owner='alice', request_id='authorize-alternative',
@@ -58,6 +60,8 @@ class RefusalOptions(unittest.TestCase):
         self.assertTrue(result['session']['task']['draft']['deadline_required'])
         options = result['validation_report']['alternatives']
         self.assertTrue(options)
+        self.assertIn('No feasible allocation can meet the required delivery date.',result['assistant_message']['content'])
+        self.assertNotIn('DEADLINE_INFEASIBLE',result['assistant_message']['content'])
         for option in options:
             if not option['plan']['deadline_met']:
                 self.assertIs(option['required_changes']['deadline_required'], False)
@@ -69,6 +73,8 @@ class RefusalOptions(unittest.TestCase):
         self.assertEqual(result['validation_report']['alternatives'], [])
         self.assertEqual(result['validation_report']['alternatives_status'], 'no_known_feasible_alternative')
         self.assertIn('No known feasible alternative', result['assistant_message']['content'])
+        self.assertIn('No workshop meets the current eligibility requirements.',result['assistant_message']['content'])
+        self.assertNotIn('NO_ELIGIBLE_WORKSHOP',result['assistant_message']['content'])
         self.assertFalse(result['committed'])
 
     def test_split_proposal_is_explicit_and_preserves_remaining_quantity(self):

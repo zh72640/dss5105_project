@@ -6,7 +6,7 @@ from typing import get_args
 from app.schemas.chat import TurnInterpretation, PatchField
 from app.schemas.parser_schema import OBJECTIVES
 from app.services.intake.rule_parser import extract
-from app.services.intake.normalization import order_ids, workshop_mentions, number
+from app.services.intake.normalization import PRODUCTS, order_ids, workshop_mentions, number
 from app.services.allocation.preflight import issue
 from app.services.intake.evidence import (date_mentions, product_evidence, category_evidence,
     literal_evidence, exclusion_operations, replaces_exclusions, clears_exclusions,
@@ -17,13 +17,30 @@ from app.services.chat.alternative_acceptance import (
 
 FIELDS = set(get_args(PatchField))
 PENDING_DUE_DATE_QUESTION = 'The new due date is unconfirmed. Provide the new date or ask me to recommend a workshop without a due date.'
+MULTIPLE_ORDER_IDS_QUESTION = 'Each allocation request supports one order. Which order should I handle first?'
 
 
 def readable_ambiguity(reason):
-    """Translate the pending-date code and deduplicate legacy comma-joined reasons."""
+    """Translate runtime clarification codes and deduplicate legacy reasons."""
     parts = [part.strip() for part in (reason or '').split(',') if part.strip()]
-    return ', '.join(dict.fromkeys(PENDING_DUE_DATE_QUESTION if part == 'unconfirmed_due_date'
-                                 else part for part in parts)) or None
+    labels = {'unconfirmed_due_date': PENDING_DUE_DATE_QUESTION,
+              'multiple_order_ids': MULTIPLE_ORDER_IDS_QUESTION}
+    return ', '.join(dict.fromkeys(labels.get(part, part) for part in parts)) or None
+
+
+def clarify_multiple_orders(value, message):
+    """Require selection before applying an ambiguous multi-order allocation turn.
+
+    Existing requirements and unsupported blockers stay saved. No patches or
+    alternative acceptance from this turn apply until one order is selected.
+    Read-only and hypothetical interpretations keep their normal routing.
+    """
+    if (value.intent in ('allocate_request', 'modify_constraints', 'answer_clarification',
+                         'select_workshop', 'unsupported_or_ambiguous') and not is_hypothetical(message) and
+            len(order_ids(message, allow_short=True)) > 1):
+        return TurnInterpretation(intent='answer_clarification', ambiguity_reason=MULTIPLE_ORDER_IDS_QUESTION,
+                                  unsupported_constraints=value.unsupported_constraints)
+    return value
 
 
 def apply_due_date_context(value, message, context):
@@ -48,6 +65,27 @@ def apply_due_date_context(value, message, context):
             reasons.append(PENDING_DUE_DATE_QUESTION)
     value.ambiguity_reason = readable_ambiguity(','.join(reasons))
     return value
+
+
+def ambiguity_field(reason, *, strict=False):
+    """Scope questions; strict mode excludes legacy substring heuristics."""
+    if reason == MULTIPLE_ORDER_IDS_QUESTION:
+        return 'order_id'
+    # A missing order reference is resolved by an evidenced order_id patch.
+    # Full matching prevents a mixed or unrelated ambiguity being discarded.
+    missing_order = (r"(?:no(?: specific)? order (?:id|identifier|reference)(?: (?:was |is )?provided)?|"
+                     r"(?:the )?order (?:id|identifier|reference) (?:is )?(?:missing|not provided))"
+                     r"(?:[.;]\s*(?:please )?(?:provide|specify) (?:the order (?:id|identifier|reference)|which order to allocate))?[.!]?")
+    if re.fullmatch(missing_order, reason.strip(), re.I):
+        return 'order_id'
+    if re.fullmatch(r'The order (?:reference|ID|number) is needed to identify the usual '
+                    rf"quantity for the (?:{'|'.join(PRODUCTS)})[.!]?", reason.strip(), re.I):
+        return 'order_id'
+    if strict:
+        return 'message'
+    return next((field for code, field in (('objective', 'objective'),
+        ('workshop_limit', 'num_workshop_allowed'), ('pieces', 'pieces'),
+        ('order_ids', 'order_id'), ('date', 'due_date')) if code in reason), 'message')
 
 
 def pending_fields(context):
@@ -76,6 +114,11 @@ class InterpretationValidationError(ValueError):
 
 
 def rule_interpret(message, context):
+    """Interpret an offline turn using current evidence and saved question context.
+
+    Return patches or a read-only intent without retrieving registered order
+    facts, selecting among multiple orders, or authorizing production writes.
+    """
     if is_offline_acceptance_request(message):
         return offline_acceptance_interpretation(message, context.get('pending_alternatives', []))
     text = message.strip()
@@ -134,13 +177,18 @@ def rule_interpret(message, context):
         return TurnInterpretation(**output)
     hypothetical = is_hypothetical(low)
     querying = bool(re.search(r'为什么|为何|怎样|怎么样|状态|多少|什么时候|能.*准时|\bwhy\b|\bstatus\b|any movement on|how much|when|on time\?', low))
-    ids = order_ids(text)
+    ids = order_ids(text, allow_short=True)
     previous_user=next((m['content'] for m in reversed(context['history']) if m['role']=='user'),'')
     previous_assistant=next((m['content'] for m in reversed(context['history']) if m['role']=='assistant'),'')
-    if len(ids)==1 and re.fullmatch(r'(?:ORD-\d{3}|O\d+)',text,re.I) and re.search(r'状态|status',previous_user,re.I) and 'Provide a valid order ID' in previous_assistant:
+    # Supplying a short ID to a status question must not start an allocation.
+    reference_only = re.fullmatch(
+        r'(?:ORD(?:-\s*|\s+)\d{1,3}|O\d+|orders?(?:\s+(?:ids?|numbers?|nos?\.?))?\s*[:#]?\s*\d{1,3})[.!]?', text, re.I)
+    if len(ids)==1 and reference_only and re.search(r'状态|status',previous_user,re.I) and 'Provide a valid order ID' in previous_assistant:
         output.update(intent='query_order',referenced_order_id=ids[0])
         return TurnInterpretation(**output)
     parsed = extract(text, date.fromisoformat(context['business_date']))
+    if len(ids) == 1:
+        parsed['order_id'] = ids[0]
     # Vocabulary extensions only; database values are never extracted from an ID.
     if re.search(r'成本(?:越低|最低|优先)|越便宜|最便宜|便宜点|成本越低', low):
         parsed['objective'] = 'min_cost'
@@ -256,16 +304,33 @@ def rule_interpret(message, context):
             output.update(intent='unsupported_or_ambiguous',ambiguity_reason='Provide the workshop ID to exclude; the current reference is ambiguous.')
     if querying and output['patch_operations']:
         output['candidate_intents']=['query_order' if re.search(r'状态|status',low) else 'explain_recommendation']
-    return apply_due_date_context(TurnInterpretation(**output), message, context)
+    value = clarify_multiple_orders(TurnInterpretation(**output), message)
+    return apply_due_date_context(value, message, context)
 
 
 def validate_interpretation(value, message, context):
+    if value.intent == 'request_alternatives' and (value.patch_operations or value.accept_alternative or
+            value.answered_question_ids or value.unsupported_constraints or value.ambiguity_reason):
+        raise ValueError('ALTERNATIVES_QUERY_CANNOT_MODIFY_REQUIREMENTS')
+    if value.intent == 'select_workshop' and not (value.accept_alternative or any(
+            p.field == 'preferred_workshop' and p.op == 'set' for p in value.patch_operations)):
+        raise ValueError('WORKSHOP_SELECTION_REQUIRED')
     if value.accept_alternative:
         validate_acceptance_quote(value.accept_alternative, message)
+        from app.services.chat.alternative_acceptance import validate_workshop_reference
+        validate_workshop_reference(value.accept_alternative, message,
+            context.get('pending_alternatives', []), context.get('workshop_names'))
     if 'unsupported_constraint' in value.answered_question_ids and not re.search(r'取消(?:预算|精确拆分|质量阈值)|(?:drop|remove) (?:budget|unsupported constraint)',message,re.I):
         raise ValueError('UNGROUNDED_WITHDRAWAL')
     if 'AMBIGUOUS_MESSAGE' in value.answered_question_ids and not re.search(r'忽略(?:上一条|刚才那条)(?:消息|要求)|ignore (?:last|previous) message',message,re.I):
-        raise ValueError('UNGROUNDED_WITHDRAWAL')
+        pending = [q for q in context.get('pending_questions', []) if q.get('code') == 'AMBIGUOUS_MESSAGE']
+        supplied = {p.field for p in value.patch_operations if p.op == 'set'}
+        # A fact answer is not a withdrawal. Require every issue covered by the
+        # coarse code to be field-scoped; patches still pass evidence checks below.
+        if ('order_id' not in supplied or not pending or any(
+                q.get('field') not in ('message', 'order_id') or
+                ambiguity_field(q['question'], strict=True) != 'order_id' for q in pending)):
+            raise ValueError('UNGROUNDED_WITHDRAWAL')
     if 'soft_workshop_preference' in value.answered_question_ids and not re.search(r'取消工坊(?:软)?偏好|remove workshop preference',message,re.I):
         raise ValueError('UNGROUNDED_WITHDRAWAL')
     for index, operation in enumerate(value.patch_operations):

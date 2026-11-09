@@ -6,6 +6,7 @@ from pathlib import Path
 import tempfile
 import unittest
 
+from app.prompts import get_registry
 from app.db.database import Database
 from app.db import chat_repository
 from app.services.chat import service as chat
@@ -74,7 +75,7 @@ class WorkshopAssignmentIntake(unittest.TestCase):
         self.assertEqual(result['session']['task']['draft']['preferred_workshop'], 'W7')
         self.assertEqual(result['validation_report']['resolved_fields']['pieces'], 600)
         self.assertTrue(any(i['code'] == 'PREFERRED_INELIGIBLE' for i in result['issues']))
-        self.assertIn('status_suspended', result['explanation'])
+        self.assertIn('is currently suspended', result['explanation'])
         self.assertNotIn('Required information is incomplete', result['explanation'])
         self.assertNotIn('does not support direct workshop assignment', result['explanation'])
         self.assertFalse(model.offered)
@@ -85,6 +86,34 @@ class WorkshopAssignmentIntake(unittest.TestCase):
         self.assertTrue(replay['replayed'])
         self.assertEqual(model.extractions, 2)
 
+    def test_outsourcing_example_reaches_preview_and_replays_without_production_writes(self):
+        """Run the active prompt example through real intake and planning with a mock model."""
+        prompt = get_registry().get('allocation.extract')
+        example = next(e for e in prompt.examples if 'this one goes outside' in e.user)
+        model = AssignmentScript([json.loads(example.assistant)], actions=actions())
+        result = self.turn(model, example.user)
+        self.assertEqual(result['session']['task']['draft']['order_id'], 'ORD-017')
+        self.assertEqual(result['validation_report']['resolved_fields']['pieces'], 800)
+        self.assertIsNotNone(result['recommendation_id'])
+        self.assertFalse(result['committed'])
+        self.assertFalse(result['session']['task']['issues'])
+        with Database(self.path) as db:
+            self.assertEqual(db.connection.execute('SELECT COUNT(*) FROM working_order').fetchone()[0], 0)
+        self.assertTrue(self.turn(model, example.user)['replayed'])
+        self.assertEqual(model.extractions, 1)
+
+    def test_outsourcing_context_does_not_remove_an_actual_unsupported_budget(self):
+        """Background context cannot authorize dropping a separate unsupported requirement."""
+        prompt = get_registry().get('allocation.extract')
+        example = next(e for e in prompt.examples if 'this one goes outside' in e.user)
+        candidate = json.loads(example.assistant)
+        candidate['unsupported_constraints'] = ['unsupported_constraint']
+        result = self.turn(AssignmentScript([candidate]), example.user + ' Keep total cost under 100.')
+        self.assertTrue(any(i['code'] == 'unsupported_constraint' for i in result['issues']))
+        self.assertIsNone(result['recommendation_id'])
+        with Database(self.path) as db:
+            self.assertEqual(db.connection.execute('SELECT COUNT(*) FROM working_order').fetchone()[0], 0)
+
     def test_arbitrary_unsupported_prose_is_repaired_not_persisted_as_an_issue_code(self):
         bad = {'intent':'unsupported_or_ambiguous', 'patch_operations':[],
                'ambiguity_reason':SECOND_REFUSAL, 'unsupported_constraints':[LEGACY_CODE]}
@@ -94,7 +123,7 @@ class WorkshopAssignmentIntake(unittest.TestCase):
         self.assertEqual(self.validation()[0]['stage'], 'format')
         self.assertTrue(any(e['location'] == ['unsupported_constraints',0] for e in self.validation()[0]['errors']))
         self.assertFalse(any(i['code'] == LEGACY_CODE for i in result['issues']))
-        self.assertIn('status_suspended', result['explanation'])
+        self.assertIn('is currently suspended', result['explanation'])
 
     def test_missing_workshop_is_repaired_before_planning(self):
         incomplete = assignment()

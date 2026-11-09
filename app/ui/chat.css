@@ -40,3 +40,13 @@
 @keyframes reply-pulse{0%,70%,100%{transform:translateY(0);opacity:.4}35%{transform:translateY(-4px);opacity:1}}
 @keyframes reply-cursor{to{opacity:0}}
 @media(prefers-reduced-motion:reduce){.reply-dots i,.is-typing .chat-message-body:after{animation:none}}
+
+/* Structured candidates and historical Markdown tables share a readable scroll area. */
+.chat-table-scroll{max-width:100%;overflow-x:auto;margin:12px 0;white-space:normal}
+.chat-table-scroll table{width:100%;border-collapse:collapse;font-size:.88rem;background:var(--surface)}
+.chat-table-scroll th,.chat-table-scroll td{padding:9px 12px;border:1px solid var(--line);text-align:left;vertical-align:top;white-space:normal}
+.chat-table-scroll th{font-weight:600;background:var(--surface-alt,var(--surface))}
+.chat-table-scroll button{white-space:nowrap}.chat-message-body strong{font-weight:700}
+
+.chat-table-scroll th,.chat-table-scroll td{overflow-wrap:normal}
+.chat-options-table{min-width:760px}.chat-options-table td:nth-child(3){white-space:nowrap}

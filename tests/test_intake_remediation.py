@@ -52,7 +52,8 @@ class IntakeRemediation(unittest.TestCase):
         text = 'ORD-041 needs a home today. 600 beanies, back by Apr 21.'
         due = [p.value for p in rule_interpret(text, self.context).patch_operations if p.field == 'due_date']
         self.assertEqual(due, ['2026-04-21'])
-        result = self.extract(text, ('set', 'due_date', '2026-04-21', 'Apr 21'))
+        result = self.extract(text, ('set', 'due_date', '2026-04-21', 'Apr 21'),
+                              ('set', 'product', 'Beanie', 'beanies'))
         self.assertEqual(result.patch_operations[0].value, '2026-04-21')
         with self.assertRaises(ExtractionValidationError):
             self.extract(text, ('set', 'due_date', '2026-04-01', text))

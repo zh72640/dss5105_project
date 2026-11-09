@@ -64,7 +64,11 @@ class WorkshopFeasibilityQuestions(unittest.TestCase):
         self.assertEqual(result['session']['task']['draft']['preferred_workshop'],'W1')
         self.assertEqual(result['validation_report']['resolved_fields']['pieces'],2000)
         self.assertTrue(any(i['code']=='PREFERRED_INELIGIBLE' for i in result['issues']))
-        self.assertIn('cannot_make_accessories',result['explanation'])
+        self.assertIn('cannot make accessories',result['explanation'])
+        self.assertIn('QuickStitch (W1) cannot handle this order because',result['explanation'])
+        self.assertNotIn('cannot_make_accessories',result['explanation'])
+        problem=next(i for i in result['issues'] if i['code']=='PREFERRED_INELIGIBLE')
+        self.assertEqual(problem['rejection_reason'],'cannot_make_accessories')
         self.assertNotIn('order ID is missing',result['explanation'])
         self.assertNotIn('Which order',result['explanation'])
         self.assertNotIn('Please confirm',result['explanation'])
@@ -73,8 +77,8 @@ class WorkshopFeasibilityQuestions(unittest.TestCase):
         self.assertEqual(trace['tool_calls'],[])
         calls=[e['detail'] for e in trace['events'] if e['event_type']=='model_call']
         self.assertEqual([c['stage'] for c in calls],['intent','extract'])
-        self.assertEqual(calls[0]['prompt']['version'],'v5')
-        self.assertEqual(calls[1]['prompt']['version'],'v9')
+        self.assertEqual(calls[0]['prompt']['version'],'v6')
+        self.assertEqual(calls[1]['prompt']['version'],'v12')
         self.assertFalse(result['committed'])
         with Database(self.path) as db:
             self.assertEqual(db.connection.execute('SELECT COUNT(*) FROM working_order').fetchone()[0],0)
@@ -86,8 +90,8 @@ class WorkshopFeasibilityQuestions(unittest.TestCase):
         self.assertEqual(model.extraction_count,2)
         failures=[e['detail'] for e in self.trace()['events'] if e['event_type']=='extraction_validation_failed']
         self.assertEqual(failures[0]['reason'],'OMITTED_EXPLICIT_ORDER_ID')
-        self.assertEqual(failures[0]['expected_fields'],{'order_id':'ORD-103','preferred_workshop':'W1'})
-        self.assertIn('cannot_make_accessories',result['explanation'])
+        self.assertEqual(failures[0]['expected_fields'],{'order_id':'ORD-103','product':'Scarf','preferred_workshop':'W1'})
+        self.assertIn('cannot make accessories',result['explanation'])
 
     def test_eligible_candidate_question_returns_only_an_uncommitted_preview_and_replays(self):
         text='Nimble Needle for the scarves on ORD-103?'
@@ -113,7 +117,7 @@ class WorkshopFeasibilityQuestions(unittest.TestCase):
                 'severity':'blocking','question':'Which order would you like to allocate?'}]})
             chat_repository.save_task(c,task)
         result=self.turn(FeasibilityScript([candidate()]))
-        self.assertIn('cannot_make_accessories',result['explanation'])
+        self.assertIn('cannot make accessories',result['explanation'])
         self.assertFalse(any(i['code']=='MISSING_ORDER_ID' for i in result['issues']))
 
     def test_status_lookup_remains_read_only_and_does_not_require_allocation_fields(self):
@@ -162,7 +166,18 @@ class WorkshopFeasibilityQuestions(unittest.TestCase):
                         db_path=self.path,message='Can QuickStitch take ORD-103?')
         self.assertEqual(result['session']['task']['draft']['order_id'],'ORD-103')
         self.assertEqual(result['session']['task']['draft']['preferred_workshop'],'W1')
-        self.assertIn('cannot_make_accessories',result['assistant_message']['content'])
+        self.assertIn('cannot make accessories',result['assistant_message']['content'])
+        self.assertNotIn('cannot_make_accessories',result['assistant_message']['content'])
+        self.assertFalse(result['committed'])
+
+    def test_batch_limit_refusal_explains_the_limit_and_preserves_the_audit_code(self):
+        result=chat.create(owner='alice',request_id='batch-limit',db_path=self.path,
+            as_of=date(2026,4,1),mode='offline',message='Allocate ORD-008 to FreshStart.')
+        text=result['assistant_message']['content']
+        self.assertIn('FreshStart (W8) cannot handle this order because this batch exceeds its limit of 300 pieces.',text)
+        self.assertNotIn('exceeds_300_piece_limit',text)
+        problem=next(i for i in result['validation_report']['blocking_issues'] if i['code']=='PREFERRED_INELIGIBLE')
+        self.assertEqual(problem['rejection_reason'],'exceeds_300_piece_limit')
         self.assertFalse(result['committed'])
 
     def test_pure_order_query_extraction_can_remain_read_only(self):

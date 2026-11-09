@@ -8,6 +8,7 @@ import unittest
 from langchain_core.messages import AIMessage
 
 from app.allocator import AllocationRequest, allocate
+from app.services.chat.interpretation import MULTIPLE_ORDER_IDS_QUESTION
 from app.db.database import Database
 from app.services.chat import service as chat
 from app.services.chat.context import build_context
@@ -143,7 +144,7 @@ class PendingDueDateBehavior(unittest.TestCase):
             'patch_operations': [{'op':'set','field':'order_id','value':'ORD-066','quote':'ORD-066'}],
             'ambiguity_reason': 'unconfirmed_due_date,multiple_order_ids'}, message=MESSAGE, conversation=context)
         self.assertTrue(parsed.recommend_without_due_date)
-        self.assertEqual(parsed.ambiguity_reason, 'multiple_order_ids')
+        self.assertEqual(parsed.ambiguity_reason, MULTIPLE_ORDER_IDS_QUESTION)
 
     def test_legacy_duplicate_pending_issues_can_resume(self):
         model = PendingScript(actions=actions())

@@ -9,7 +9,9 @@ This package is the source of runtime LLM instructions. Offline conversation rep
 | `conversation.intent`, `conversation.interpret`, `conversation.reply` | fragment / prompt | Chat v2 turn interpretation and grounded replies. |
 | `agent.intent`, `agent.followup`, `allocation.extract`, `agent.reply` | prompt | Main Graph routing, contextual follow-up interpretation, allocation intake, and Tool-loop instructions. |
 
-The conversation definitions use `chat_v2`. Active versions are selected in `catalog/manifest.yaml`: routing uses `agent.intent` v5, contextual follow-ups use `agent.followup` v1, allocation extraction uses v9, and allocation explanation uses v5. Prior versions remain available for inspection and pinned requests.
+The conversation definitions use `chat_v2`. Active versions are selected in `catalog/manifest.yaml`: routing uses `agent.intent` v6, contextual follow-ups use `agent.followup` v4, allocation extraction uses v12, and allocation explanation uses v5. Prior versions remain available for inspection and pinned requests.
+
+Extraction v10 states the allocation domain explicitly: outsourcing garment work to external workshops is the normal request, and a full factory is background context. Such wording does not create an unsupported routing constraint or authorize changes to capacity or queues. Actual unsupported budget, split, and quality requirements must still be reported. Its ORD-017 example is exercised through real preparation and preview services using a scripted model on a temporary database; this checks the contract and downstream behavior, not live model reliability. Previously saved blocking issues and pinned request versions are not automatically rewritten by a prompt update.
 
 ## Directory ownership
 
@@ -118,3 +120,21 @@ Registry tests cover generic function discovery, version selection, invalid YAML
 ```bash
 uv run --no-sync python -m unittest tests.test_prompt_registry tests.test_dynamic_agent -v
 ```
+
+Extraction v11 retains explicitly stated product/customer facts when an order or
+quantity is missing. "Usual quantities" stays unresolved until an order is
+identified; dispatch wording does not invent dates. Follow-up v3 treats a missing
+order reply such as `ord 34` as an evidenced ORD-034 patch, not a withdrawal.
+A bounded completeness check retries omitted, unambiguous product references;
+normalization requires one matching labeled quote before expanding a short model
+value. Historical prompt versions remain inspectable.
+
+Extraction v12 and follow-up v4 distinguish a conditional optional split from a
+hard unsupported requirement. `optional_split` requests such as "split it across
+two shops if that gets it back faster" produce a nonblocking, evidence-linked
+notice and a normal single-workshop preview. They do not set a workshop limit or
+claim a split was performed. The final response always discloses the unsupported
+split request and its omission, including after explanation fallback. Mandatory
+exact splits, budgets, and quality thresholds remain blocking. Tests replay the
+reported extraction using a scripted model and an isolated database; no live model
+reliability is implied.

@@ -8,7 +8,7 @@ from langgraph.graph.message import add_messages
 from langgraph.runtime import Runtime
 
 from app.agent.allocation_graph import build_graph as build_allocation_graph
-from app.agent.followup import resolve as resolve_followup
+from app.agent.followup import resolve as resolve_followup, alternatives as prepare_alternatives
 from app.agent.explanation import explain
 from app.agent.response import assemble
 from app.agent.dynamic import AgentContext, final_text, record_model_response, record_model_start
@@ -49,6 +49,7 @@ class MainState(TypedDict, total=False):
     followup_interpretation: dict | None
     followup_sequence: int | None
     followup_route: str
+    compat_task_type: str | None
 
 
 def _answers_pending_due_date(message, session):
@@ -145,7 +146,7 @@ def respond(state: MainState, runtime: Runtime[AgentContext]):
 
 def compatibility(state: MainState, runtime: Runtime[AgentContext]):
     history = state.get("messages", [])
-    output = run_executor(runtime.context, task_type="compat",
+    output = run_executor(runtime.context, task_type=state.get("compat_task_type") or "compat",
                           seed_history=history[:-1] if history else ())
     return {"task_result": output["task_result"], "reply": final_text(output), "source_node": "compat",
             "tool_results": output.get("tool_results", []),
@@ -175,6 +176,7 @@ def _build_graph(checkpointer, *, legacy):
     graph.add_node("identify", identify)
     graph.add_node("allocation", allocation)
     graph.add_node("followup", resolve_followup)
+    graph.add_node("alternatives", prepare_alternatives)
     graph.add_node("compat", compatibility)
     graph.add_node("finish", finish)
     if legacy:
@@ -186,12 +188,14 @@ def _build_graph(checkpointer, *, legacy):
     graph.add_conditional_edges("identify", lambda state: state["route"],
                                 {"allocation": "allocation", "followup": "followup", "compat": "compat", "failed": "finish"})
     graph.add_conditional_edges("followup", lambda state: state['followup_route'],
-                                {"allocation": "allocation", "compat": "compat", "finish": "finish"})
+                                {"allocation": "allocation", "alternatives": "alternatives", "compat": "compat", "finish": "finish"})
     if legacy:
         graph.add_edge("allocation", "respond")
+        graph.add_edge("alternatives", "respond")
         graph.add_edge("respond", "finish")
     else:
         graph.add_edge("allocation", "explanation")
+        graph.add_edge("alternatives", "explanation")
         graph.add_edge("explanation", "response")
         graph.add_edge("response", "finish")
     graph.add_edge("compat", "finish")

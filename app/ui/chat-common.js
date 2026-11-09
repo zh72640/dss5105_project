@@ -47,7 +47,52 @@
     node.append(button);
     return node;
   }
-  function alternatives(options){
+  function inlineText(node,content){
+    // Create text nodes only: model-supplied HTML and URLs are never executable.
+    const parts=String(content).split(/(\*\*[^*\n]+\*\*|`[^`\n]+`)/g);
+    parts.forEach(part=>node.append(part.startsWith('**')&&part.endsWith('**')?text('strong',part.slice(2,-2)):part.startsWith('`')&&part.endsWith('`')?text('code',part.slice(1,-1)):text('span',part)));
+  }
+  /** Render supported Markdown into a container; supplied HTML stays literal text. */
+  function richText(node,content){
+    content=String(content??'');
+    node.replaceChildren();node.textContent='';
+    if(!/[|]|\*\*|`/.test(content)){node.textContent=content;return;}
+    const lines=String(content).split('\n'),cells=line=>line.trim().replace(/^\||\|$/g,'').split('|').map(v=>v.trim());
+    const separator=line=>/^\s*\|?\s*:?-{3,}:?\s*(?:\|\s*:?-{3,}:?\s*)+\|?\s*$/.test(line||'');
+    for(let i=0;i<lines.length;i++){
+      if(lines[i].includes('|')&&separator(lines[i+1])){
+        const wrap=text('div',null,'chat-table-scroll'),table=text('table'),head=text('thead'),row=text('tr');
+        table.setAttribute('aria-label','Comparison');
+        cells(lines[i]).forEach(value=>{const cell=text('th');cell.setAttribute('scope','col');inlineText(cell,value);row.append(cell);});
+        head.append(row);table.append(head);const body=text('tbody');i+=2;
+        while(i<lines.length&&lines[i].includes('|')&&lines[i].trim()){
+          const tr=text('tr');cells(lines[i]).forEach(value=>{const cell=text('td');inlineText(cell,value);tr.append(cell);});body.append(tr);i++;
+        }
+        i--;table.append(body);wrap.append(table);node.append(wrap);
+      }else{const line=text('div');inlineText(line,lines[i]||'\u00a0');node.append(line);}
+    }
+  }
+  /** Display verified offers; selection requests a fresh preview, never commitment. */
+  function workshopOptions(options,onSelect){
+    const node=text('section'),wrap=text('div',null,'chat-table-scroll'),table=text('table',null,'chat-options-table');
+    node.append(text('h3','Other workshop options'));table.setAttribute('aria-label','Workshop alternatives');
+    const head=text('thead'),header=text('tr');
+    ['Option / workshop','Pieces','Estimated delivery','Against due date','Cost','Defect rate','Required changes',''].forEach(label=>{const th=text('th',label);th.setAttribute('scope','col');header.append(th);});
+    head.append(header);table.append(head);const body=text('tbody');
+    options.forEach((option,index)=>{
+      const p=option.plan,part=p.allocation[0],row=text('tr');
+      const changes=Object.entries(option.required_changes).map(([field,value])=>({preferred_workshop:value?`Use ${value} as the sole workshop`:'Remove the sole-workshop requirement',deadline_required:'Allow late delivery',objective:'Use earliest completion',num_workshop_allowed:`Allow up to ${value} workshops`}[field]||'Review this requirement')).join('; ');
+      const timing=p.delay_days==null?'Due date unconfirmed':p.delay_days===0?'On time':`${Math.abs(p.delay_days)} day(s) ${p.delay_days<0?'early':'late'}`;
+      [`Option ${index+1}: ${part.workshop_name||part.workshop_id} (${part.workshop_id})`,part.pieces,p.estimated_delivery_date,timing,Number(p.estimated_cost).toFixed(2),`${(100*p.expected_defect_rate).toFixed(2)}%`,changes].forEach(value=>row.append(text('td',value)));
+      const action=text('td'),button=text('button',`Use option ${index+1}`,'secondary');button.type='button';button.disabled=!onSelect;
+      button.addEventListener('click',()=>onSelect?.(option,index));action.append(button);row.append(action);body.append(row);
+    });
+    table.append(body);wrap.append(table);node.append(wrap);
+    node.append(text('p','Your requirements have not changed. Select an option to generate a fresh recommendation, then review and confirm it.','chat-notice'));
+    return node;
+  }
+  function alternatives(options,onSelect){
+    if(options.length&&options.every(o=>o.offer_type==='workshop_candidate'))return workshopOptions(options,onSelect);
     const node=text('section');node.append(text('h3','Options requiring your authorization'));
     const labels={preferred_workshop:()=> 'Remove the required sole workshop',deadline_required:()=> 'Allow late delivery',num_workshop_allowed:value=>`Allow up to ${value} workshops`,objective:()=> 'Use earliest completion'};
     options.forEach((option,index)=>{
@@ -96,7 +141,7 @@
     if(session.status==='ARCHIVED')events.push({title:'Request archived',when:session.updated_at});
     return events;
   }
-  const api={confirmation,canConfirm,stateLabel,text,request,card,alternatives,registeredDifferences,reviewChanges,decisionEvents};
+  const api={richText,confirmation,canConfirm,stateLabel,text,request,card,alternatives,registeredDifferences,reviewChanges,decisionEvents};
   if(typeof module!=='undefined'&&module.exports)module.exports=api;
   else root.ChatV2=api;
 })(typeof globalThis!=='undefined'?globalThis:this);

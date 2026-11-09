@@ -155,6 +155,25 @@ def track_report(task, report, previous_report, sequence=None):
     return result
 
 
+def validate_workshop_reference(reference, message, options, workshop_names):
+    """Reject an option reference that would discard one explicit workshop identity.
+
+    Intent and negation remain LLM responsibilities. A mismatching concrete
+    reference requires repair or clarification, never selection of another shop.
+    """
+    from app.services.intake.normalization import workshop_mentions
+    mentioned = {wid for _, _, wid in workshop_mentions(message, workshop_names)}
+    selected = next((o for o in options if o['alternative_id'] == reference.alternative_id), None)
+    if selected is None and not reference.alternative_id and len(options) == 1:
+        selected = options[0]
+    if len(mentioned) == 1 and selected is not None:
+        offered = {p['workshop_id'] for p in selected['plan']['allocation']}
+        if not mentioned <= offered:
+            raise ValueError('ALTERNATIVE_WORKSHOP_MISMATCH')
+        if selected.get('required_changes', {}).get('preferred_workshop') not in mentioned:
+            raise ValueError('EXPLICIT_WORKSHOP_REQUIRES_SELECTION')
+
+
 def _select(reference, message, options):
     validate_acceptance_quote(reference, message)
     if not options:
@@ -182,6 +201,8 @@ def prepare_acceptance(connection, task, interpretation, sequence, mode, message
     try:
         selected = _select(interpretation.accept_alternative,
                            message, pending_options(connection, task))
+        from app.db.workshop_repository import names
+        validate_workshop_reference(interpretation.accept_alternative, message, [selected], names(connection))
         resolved = set(interpretation.accept_alternative.resolved_reference_issue_ids)
         eligible_questions = {reference_issue_id(p) for p in task['issues']
                               if p['code'] == 'AMBIGUOUS_MESSAGE' and p.get('field') == 'message'}
@@ -200,7 +221,10 @@ def prepare_acceptance(connection, task, interpretation, sequence, mode, message
                 'This alternative requires Offline split planning. Choose a single-workshop option or use Offline mode.')
         changes = selected.get('required_changes', {})
         valid = bool(changes) and all(
-            (field == 'preferred_workshop' and value is None) or
+            (field == 'preferred_workshop' and (value is None or (
+                selected.get('offer_type') == 'workshop_candidate' and
+                len(selected['plan']['allocation']) == 1 and
+                value == selected['plan']['allocation'][0]['workshop_id']))) or
             (field == 'deadline_required' and value is False) or
             (field == 'num_workshop_allowed' and type(value) is int and 1 <= value <= 8) or
             (field == 'objective' and value == 'min_delay') for field, value in changes.items())

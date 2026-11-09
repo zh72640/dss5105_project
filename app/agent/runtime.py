@@ -66,7 +66,7 @@ def run(context, registry):
             initial.update(task_result={}, reply="", pending_question=None,
                            tool_results=[], loaded_skills={}, source_node=None,
                            explanation=None, response=None, followup_interpretation=None,
-                           followup_sequence=None, followup_route='')
+                           followup_sequence=None, followup_route='', compat_task_type=None)
         else:
             initial.update(step_count=0, tool_call_count=0, plan=None,
                 pending_question=None, tool_results=[],

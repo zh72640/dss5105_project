@@ -5,6 +5,7 @@ from app.schemas.api import Input, Output, Identifier, Version, Objective
 from app.schemas.allocation import AllocationRecommendationResult
 
 Intent = Literal['new_request', 'allocate_request', 'answer_clarification', 'modify_constraints',
+    'request_alternatives', 'select_workshop',
     'undo_change', 'query_order', 'query_workshop', 'explain_recommendation', 'reject_recommendation',
     'confirm_allocation', 'cancel_task', 'help_or_chat', 'unsupported_or_ambiguous']
 
@@ -48,7 +49,7 @@ class AllocationPatch(Input):
     quote: str = Field(min_length=1, max_length=10000)
 
 
-UnsupportedAllocationConstraint = Literal['unsupported_constraint', 'soft_workshop_preference']
+UnsupportedAllocationConstraint = Literal['unsupported_constraint', 'soft_workshop_preference', 'optional_split']
 
 
 class AlternativeAcceptance(Input):
@@ -95,6 +96,7 @@ class TurnInterpretation(Input):
     # Derived from current-message evidence by intake, never supplied by the LLM.
     due_date_pending: bool = False
     recommend_without_due_date: bool = False
+    allocation_notices: list[dict[str, Any]] = Field(default_factory=list)
     referenced_order_id: str | None = None
     referenced_recommendation_id: str | None = None
     patch_operations: list[PatchOperation] = Field(default_factory=list)
@@ -109,6 +111,7 @@ class AllocationResponseBody(Input):
     allocation: AllocationRecommendationResult | None = None
     issues: list[dict[str, Any]] = Field(default_factory=list)
     recommendation_id: str | None = None
+    alternatives: list[dict[str, Any]] = Field(default_factory=list)
 
 
 class ChatOutput(Output):
@@ -121,3 +124,4 @@ class ChatOutput(Output):
     explanation: str | None = None
     allocation: AllocationRecommendationResult | None = None
     issues: list[dict[str, Any]] = Field(default_factory=list)
+    alternatives: list[dict[str, Any]] = Field(default_factory=list)

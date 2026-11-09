@@ -23,8 +23,10 @@ QUESTION = 'QuickStitch for the scarves on ORD-103?'
 
 
 def inquiry():
+    """Keep all explicit facts in the scripted initial feasibility request."""
     return {'intent':'allocate_request','patch_operations':[
         {'op':'set','field':'order_id','value':'ORD-103','quote':'ORD-103'},
+        {'op':'set','field':'product','value':'Scarf','quote':'scarves'},
         {'op':'set','field':'preferred_workshop','value':'W1','quote':'QuickStitch'}]}
 
 
@@ -165,7 +167,7 @@ class AlternativeAcceptanceBehavior(unittest.TestCase):
             {'op':'set','field':'preferred_workshop','value':'W7','quote':'OldMill'}]}
         model = AlternativeScript([candidate], actions=actions())
         first = self.turn(model, question)
-        self.assertIn('status_suspended', first['explanation'])
+        self.assertIn('is currently suspended', first['explanation'])
         second = self.turn(model, 'sure, use your suggested workshop', 'accept', first['session_version'])
         self.assertEqual(second['task_state'],'RECOMMENDED')
         self.assertEqual(second['allocation']['order_id'],'ORD-008')

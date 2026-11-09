@@ -2,6 +2,7 @@
 from app.prompts import get_registry
 from app.llm.errors import check_response, text_content, translate_error
 from app.llm.registry import selection_metadata
+from app.services.allocation.messages import eligibility_reason_text
 
 OBJECTIVES = {"min_delay": "earliest completion", "min_cost": "lowest cost",
               "min_defects": "lowest defect rate", "hybrid": "weighted time and quality", "weighted_hybrid": "normalized 80/20 lateness and defect exposure"}
@@ -33,10 +34,7 @@ def explain(session, message):
     result = rec["committed_result"] or rec["result"]
     status = {"confirmed": "Committed result", "valid": "Current recommendation",
               "superseded": "Superseded recommendation"}[rec["status"]]
-    reasons = {"excluded_by_user": "excluded by your requirement", "cannot_make_tops": "cannot make tops",
-               "cannot_make_accessories": "cannot make accessories", "status_suspended": "suspended",
-               "status_closed": "closed", "invalid_capacity_or_queue": "invalid capacity or queue"}
-    rejected = "; ".join(f"{wid}: {reasons.get(reason, 'ineligible for this batch')}"
+    rejected = "; ".join(f"{wid}: {eligibility_reason_text(reason)}"
                          for wid, reason in result.get("rejected", {}).items())
     deadline = ("Due-date compliance cannot be assessed without a confirmed due date."
                 if result.get('deadline_met') is None else
