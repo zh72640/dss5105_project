@@ -13,8 +13,12 @@ METHODS = {
 
 
 def normalize_weighted(options, allowed_days):
-    """Score complete single-workshop candidates in-place; no eligibility or writes."""
-    lateness = [p["estimated_days"] - allowed_days for p in options]
+    """Score candidates; unknown dates use normalized completion time.
+
+    Subtracting the same allowed-days constant leaves min-max scores unchanged.
+    Keep completion evidence explicit rather than inventing a lateness baseline.
+    """
+    lateness = [p["estimated_days"] - allowed_days if allowed_days is not None else p['estimated_days'] for p in options]
     exposure = [p["allocation"][0]["defect_rate"] * p["allocation"][0]["processing_days"] for p in options]
 
     def scale(values):
@@ -28,15 +32,28 @@ def normalize_weighted(options, allowed_days):
             "normalized_lateness": norm_late, "normalized_defect_exposure": norm_defect,
             "lateness_weight": .8, "defect_weight": .2,
         }
+        if allowed_days is None:
+            components = plan['scoring_components']
+            for old, new in (('signed_lateness_days', 'completion_days'),
+                             ('normalized_lateness', 'normalized_completion'),
+                             ('lateness_weight', 'completion_weight')):
+                components[new] = components.pop(old)
 
 
-def explanation_evidence(best, options, objective, rejected, eligible, preferred, deadline_required):
+def explanation_evidence(best, options, objective, rejected, eligible, preferred, deadline_required, *, due_date_known=True):
     """Snapshot the facts behind a single-workshop choice for later explanation."""
     if len(best["allocation"]) != 1:
         return None
     part = best["allocation"][0]
+    method, formula = METHODS[objective]
+    if not due_date_known:
+        if objective == 'min_delay':
+            formula = 'Minimize completion days; no due date is available for lateness assessment.'
+        elif objective == 'weighted_hybrid':
+            method = 'Normalized completion time and defect exposure (80/20)'
+            formula = formula.replace('signed lateness', 'completion days')
     return {
-        "method": METHODS[objective][0], "score_formula": METHODS[objective][1],
+        "method": method, "score_formula": formula,
         "comparison_scope": "Feasible single-workshop plans under the saved request constraints.",
         "selection_reason": ("Required sole workshop specified by the user." if preferred else
                              "Lowest configured score; ties use completion time, cost, then workshop ID."),

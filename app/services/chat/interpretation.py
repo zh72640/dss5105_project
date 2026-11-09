@@ -9,9 +9,50 @@ from app.services.intake.rule_parser import extract
 from app.services.intake.normalization import order_ids, workshop_mentions, number
 from app.services.allocation.preflight import issue
 from app.services.intake.evidence import (date_mentions, product_evidence, category_evidence,
-    literal_evidence, exclusion_operations, replaces_exclusions, clears_exclusions)
+    literal_evidence, exclusion_operations, replaces_exclusions, clears_exclusions,
+    pending_due_date, requests_recommendation)
 
 FIELDS = set(get_args(PatchField))
+PENDING_DUE_DATE_QUESTION = 'The new due date is unconfirmed. Provide the new date or ask me to recommend a workshop without a due date.'
+
+
+def readable_ambiguity(reason):
+    """Translate the pending-date code and deduplicate legacy comma-joined reasons."""
+    parts = [part.strip() for part in (reason or '').split(',') if part.strip()]
+    return ', '.join(dict.fromkeys(PENDING_DUE_DATE_QUESTION if part == 'unconfirmed_due_date'
+                                 else part for part in parts)) or None
+
+
+def apply_due_date_context(value, message, context):
+    """Attach evidenced pending-date policy and preserve unrelated ambiguities.
+
+    A later instruction can authorize planning against an already pending date;
+    a supplied date instead resolves it through the ordinary patch protocol.
+    """
+    supplied = any(p.field == 'due_date' and p.op == 'set' for p in value.patch_operations)
+    source = context.get('field_sources', {}).get('due_date', {})
+    old_pending = source.get('pending', False) or any(
+        q.get('field') in ('due_date', 'message') and ('unconfirmed_due_date' in q.get('question', '') or
+        q.get('question') == PENDING_DUE_DATE_QUESTION) for q in context.get('pending_questions', []))
+    newly_pending = pending_due_date(message)
+    proceed = requests_recommendation(message)
+    value.due_date_pending = newly_pending or (old_pending and not supplied and proceed)
+    value.recommend_without_due_date = value.due_date_pending and proceed
+    reasons = [part.strip() for part in (value.ambiguity_reason or '').split(',') if part.strip()]
+    if value.due_date_pending:
+        reasons = [part for part in reasons if part not in ('unconfirmed_due_date', PENDING_DUE_DATE_QUESTION)]
+        if not value.recommend_without_due_date:
+            reasons.append(PENDING_DUE_DATE_QUESTION)
+    value.ambiguity_reason = readable_ambiguity(','.join(reasons))
+    return value
+
+
+def pending_fields(context):
+    """Return clarification fields, including a nonblocking pending-date notice."""
+    fields = {item.get('field') for item in context.get('pending_questions') or [] if isinstance(item, dict)}
+    if context.get('field_sources', {}).get('due_date', {}).get('pending'):
+        fields.add('due_date')
+    return fields
 
 
 def is_hypothetical(message):
@@ -116,10 +157,21 @@ def rule_interpret(message, context):
         parsed['deadline_required'] = True
     if re.search(r'允许迟交|allow late', low):
         patch('deadline_required', False)
-    for token, days in (('明天',1),('tomorrow',1),('今天',0),('today',0)):
-        if token in low and re.search(r'交期|截止|due|deadline|by', low):
-            parsed['due_date'] = (date.fromisoformat(context['business_date'])+timedelta(days=days)).isoformat()
-            parsed['ambiguities'] = [a for a in parsed['ambiguities'] if a != 'relative_due_date']
+    for token, days in (('明天', 1), ('tomorrow', 1), ('今天', 0), ('today', 0)):
+        boundary = r'\b' if token.isascii() else ''
+        cue = rf'(?:交期|截止|due(?:\s+date)?|deadline|back\s+by|\bby\b)\s*{boundary}{re.escape(token)}{boundary}'
+        if not re.search(cue, low):
+            continue
+        resolved = (date.fromisoformat(context['business_date']) + timedelta(days=days)).isoformat()
+        if parsed['due_date'] and parsed['due_date'] != resolved:
+            parsed['ambiguities'].append('conflicting_due_date')
+            continue
+        parsed['due_date'] = resolved
+        parsed['ambiguities'] = [a for a in parsed['ambiguities'] if a != 'relative_due_date']
+    if 'due_date' in pending_fields(context) and not parsed.get('due_date'):
+        values = {value for value, _explicit in date_mentions(text, context['business_date'])}
+        if len(values) == 1:
+            parsed['due_date'] = values.pop()
     removed = set()
     for start, end, wid in workshop_mentions(text):
         prefix = text[max(0,start-28):start].lower()
@@ -177,8 +229,10 @@ def rule_interpret(message, context):
         issues.append('multiple_order_ids')
     if re.search(r'之前|刚才|一样|same|previous',low) and not output['patch_operations']:
         output.update(intent='unsupported_or_ambiguous',ambiguity_reason='Specify which earlier requirement or message should be reused.')
-    elif issues or output['unsupported_constraints'] or output['patch_operations'] or re.search(r'分配|allocate|dispatch|重新推荐|重新计算',low):
-        output['intent']='modify_constraints' if context['draft'].get('order_id') else 'allocate_request'
+    elif (issues or output['unsupported_constraints'] or output['patch_operations'] or
+          requests_recommendation(text) or re.search(r'分配|allocate|dispatch|重新推荐|重新计算', low)):
+        supplement = bool(pending_fields(context) & {item['field'] for item in output['patch_operations']})
+        output['intent']='modify_constraints' if context['draft'].get('order_id') or supplement else 'allocate_request'
         if issues:
             output['ambiguity_reason']=','.join(sorted(set(issues)))
     elif text and low not in ('你好','您好','谢谢','hi','hello','help','帮助'):
@@ -193,7 +247,7 @@ def rule_interpret(message, context):
             output.update(intent='unsupported_or_ambiguous',ambiguity_reason='Provide the workshop ID to exclude; the current reference is ambiguous.')
     if querying and output['patch_operations']:
         output['candidate_intents']=['query_order' if re.search(r'状态|status',low) else 'explain_recommendation']
-    return TurnInterpretation(**output)
+    return apply_due_date_context(TurnInterpretation(**output), message, context)
 
 
 def validate_interpretation(value, message, context):

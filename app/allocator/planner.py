@@ -130,7 +130,7 @@ def plan(order, workshops, *, objective, as_of, max_workshops=1, exclusion=None,
         max_workshops = 1
     if not eligible:
         return {**base, "reason_codes": ["NO_ELIGIBLE_WORKSHOP"], "message": "No workshop satisfies eligibility rules."}
-    deadline = date.fromisoformat(order["due_date"])
+    deadline = date.fromisoformat(order["due_date"]) if order.get('due_date') else None
     day_limit = (deadline - as_of).days if deadline_required else None
     options = []
     for count in range(1, min(max_workshops, len(eligible)) + 1):
@@ -149,13 +149,21 @@ def plan(order, workshops, *, objective, as_of, max_workshops=1, exclusion=None,
         reason = "DEADLINE_INFEASIBLE" if deadline_required else "CAPACITY_INFEASIBLE"
         return {**base, "reason_codes": [reason], "message": "No complete integer allocation satisfies the batch/count/deadline constraints."}
     if objective == "weighted_hybrid":
-        normalize_weighted(options, (deadline - as_of).days)
+        normalize_weighted(options, (deadline - as_of).days if deadline else None)
     options.sort(key=lambda p: (round(p["score"], 10), p["estimated_days"], p["estimated_cost"],
                                len(p["allocation"]), [a["workshop_id"] for a in p["allocation"]]))
     best = options[0]
     # Conservative whole-day display; shared official simulator uses round(), left unchanged.
     delivery = as_of + timedelta(days=math.ceil(best["estimated_days"] - 1e-10))
-    warnings = [] if delivery <= deadline else ["ESTIMATED_DEADLINE_MISS"]
+    def deadline_result(eta):
+        # Unknown is distinct from either meeting or missing a real deadline.
+        return eta <= deadline if deadline else None
+
+    def deadline_warnings(eta):
+        return (['DUE_DATE_UNCONFIRMED'] if deadline is None else
+                [] if eta <= deadline else ['ESTIMATED_DEADLINE_MISS'])
+
+    warnings = deadline_warnings(delivery)
     ranking = [{"workshop_id": p["allocation"][0]["workshop_id"],
                 "workshop_name": p["allocation"][0]["workshop_name"], **p}
                for p in options if len(p["allocation"]) == 1]
@@ -168,8 +176,8 @@ def plan(order, workshops, *, objective, as_of, max_workshops=1, exclusion=None,
         if len(candidates) < 5:
             eta = as_of + timedelta(days=math.ceil(option["estimated_days"] - 1e-10))
             candidates.append({**option, "objective": objective,
-                               "estimated_delivery_date": eta.isoformat(), "deadline_met": eta <= deadline,
-                               "warnings": [] if eta <= deadline else ["ESTIMATED_DEADLINE_MISS"],
+                               "estimated_delivery_date": eta.isoformat(), "deadline_met": deadline_result(eta),
+                               "warnings": deadline_warnings(eta),
                                "constraints": {"max_workshops": max_workshops,
                                                "exclusion": exclusion,
                                                "required_sole_workshop": preferred_workshop,
@@ -177,11 +185,11 @@ def plan(order, workshops, *, objective, as_of, max_workshops=1, exclusion=None,
     return {**base, **best, "success": True, "decision_status": "ALLOCATE",
             "recommended_workshop_id": best["allocation"][0]["workshop_id"],
             "recommended_workshop_name": ", ".join(p["workshop_name"] for p in best["allocation"]),
-            "estimated_delivery_date": delivery.isoformat(), "deadline_met": delivery <= deadline,
+            "estimated_delivery_date": delivery.isoformat(), "deadline_met": deadline_result(delivery),
             "candidate_ranking": ranking, "warnings": warnings,
             "candidate_plans": candidates, "candidate_plan_count": len(seen),
             "candidate_plan_scope": "Up to five distinct best plans from the evaluated workshop subsets.",
             "explanation_evidence": explanation_evidence(best, options, objective, rejected,
-                [w.workshop_id for w in eligible], preferred_workshop, deadline_required),
+                [w.workshop_id for w in eligible], preferred_workshop, deadline_required, due_date_known=deadline is not None),
             "reason_codes": ["ELIGIBLE", "BEST_CONFIGURED_SCORE", "INTEGER_PIECES_CONSERVED"],
             "message": f"Allocated {pieces} pieces to {len(best['allocation'])} workshop(s) using {objective}."}

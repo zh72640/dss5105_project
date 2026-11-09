@@ -10,13 +10,13 @@ FIELDS = tuple(AllocationFields.model_fields)
 
 
 def inspect_input(value, *, skill=False):
-    """Return a complete four-field input or explicit missing/invalid issues."""
+    """Validate identity/quantity and an optional ISO due date after enrichment."""
     if not isinstance(value, dict):
         return None, [issue("INVALID_ALLOCATION_INPUT", "workflow",
-                            "Allocation input must contain the four required fields.")]
+                            "Allocation input must contain order ID, product, and quantity.")]
     data = {field: value.get(field) for field in FIELDS}
     missing = [field for field, item in data.items()
-               if item is None or isinstance(item, str) and not item.strip()]
+               if field != 'due_date' and (item is None or isinstance(item, str) and not item.strip())]
     if missing:
         code = "SKILL_INPUT_INCOMPLETE" if skill else "REQUIRED_INFO_INCOMPLETE"
         prefix = "Missing required field(s): " if skill else "Required information is incomplete: "
@@ -47,7 +47,7 @@ def add_order_snapshot(order, result):
             "pieces": order["pieces"], "due_date": order["due_date"],
             "allocated_pieces": sum(part["pieces"] for part in result["allocation"]),
             "delay_days": (date.fromisoformat(result["estimated_delivery_date"]) -
-                           date.fromisoformat(order["due_date"])).days}
+                           date.fromisoformat(order["due_date"])).days if order.get('due_date') else None}
 
 
 def saved_result(recommendation):
@@ -69,6 +69,8 @@ def saved_result(recommendation):
             validated.allocated_pieces > validated.pieces or
             abs(validated.expected_defect_rate - part["defect_rate"]) > 1e-10 or
             validated.estimated_cost != part["estimated_cost"] or validated.delay_days != (
-            date.fromisoformat(validated.estimated_delivery_date) - date.fromisoformat(validated.due_date)).days):
+            (date.fromisoformat(validated.estimated_delivery_date) - date.fromisoformat(validated.due_date)).days
+            if validated.due_date else None) or
+            (validated.due_date is None and result.get('deadline_met') is not None)):
         raise ValueError("The saved recommendation summary is inconsistent.")
     return validated.model_dump()

@@ -532,3 +532,22 @@ test('registered fact differences are visible before confirmation',async()=>{
   assert.match(content,/your message 1200; registered value 800/);
   assert.match(content,/before confirming/);
 });
+
+
+test('undated recommendation cards disclose missing dates without deadline claims',async()=>{
+  const view=snapshot('undated');
+  view.recommendation={session_id:'undated',session_version:1,recommendation_id:'r',status:'valid',result:{
+    due_date:null,delay_days:null,deadline_met:null,estimated_delivery_date:'2026-04-05',estimated_cost:100,
+    expected_defect_rate:.02,warnings:['DUE_DATE_UNCONFIRMED'],
+    allocation:[{workshop_id:'W1',workshop_name:'One',pieces:100}],
+    candidate_plans:[{allocation:[{workshop_id:'W1',pieces:100}],estimated_delivery_date:'2026-04-05',
+      estimated_cost:100,expected_defect_rate:.02,deadline_met:null}]
+  }};
+  const ui=controller(async url=>response(url.includes('/messages')?{items:[]}:view));
+  await ui.load('undated');
+  const flatten=node=>[node.textContent,...node.children.map(flatten)].join(' ');
+  const content=flatten(ui.button('chat-plan'));
+  assert.match(content,/No confirmed due date/);
+  assert.match(content,/deadline compliance cannot be assessed/);
+  assert.doesNotMatch(content,/Exceeds the registered due date|Meets the registered due date|DUE_DATE_UNCONFIRMED/);
+});

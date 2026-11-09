@@ -28,10 +28,10 @@ class AllocationFields(Input):
 
 
 class AllocationSkillInput(AllocationFields):
+    """Order identity and quantity are required; a due date may be unconfirmed."""
     order_id: Annotated[str, Field(min_length=1)]
     product: Annotated[str, Field(min_length=1)]
     pieces: Annotated[int, Field(gt=0)]
-    due_date: str
 
 
 class AllocationCandidateEvidence(Input):
@@ -73,7 +73,7 @@ class AllocationRecommendationResult(AllocationSkillInput):
     workshop_name: str
     allocated_pieces: Annotated[int, Field(gt=0)]
     estimated_delivery_date: str
-    delay_days: int
+    delay_days: int | None
     expected_defect_rate: Annotated[float, Field(ge=0, le=1, allow_inf_nan=False)]
     estimated_cost: Annotated[float, Field(ge=0, allow_inf_nan=False)]
     objective: str

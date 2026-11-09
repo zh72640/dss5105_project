@@ -26,7 +26,7 @@
       const metrics=text('dl',null,'plan-metrics');
       [['Completion',U.date(result.estimated_delivery_date)],['Estimated cost',`${U.number(result.estimated_cost,2)} units`],['Expected defects',typeof result.expected_defect_rate==='number'?`${U.number(result.expected_defect_rate*100,2)}%`:'—']].forEach(([label,value])=>{const item=text('div');item.append(text('dt',label),text('dd',value));metrics.append(item);});node.append(metrics);
     }else node.append(text('p',`Estimated completion ${result.estimated_delivery_date} · Estimated cost ${result.estimated_cost}`));
-    if(result.warnings?.length)node.append(text('p',result.warnings.map(w=>({ESTIMATED_DEADLINE_MISS:'Estimated date exceeds the registered due date; the deadline is currently soft.'}[w]||w)).join('; '),'chat-notice'));
+    if(result.warnings?.length)node.append(text('p',result.warnings.map(w=>({ESTIMATED_DEADLINE_MISS:'Estimated date exceeds the registered due date; the deadline is currently soft.',DUE_DATE_UNCONFIRMED:'No confirmed due date is available. Lateness and on-time delivery cannot be assessed.'}[w]||w)).join('; '),'chat-notice'));
     if(result.candidate_plans?.length){
       const details=text('details');details.append(text('summary','Compare complete candidate plans'));
       details.append(text('p',result.candidate_plan_scope||'Plans calculated under the current requirements.'));
@@ -34,7 +34,7 @@
         const item=text('section');item.append(text('strong',index===0?'Recommended plan':'Alternative plan '+(index+1)));
         item.append(text('p',plan.allocation.map(p=>`${p.workshop_id} (${p.pieces} pieces)`).join(' + ')));
         item.append(text('p',`Completion ${plan.estimated_delivery_date} · Cost ${plan.estimated_cost} · Weighted defect rate ${(100*plan.expected_defect_rate).toFixed(2)}%`));
-        item.append(text('p',plan.deadline_met?'Meets the registered due date.':'Exceeds the registered due date.'));
+        item.append(text('p',plan.deadline_met==null?'No confirmed due date; deadline compliance cannot be assessed.':plan.deadline_met?'Meets the registered due date.':'Exceeds the registered due date.'));
         details.append(item);
       });
       details.append(text('p','These plans satisfy the current requirements. To choose another plan, revise your request and review its new recommendation.'));

@@ -82,6 +82,11 @@ def extract_fields(state: AllocationState, runtime: Runtime[AgentContext]):
             if not cached or not result.get('validation_recorded'):
                 _record_extraction_event(context, 'extraction_validation_failed', detail)
             if attempt == MAX_EXTRACTION_ATTEMPTS:
+                salvaged = extraction.salvage_due_date(result.get('extracted'), error,
+                    message=context.user_message, conversation=conversation)
+                if salvaged is not None:
+                    return {"interpretation": salvaged.model_dump(),
+                            "sequence": conversation["current_sequence"]}
                 failure = _failed('EXTRACTION_FORMAT_INVALID' if error.stage == 'format' else
                     'EXTRACTION_EVIDENCE_INVALID', extraction.failure_message(error.stage, detail) +
                     extraction.recovery_hint(context.user_message, detail.get('field')),

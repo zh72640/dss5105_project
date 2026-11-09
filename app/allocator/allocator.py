@@ -9,6 +9,7 @@ from app.schemas.parser_schema import OBJECTIVES
 
 @dataclass(frozen=True)
 class AllocationRequest:
+    """Pure planning inputs; order.due_date may be None for soft-deadline plans."""
     order: dict[str, Any]
     workshops: list
     as_of: date
@@ -28,10 +29,13 @@ def _validate(request: AllocationRequest) -> None:
             raise ValueError(f"order missing required field: {key}")
     if type(order["pieces"]) is not int or order["pieces"] <= 0:
         raise ValueError("order pieces must be a positive integer")
-    try:
-        date.fromisoformat(order["due_date"])
-    except (TypeError, ValueError) as error:
-        raise ValueError("order due_date must be an ISO date string") from error
+    if order['due_date'] is not None:
+        try:
+            date.fromisoformat(order["due_date"])
+        except (TypeError, ValueError) as error:
+            raise ValueError("order due_date must be an ISO date string or None") from error
+    elif request.deadline_required:
+        raise ValueError('a hard deadline requires a confirmed due_date')
     if type(request.as_of) is not date:
         raise ValueError("as_of must be a date")
     if request.objective not in OBJECTIVES:

@@ -8,6 +8,8 @@ from app.db.database import Database
 from app.services.chat import service as chat
 from app.services.chat.context import build_context
 from app.services.chat.extraction import validate_candidate, ExtractionValidationError
+from app.services.chat.interpretation import rule_interpret
+from app.services.intake.normalization import order_ids
 from app.services.chat.constraint_patches import apply_interpretation
 from app.services.chat import allocation_preparation
 from app.services.chat.explanation_guard import claim_problem
@@ -26,6 +28,10 @@ class IntakeRemediation(unittest.TestCase):
             self.context = build_context(db.connection, self.session)
 
     def extract(self, text, *patches, answers=()):
+        # Focused field fixtures still need to retain explicit order references.
+        ids = order_ids(text, allow_short=True)
+        if len(ids) == 1 and not any(field == 'order_id' for _, field, _, _ in patches):
+            patches = (*patches, ('set', 'order_id', ids[0], text))
         return validate_candidate({'intent':'modify_constraints', 'answered_question_ids':list(answers),
             'patch_operations':[dict(op=op, field=field, value=value, quote=quote)
                                 for op,field,value,quote in patches]}, message=text, conversation=self.context)
@@ -41,6 +47,37 @@ class IntakeRemediation(unittest.TestCase):
         self.assertEqual(result.patch_operations[0].value,'2027-03-29')
         with self.assertRaises(ExtractionValidationError):
             self.extract('Order placed Mar 29; due Apr 10.', ('set','due_date','2026-03-29','Mar 29'))
+
+    def test_dispatch_today_does_not_replace_explicit_due_date(self):
+        text = 'ORD-041 needs a home today. 600 beanies, back by Apr 21.'
+        due = [p.value for p in rule_interpret(text, self.context).patch_operations if p.field == 'due_date']
+        self.assertEqual(due, ['2026-04-21'])
+        result = self.extract(text, ('set', 'due_date', '2026-04-21', 'Apr 21'))
+        self.assertEqual(result.patch_operations[0].value, '2026-04-21')
+        with self.assertRaises(ExtractionValidationError):
+            self.extract(text, ('set', 'due_date', '2026-04-01', text))
+        self.assertEqual(self._due('ORD-041 due today.'), '2026-04-01')
+        self.assertEqual(self._due('ORD-041 back by tomorrow.'), '2026-04-02')
+        self.assertEqual(self._due('ORD-041 截止明天.'), '2026-04-02')
+
+    def test_pending_due_date_answer_is_modify_constraints(self):
+        plain = {**self.context, 'pending_questions': [],
+                 'draft': {**self.context['draft'], 'order_id': None}}
+        self.assertFalse(any(p.field == 'due_date' for p in rule_interpret('Apr 21', plain).patch_operations))
+        self.context['draft']['order_id'] = 'ORD-041'
+        self.context['pending_questions'] = [{'field': 'due_date',
+            'question': 'Please restate the due date including its year.'}]
+        parsed = rule_interpret('Apr 21', self.context)
+        self.assertEqual(parsed.intent, 'modify_constraints')
+        self.assertEqual([p.value for p in parsed.patch_operations if p.field == 'due_date'], ['2026-04-21'])
+        result = self.extract('Apr 21', ('set', 'due_date', '2026-04-21', 'Apr 21'))
+        self.assertEqual(result.intent, 'modify_constraints')
+        self.assertEqual(result.patch_operations[0].value, '2026-04-21')
+
+    def _due(self, text):
+        values = [p.value for p in rule_interpret(text, self.context).patch_operations if p.field == 'due_date']
+        self.assertEqual(len(values), 1)
+        return values[0]
 
     def test_dynamic_names_add_remove_clear_and_undo_preserve_other_constraints(self):
         self.context['workshop_names']['W1'] = 'Renamed Stitch'
@@ -122,3 +159,40 @@ class IntakeRemediation(unittest.TestCase):
         self.assertEqual(result['allocation']['order_id'], 'ORD-045')
         self.assertEqual(claim_problem('Estimated completion 2099-01-01.', result['allocation']), 'unsupported_date')
         self.assertFalse(result['committed'])
+
+    def test_due_date_follow_up_updates_the_saved_request_and_recommends(self):
+        import json
+        from langchain_core.messages import AIMessage
+        from tests.test_architecture_alignment import NativeScript
+
+        class SupplementScript(NativeScript):
+            def invoke(self, messages):
+                system = messages[0]['content'] if isinstance(messages[0], dict) else messages[0].content
+                user = messages[-1]['content'] if isinstance(messages[-1], dict) else messages[-1].content
+                if 'Classify the current user message' in system:
+                    route = 'compat' if 'Apr 21' in user else 'allocation'
+                    return AIMessage(content='{"task_type":"%s"}' % route)
+                return super().invoke(messages)
+
+            def invoke_task(self, mode, key, bundle):
+                message = bundle.as_messages()[-1]['content']
+                if 'Apr 21' in message:
+                    patches = [{'op': 'set', 'field': 'due_date', 'value': '2026-04-21', 'quote': 'Apr 21'}]
+                else:
+                    patches = [{'op': 'set', 'field': 'order_id', 'value': 'ORD-045', 'quote': 'ORD-045'},
+                               {'op': 'set', 'field': 'due_date', 'value': '2026-04-01', 'quote': 'today'}]
+                return {'text': json.dumps({'intent': 'allocate_request', 'patch_operations': patches})}, {}
+
+        model = SupplementScript(actions=actions())
+        blocked = chat.turn(self.sid, owner='alice', request_id='partial', expected_version=0,
+            db_path=self.db, message='Allocate ORD-045 today.', registry=model)
+        self.assertIsNone(blocked['recommendation_id'])
+        self.assertEqual(blocked['session']['task']['draft']['order_id'], 'ORD-045')
+        self.assertTrue(any(item['field'] == 'due_date' for item in blocked['session']['task']['issues']))
+        self.assertIn('due date', blocked['assistant_message']['content'])
+        self.assertNotIn('has not changed the allocation requirements', blocked['assistant_message']['content'])
+        answered = chat.turn(self.sid, owner='alice', request_id='date',
+            expected_version=blocked['session_version'], db_path=self.db, message='Apr 21', registry=model)
+        self.assertIsNotNone(answered['recommendation_id'])
+        self.assertFalse(answered['committed'])
+        self.assertEqual(answered['allocation']['order_id'], 'ORD-045')

@@ -27,7 +27,8 @@ def prepare(*, db_path, session_id, owner, request_id, interpretation, as_of, se
                     "code": "TASK_CLOSED", "field": "task", "severity": "blocking",
                     "question": "Create a new request for another allocation."}]}
             if (interpretation.patch_operations or interpretation.ambiguity_reason or
-                    interpretation.unsupported_constraints or interpretation.answered_question_ids):
+                    interpretation.unsupported_constraints or interpretation.answered_question_ids or
+                    interpretation.due_date_pending):
                 task = apply_interpretation(task, interpretation, sequence)
                 task["task_version"] += 1
                 chat_repository.supersede_current(connection, session_id)
@@ -39,8 +40,11 @@ def prepare(*, db_path, session_id, owner, request_id, interpretation, as_of, se
             order = get_order(connection, order_id) if order_id else None
             if order:
                 for field in FACT_FIELDS:
+                    if field == 'due_date' and any(task['sources'].get(field, {}).get(key)
+                                                for key in ('pending', 'replacement')):
+                        continue
                     supplied = task["draft"].get(field)
-                    recorded = order[field]
+                    recorded = (order[field] or None) if field == 'due_date' else order[field]
                     if supplied is not None and str(supplied).casefold() != str(recorded).casefold():
                         differences.append({"field": field, "supplied": supplied, "recorded": recorded})
                     task["draft"][field] = recorded

@@ -1,5 +1,6 @@
 """Pure response assembly and reconciliation with an authoritative session snapshot."""
 from copy import deepcopy
+import re
 
 from app.schemas.allocation import AllocationRecommendationResult
 from app.schemas.chat import AllocationResponseBody
@@ -33,8 +34,13 @@ def build_allocation_response(result: TaskResult, explanation: ExplanationResult
     if result['task_type'] != 'allocation':
         raise ValueError('ALLOCATION_RESPONSE_TYPE_MISMATCH')
     payload = allocation_payload(result)
+    text = explanation['text']
+    if (payload and payload['due_date'] is None and not re.search(
+            r'no confirmed due date|due date (?:is )?(?:unconfirmed|not (?:yet )?confirmed)', text, re.I)):
+        # Always disclose missing dates, including when a model omits the warning.
+        text += '\n\nNo confirmed due date is available. This recommendation does not assess lateness or guarantee on-time delivery.'
     body = AllocationResponseBody(
-        explanation=explanation['text'], allocation=payload, issues=deepcopy(result['issues']),
+        explanation=text, allocation=payload, issues=deepcopy(result['issues']),
         recommendation_id=payload['recommendation_id'] if payload else None).model_dump()
     return {**body, 'assistant_message': {'role': 'assistant', 'content': body['explanation']}}
 

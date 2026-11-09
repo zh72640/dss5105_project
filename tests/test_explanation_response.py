@@ -97,7 +97,29 @@ class ExplanationResponseBehavior(unittest.TestCase):
         self.assertEqual([item['stage'] for item in calls],
                          ['intent', 'extract', 'tool_loop', 'tool_loop', 'tool_loop', 'explanation'])
         self.assertEqual(calls[-1]['prompt']['id'], 'allocation.explain')
-        self.assertEqual(calls[-1]['prompt']['version'], 'v4')
+        self.assertEqual(calls[-1]['prompt']['version'], 'v5')
+
+    def test_english_dates_keep_the_model_explanation_and_replay_without_fallback(self):
+        class EnglishDatesScript(ExplanationScript):
+            def invoke(self, messages):
+                system = messages[0]['content'] if isinstance(messages[0], dict) else messages[0].content
+                if 'Explain the allocation result' in system:
+                    raw = messages[-1]['content'] if isinstance(messages[-1], dict) else messages[-1].content
+                    payload = json.loads(raw)['result']
+                    eta = date.fromisoformat(payload['estimated_delivery_date'])
+                    due = date.fromisoformat(payload['due_date'])
+                    self.expected_explanation = (f'Estimated completion {eta:%B} {eta.day}, {eta.year}; '
+                                                 f'due {due:%B} {due.day}, {due.year}. Review before confirming.')
+                    return AIMessage(content=self.expected_explanation)
+                return super().invoke(messages)
+        model = EnglishDatesScript(actions=actions())
+        result = self.turn(model)
+        self.assertEqual(result['explanation'], model.expected_explanation)
+        self.assertFalse(any(e['event_type'] == 'explanation_fallback' for e in self.trace()['events']))
+        replay = self.turn(ExplanationScript())
+        self.assertTrue(replay['replayed'])
+        self.assertEqual(replay['explanation'], result['explanation'])
+        self.assertEqual(replay['allocation'], result['allocation'])
 
     def test_gemini_explanation_contains_user_content_without_a_network_call(self):
         from langchain_core.messages import convert_to_messages

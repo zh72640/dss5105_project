@@ -125,12 +125,31 @@ flowchart TD
 派单子图首先执行固定节点，此时尚未让模型自由选择业务 Tools。
 
 1. **提取**：`allocation.extract` 要求模型返回当前消息中的 `set` patches 和原文引用。Runtime 填入消息序号，校验字段格式、引用和字段值的用户输入依据。
-2. **有限修复**：格式或证据校验失败时最多进行两次提取尝试。供应商或网络失败走请求恢复机制，不伪装成缺失信息。
+2. **Extraction repair**: format, evidence, and explicit-reference completeness failures allow at most two attempts. An unambiguous order reference must be retained or already bound to the task. Supported hard workshop assignments must retain the required workshop and cannot be relabeled as an unsupported capability. Model/provider failures retain the request-recovery behavior.
 3. **事实补全**：`allocation_preparation.prepare()` 根据订单号读取登记订单，补齐产品、数量、交期等。LLM 路径遇到输入与登记事实不同时采用登记值，并保存 `resolved_differences`。
 4. **预检**：检查订单状态、工坊状态、产品能力、批量限制、排除项、指定工坊和交期要求；需要澄清时返回具体阻塞原因。
-5. **Skill 输入**：必须形成完整的 `order_id`、`product`、`pieces`、`due_date` 四字段输入，才能进入推荐阶段。
+5. **Skill input**: `order_id`, `product`, and `pieces` are required; `due_date` may be null. A pending replacement date is retained in task sources instead of reusing the old registered date. An explicit planning instruction such as "line something up" permits a preview without that date. Informational pending-date messages still require clarification. Hard deadline constraints always require a confirmed date.
+
+Without a due date, completion, cost and defect estimates remain available, while
+`delay_days` and `deadline_met` are null. Every saved plan and candidate carries
+`DUE_DATE_UNCONFIRMED`; response assembly and the card disclose the missing date.
+A later evidenced date replaces the pending task date, supersedes the old preview,
+and recalculates the plan without changing the registered order record. Normal
+registered-fact precedence remains unchanged for unrelated intake. Explicit card
+confirmation, owner/version checks, fresh-fact validation and replay rules remain
+in force for both dated and undated previews.
 
 最新修复区分缺少订单号与真正的歧义：补充订单号后清除对应缺失提示，其他未解决约束继续保留；已验证的单个排除工坊统一保存为列表。
+
+The active extraction prompt is `allocation.extract` v6. A request such as
+"OldMill is free right now — give them ORD-008" means a recommendation preview
+with `order_id=ORD-008` and a hard `preferred_workshop` constraint. The user's
+availability claim does not override registered status or queues. Extraction
+uses the existing bounded repair loop for omitted references. The model-facing
+unsupported-constraint list accepts only `unsupported_constraint` and
+`soft_workshop_preference`; arbitrary model prose cannot become a business issue
+code. Legacy direct-assignment refusals can be cleared by a new, fully evidenced
+order/workshop request while real unsupported constraints remain in force.
 
 ### 4.3 受控推荐执行
 
@@ -163,7 +182,7 @@ check_requirements → compute_plan → save_recommendation
 
 单工坊推荐保存 `explanation_evidence`，包括实际方法、公式、所选分数、候选对比、排队/生产/运输时间、排除原因和硬交期约束。解释读取已保存证据，不使用稍后变化的工坊资料重新编造选择理由。
 
-当前 `allocation.explain` v4 参考项目提供的 Explanation Template，按以下顺序组织：
+当前 `allocation.explain` v5 参考项目提供的 Explanation Template，按以下顺序组织：
 
 1. **Allocation plan**：订单、工坊、件数、交付、成本和缺陷率。
 2. **Allocation method**：实际分配目标与评分规则。

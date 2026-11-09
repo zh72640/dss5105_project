@@ -78,7 +78,28 @@ def clears_exclusions(text):
 def pending_due_date(text):
     """An explicitly pending replacement date cannot be satisfied by old DB facts."""
     return bool(re.search(r'(?:due date|deadline|ship date|交期|截止日期)', text, re.I) and
-                re.search(r'will confirm|confirm[^.!?]*later|date[^.!?]*to follow|待确认|稍后确认', text, re.I))
+                re.search(r'will confirm|confirm[^.!?]*later|date[^.!?]*to follow|'
+                          r'unconfirmed|not (?:yet )?confirmed|to be confirmed|\b(?:TBD|TBC)\b|no (?:confirmed )?due date|待确认|稍后确认', text, re.I))
+
+
+def requests_recommendation(text):
+    """Recognize affirmative planning instructions without authorizing submission.
+
+    These bounded phrases cover proceeding while a replacement date is pending.
+    Negated and hypothetical instructions cannot waive the clarification.
+    """
+    if re.search(r'\b(?:what if|if we|if you|suppose)\b', text, re.I):
+        return False
+    pattern = (r'\b(?:allocate|assign|dispatch|recommend)\b|'
+               r'\bline\s+(?:something|it|this|a workshop)\s+up\b|'
+               r'\b(?:find|choose|select)\s+(?:me\s+)?(?:a\s+)?(?:suitable\s+)?workshop\b|'
+               r'\b(?:go ahead|proceed)\b')
+    for match in re.finditer(pattern, text, re.I):
+        prefix = text[max(0, match.start() - 60):match.start()]
+        clause = re.split(r'[.!?;,]|\b(?:but|however)\b', prefix, flags=re.I)[-1]
+        if not re.search(r"\b(?:not|no|don't|cannot|can't|won't|never|hold off(?: on)?|wait (?:to|before))\s+(?:\w+\s+){0,3}$", clause, re.I):
+            return True
+    return False
 
 
 def exclusion_operations(text, names=None):

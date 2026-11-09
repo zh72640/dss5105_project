@@ -148,7 +148,7 @@ class AllocationNodeBehavior(unittest.TestCase):
         result = self.checkpoint()["task_result"]
         self.assertEqual(result["status"], "blocked")
         missing = [item for item in result["issues"] if item["code"] == "REQUIRED_INFO_INCOMPLETE"]
-        self.assertEqual({item["field"] for item in missing}, set(FIELDS))
+        self.assertEqual({item["field"] for item in missing}, set(FIELDS) - {'due_date'})
         self.assertIsNone(response["pending_question"])
         self.assertFalse(model.offered)
 
@@ -169,15 +169,14 @@ class AllocationNodeBehavior(unittest.TestCase):
         self.assertEqual(self.checkpoint()["task_result"]["issues"][0]["code"], "MULTI_WORKSHOP_UNSUPPORTED")
         self.assertFalse(model.offered)
 
-    def test_missing_registered_due_date_is_a_missing_field(self):
+    def test_missing_registered_due_date_still_recommends_with_a_warning(self):
         with Database(self.path) as db, db.transaction() as connection:
             connection.execute("UPDATE orders SET due_date='' WHERE order_id='ORD-045'")
-        model = NativeScript()
-        self.turn(model)
-        issues = self.checkpoint()["task_result"]["issues"]
-        self.assertEqual(issues[0]["code"], "REQUIRED_INFO_INCOMPLETE")
-        self.assertEqual(issues[0]["missing_fields"], ["due_date"])
-        self.assertFalse(model.offered)
+        response = self.turn(NativeScript(actions=actions()))
+        self.assertIsNotNone(response['recommendation_id'])
+        self.assertIsNone(response['allocation']['due_date'])
+        self.assertIsNone(response['allocation']['delay_days'])
+        self.assertIn('No confirmed due date', response['explanation'])
 
     def test_unproven_extraction_is_rejected_before_database_enrichment(self):
         model = NativeScript(order_id="ORD-046")
@@ -226,9 +225,9 @@ class AllocationNodeBehavior(unittest.TestCase):
             return original(state, runtime)
         with patch.object(allocation_graph, "execute_allocation", missing):
             response = self.turn(NativeScript(actions=actions()))
-        self.assertIn("due_date", response["assistant_message"]["content"])
+        self.assertIn("prepared allocation input changed", response["assistant_message"]["content"])
         self.assertEqual(len(self.calls()), 1)
-        self.assertEqual(self.calls()[0]["result"]["error"]["code"], "SKILL_INPUT_INCOMPLETE")
+        self.assertEqual(self.calls()[0]["result"]["error"]["code"], "SKILL_INPUT_STALE")
         self.assertIsNone(response["recommendation_id"])
 
     def test_no_feasible_workshop_stops_after_compute(self):
@@ -327,7 +326,7 @@ class AllocationNodeBehavior(unittest.TestCase):
 class AllocationContractBehavior(unittest.TestCase):
     def test_each_required_field_has_an_explicit_missing_issue(self):
         complete = {"order_id": "ORD-045", "product": "Shirt", "pieces": 150, "due_date": "2026-04-03"}
-        for field in FIELDS:
+        for field in (key for key in FIELDS if key != 'due_date'):
             for skill in (False, True):
                 with self.subTest(field=field, skill=skill):
                     supplied = {key: value for key, value in complete.items() if key != field}

@@ -17,7 +17,11 @@ The Runtime supplies skill_input containing order_id, product, pieces (registere
 order total), and due_date. It also supplies the business date, objective, and
 effective constraints. Preserve registered facts and saved constraints.
 order_id and product must be nonempty strings, pieces a positive integer, and
-due_date an ISO date (YYYY-MM-DD). Missing and invalid fields are separate errors.
+due_date an ISO date (YYYY-MM-DD) or null. A null date is supported after
+Service validation: recommend using completion estimates, cost and quality,
+without deadline feasibility or lateness claims. An unconfirmed replacement date
+must not fall back to an obsolete registered date. A hard deadline still needs
+a confirmed date. Missing required fields and invalid values are separate errors.
 The supported objectives include `weighted_hybrid`: normalized 80% signed
 lateness and 20% defect exposure (`defect_rate * pieces / capacity`). It applies
 to one workshop. Preserve the user's recorded objective; do not substitute this
@@ -26,7 +30,7 @@ policy for `hybrid` or infer that it optimizes cost.
 ## Workflow
 1. **Verify delivered inputs → call check_requirements → inspect skill_input and
    the validation report.** Check order ID, product, total pieces, and due date
-   again. A missing field ends the workflow with
+   again. A missing order ID, product, or quantity ends the workflow with
    `Missing required field(s): {fields}.` Do not invent a value, ask a follow-up
    question, or proceed while blocked.
 2. **Calculate → call compute_plan → inspect the verified allocation result.**
@@ -45,7 +49,10 @@ recommendation_id, and task_version.
 When present, preserve explanation_evidence from the saved result, including
 the method, score formula, candidate comparisons and queue/processing/pickup times.
 The Service supplies these values. Negative delay_days means early delivery,
-zero means on time, and positive means late. Quality is expected defect rate;
+zero means on time, and positive means late. When due_date is null, delay_days
+and deadline_met are null and warnings includes DUE_DATE_UNCONFIRMED. Preserve
+that warning. For weighted_hybrid, normalized completion time replaces signed
+lateness when the date is unknown; the min-max ranking is unchanged. Quality is expected defect rate;
 price is estimated total cost. Do not calculate or fabricate these fields.
 The Runtime checks completion from a valid current-version saved recommendation.
 This is a preview awaiting explicit confirmation. Explanation, user response

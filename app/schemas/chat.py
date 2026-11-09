@@ -48,11 +48,14 @@ class AllocationPatch(Input):
     quote: str = Field(min_length=1, max_length=10000)
 
 
+UnsupportedAllocationConstraint = Literal['unsupported_constraint', 'soft_workshop_preference']
+
+
 class AllocationExtraction(Input):
     intent: Intent
     patch_operations: list[AllocationPatch] = Field(default_factory=list)
     ambiguity_reason: str | None = None
-    unsupported_constraints: list[str] = Field(default_factory=list)
+    unsupported_constraints: list[UnsupportedAllocationConstraint] = Field(default_factory=list)
     answered_question_ids: list[Literal['unsupported_constraint', 'AMBIGUOUS_MESSAGE', 'soft_workshop_preference']] = Field(default_factory=list)
 
     def with_evidence(self, sequence):
@@ -80,6 +83,9 @@ class TurnInterpretation(Input):
     intent: Intent
     candidate_intents: list[str] = Field(default_factory=list)
     ambiguity_reason: str | None = None
+    # Derived from current-message evidence by intake, never supplied by the LLM.
+    due_date_pending: bool = False
+    recommend_without_due_date: bool = False
     referenced_order_id: str | None = None
     referenced_recommendation_id: str | None = None
     patch_operations: list[PatchOperation] = Field(default_factory=list)

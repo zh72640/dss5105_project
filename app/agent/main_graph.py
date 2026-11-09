@@ -16,6 +16,7 @@ from app.llm.json_output import json_text
 from app.agent.executor import run as run_executor
 from app.prompts import get_registry
 from app.services.chat import service as chat
+from app.services.intake.evidence import date_mentions
 from app.schemas.agent import ExplanationResult
 
 CURRENT_WORKFLOW = 'main_v2'
@@ -44,9 +45,19 @@ class MainState(TypedDict, total=False):
     response: dict | None
 
 
+def _answers_pending_due_date(message, session):
+    issues = session["task"].get("issues") or []
+    if not (session["task"].get("sources", {}).get("due_date", {}).get("pending") or
+            any(isinstance(item, dict) and item.get("field") == "due_date" for item in issues)):
+        return False
+    return bool(date_mentions(message, session["business_date"]))
+
+
 def identify(state: MainState, runtime: Runtime[AgentContext]):
     context = runtime.context
     session = chat.inspect(context.session_id, owner=context.owner, db_path=context.db_path)
+    if _answers_pending_due_date(context.user_message, session):
+        return {"route": "allocation", "workflow_version": state.get("workflow_version", CURRENT_WORKFLOW)}
     bundle = get_registry().render("agent.intent",
         variables={"task": {"task_id": session["task"]["task_id"],
                             "state": session["task"]["state"],
