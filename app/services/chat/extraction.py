@@ -50,9 +50,6 @@ def _validate_explicit_references(interpretation, message, conversation):
     permission. Reuse the offline interpretation for supported hard assignments;
     never manufacture patches or override ambiguous, negated, or read-only input.
     """
-    if interpretation.intent not in ('allocate_request', 'modify_constraints',
-                                      'answer_clarification', 'unsupported_or_ambiguous'):
-        return
     if is_hypothetical(message):
         return
     if re.search(r"\b(?:do not|don't|never|must not|should not)\s+(?:give|send|assign|allocate|use|dispatch)\b", message, re.I):
@@ -69,6 +66,9 @@ def _validate_explicit_references(interpretation, message, conversation):
     required = {p.value for p in baseline.patch_operations
                 if p.field == 'preferred_workshop' and p.op == 'set' and p.value in mentioned}
     expected = required.pop() if len(required) == 1 and len(mentioned) == 1 else None
+    if not expected and interpretation.intent not in (
+            'allocate_request', 'modify_constraints', 'answer_clarification', 'unsupported_or_ambiguous'):
+        return
     expected_fields = {'order_id': ids[0]}
     if expected:
         expected_fields['preferred_workshop'] = expected
@@ -86,7 +86,8 @@ def _validate_explicit_references(interpretation, message, conversation):
     if not expected:
         return
     if (not baseline.ambiguity_reason and not baseline.unsupported_constraints and
-            (interpretation.intent == 'unsupported_or_ambiguous' or interpretation.unsupported_constraints)):
+            (interpretation.intent not in ('allocate_request', 'modify_constraints', 'answer_clarification') or
+             interpretation.unsupported_constraints)):
         raise ExtractionValidationError('evidence', {
             'reason': 'MISCLASSIFIED_WORKSHOP_ASSIGNMENT', 'field': 'preferred_workshop',
             'expected_value': expected, 'source_message': message,

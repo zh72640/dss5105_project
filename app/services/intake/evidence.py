@@ -2,7 +2,7 @@
 import re
 from datetime import date
 
-from app.services.intake.normalization import PRODUCTS, WORKSHOPS, workshop_mentions
+from app.services.intake.normalization import PRODUCTS, WORKSHOPS, workshop_mentions, order_ids
 
 DATE_TOKEN = re.compile(
     r'\b(?:(?P<iso>\d{4}-\d{2}-\d{2})|'
@@ -100,6 +100,32 @@ def requests_recommendation(text):
         if not re.search(r"\b(?:not|no|don't|cannot|can't|won't|never|hold off(?: on)?|wait (?:to|before))\s+(?:\w+\s+){0,3}$", clause, re.I):
             return True
     return False
+
+
+def candidate_workshop_question(text, names=None):
+    """Return the sole named candidate for a specific-order feasibility question.
+
+    This only recognizes the requested evaluation target; it makes no claim
+    about capability, capacity, availability, or permission to submit allocation.
+    Status lookups, multiple candidates/orders and explicit hypotheticals stay
+    outside this bounded evidence helper.
+    """
+    if len(order_ids(text, allow_short=True)) != 1 or re.search(
+            r'\b(?:what if|if we|if you|suppose)\b', text, re.I):
+        return None
+    mentions = workshop_mentions(text, names)
+    if len({wid for _, _, wid in mentions}) != 1:
+        return None
+    for start, end, wid in mentions:
+        prefix, suffix = text[:start].strip(), text[end:]
+        terse = (text.rstrip().endswith('?') and
+                 re.fullmatch(r'(?:(?:how|what) about)?', prefix, re.I) and
+                 re.match(r'\s+for\b', suffix, re.I))
+        modal = (re.search(r'\b(?:can|could|would)\b', prefix, re.I) and
+                 re.search(r'\b(?:take|handle|make|produce|work)\b', suffix, re.I))
+        if terse or modal:
+            return wid
+    return None
 
 
 def exclusion_operations(text, names=None):

@@ -10,7 +10,7 @@ from app.services.intake.normalization import order_ids, workshop_mentions, numb
 from app.services.allocation.preflight import issue
 from app.services.intake.evidence import (date_mentions, product_evidence, category_evidence,
     literal_evidence, exclusion_operations, replaces_exclusions, clears_exclusions,
-    pending_due_date, requests_recommendation)
+    pending_due_date, requests_recommendation, candidate_workshop_question)
 
 FIELDS = set(get_args(PatchField))
 PENDING_DUE_DATE_QUESTION = 'The new due date is unconfirmed. Provide the new date or ask me to recommend a workshop without a due date.'
@@ -172,6 +172,10 @@ def rule_interpret(message, context):
         values = {value for value, _explicit in date_mentions(text, context['business_date'])}
         if len(values) == 1:
             parsed['due_date'] = values.pop()
+    candidate_workshop = candidate_workshop_question(text, context.get('workshop_names'))
+    if candidate_workshop:
+        parsed['preferred_workshop'] = candidate_workshop
+        parsed['ambiguities'] = [a for a in parsed['ambiguities'] if a != 'unclear_workshop_constraint']
     removed = set()
     for start, end, wid in workshop_mentions(text):
         prefix = text[max(0,start-28):start].lower()
@@ -204,7 +208,7 @@ def rule_interpret(message, context):
     if hypothetical:
         output.update(intent='explain_recommendation', patch_operations=[], referenced_order_id=ids[0] if len(ids)==1 else None)
         return TurnInterpretation(**output)
-    if querying and not output['unsupported_constraints'] and not re.search(r'改成|改为|排除|exclude|不要|最多|必须|成本越低|工坊.*(?:状态|产能|费用)|workshop.*(?:capacity|status|cost)', low):
+    if querying and not candidate_workshop and not output['unsupported_constraints'] and not re.search(r'改成|改为|排除|exclude|不要|最多|必须|成本越低|工坊.*(?:状态|产能|费用)|workshop.*(?:capacity|status|cost)', low):
         output.update(intent='query_order' if ids or re.search(r'状态|status',low) else 'explain_recommendation',
             referenced_order_id=ids[0] if len(ids)==1 else None)
         if len(ids)>1:

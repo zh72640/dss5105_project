@@ -120,6 +120,15 @@ flowchart TD
 
 `compat` 当前承接订单查询、工坊查询、已有推荐问答和受控生产操作等通用任务，复用动态 Executor；这些任务尚未分别拆成独立业务子图。
 
+The active `agent.intent` v3 routes named-workshop/specific-order feasibility
+questions, such as "QuickStitch for the scarves on ORD-103?", through Allocation
+preparation. Extraction v7 retains the order, stated product, and candidate workshop
+as the evaluated sole workshop. The Service then returns actual eligibility or a
+saved preview; it does not ask for confirmation merely to check feasibility.
+General status/capacity lookups and explicit hypotheticals about recommendations
+remain on the compatibility route. Production submission still requires explicit
+recommendation-card confirmation.
+
 ### 4.2 字段提取与固定准备
 
 派单子图首先执行固定节点，此时尚未让模型自由选择业务 Tools。
@@ -141,7 +150,7 @@ in force for both dated and undated previews.
 
 最新修复区分缺少订单号与真正的歧义：补充订单号后清除对应缺失提示，其他未解决约束继续保留；已验证的单个排除工坊统一保存为列表。
 
-The active extraction prompt is `allocation.extract` v6. A request such as
+The active extraction prompt is `allocation.extract` v7. A request such as
 "OldMill is free right now — give them ORD-008" means a recommendation preview
 with `order_id=ORD-008` and a hard `preferred_workshop` constraint. The user's
 availability claim does not override registered status or queues. Extraction
