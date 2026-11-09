@@ -12,6 +12,9 @@ from app.services.intake.evidence import (date_mentions, product_evidence, categ
     literal_evidence, exclusion_operations, replaces_exclusions, clears_exclusions,
     pending_due_date, requests_recommendation, candidate_workshop_question)
 
+from app.services.chat.alternative_acceptance import (
+    is_offline_acceptance_request, offline_acceptance_interpretation, validate_acceptance_quote)
+
 FIELDS = set(get_args(PatchField))
 PENDING_DUE_DATE_QUESTION = 'The new due date is unconfirmed. Provide the new date or ask me to recommend a workshop without a due date.'
 
@@ -73,6 +76,8 @@ class InterpretationValidationError(ValueError):
 
 
 def rule_interpret(message, context):
+    if is_offline_acceptance_request(message):
+        return offline_acceptance_interpretation(message, context.get('pending_alternatives', []))
     text = message.strip()
     low = text.lower().rstrip('.!。！')
     sequence = context['current_sequence']
@@ -255,6 +260,8 @@ def rule_interpret(message, context):
 
 
 def validate_interpretation(value, message, context):
+    if value.accept_alternative:
+        validate_acceptance_quote(value.accept_alternative, message)
     if 'unsupported_constraint' in value.answered_question_ids and not re.search(r'取消(?:预算|精确拆分|质量阈值)|(?:drop|remove) (?:budget|unsupported constraint)',message,re.I):
         raise ValueError('UNGROUNDED_WITHDRAWAL')
     if 'AMBIGUOUS_MESSAGE' in value.answered_question_ids and not re.search(r'忽略(?:上一条|刚才那条)(?:消息|要求)|ignore (?:last|previous) message',message,re.I):

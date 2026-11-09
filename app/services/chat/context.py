@@ -1,6 +1,7 @@
 """Bounded recent turns plus complete authoritative task facts and change sources."""
 from app.db import context_repository
 from app.db.workshop_repository import names
+from app.services.chat.alternative_acceptance import pending_options, reference_issue_id
 
 
 def build_context(connection, session):
@@ -24,5 +25,7 @@ def build_context(connection, session):
     return {'business_date': session['business_date'], 'workshop_names': names(connection),
         'history': sorted(history, key=lambda m:m['sequence']),
         'current_sequence': session['version'] * 2 + 1, 'draft': task['draft'], 'field_sources': task['sources'],
-        'recent_changes': task['changes'][-12:], 'pending_questions': task['issues'],
-        'order_facts': task['report'].get('resolved_fields', {}), 'recommendation': session['recommendation']}
+        'recent_changes': task['changes'][-12:],
+        'pending_questions': [{**p, 'question_id': reference_issue_id(p)} for p in task['issues']],
+        'order_facts': task['report'].get('resolved_fields', {}), 'recommendation': session['recommendation'],
+        'pending_alternatives': pending_options(connection, task)}

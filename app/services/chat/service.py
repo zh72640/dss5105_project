@@ -22,6 +22,7 @@ from pydantic import ValidationError
 from app.db import chat_repository as repository
 from app.services.allocation import service as allocation
 from app.services.allocation.preflight import digest, issue, preflight
+from app.services.chat.alternative_acceptance import pending_options, prepare_acceptance, track_report
 
 
 class ChatError(ValueError):
@@ -261,6 +262,8 @@ def turn(sid, *, owner, request_id, expected_version, db_path, action='message',
                 raise ChatError('SESSION_VERSION_CONFLICT','The session changed. Read its latest state.')
             session=current
             task=deepcopy(session['task'])
+            previous_report=deepcopy(task['report'])
+            previous_report['pending_alternatives']=pending_options(c,task)
             prior_task_state=task['state']
             session['task']=task
             intent=interpretation.intent
@@ -364,6 +367,10 @@ def turn(sid, *, owner, request_id, expected_version, db_path, action='message',
                 task['issues'].append(issue('TASK_CANCELLED' if intent=='cancel_task' else 'RECOMMENDATION_REJECTED','message','The task was cancelled. Create a new request.' if intent=='cancel_task' else 'The recommendation was rejected. State the revised requirements.'))
                 reply=task['issues'][-1]['question']
             else:
+                task,interpretation=prepare_acceptance(c,task,interpretation,context['current_sequence'],session['mode'],message)
+                if interpretation.accept_alternative and task['report'].get('accepted_alternative'):
+                    previous_report['accepted_alternative']=task['report']['accepted_alternative']
+                    previous_report['pending_alternatives']=[]
                 task=apply_interpretation(task,interpretation,context['current_sequence'])
                 session['task']=task
                 if task['state']=='CANCELLED':
@@ -389,6 +396,7 @@ def turn(sid, *, owner, request_id, expected_version, db_path, action='message',
                 if 'query_order' in interpretation.candidate_intents and trace and trace.get('order'):
                     order=trace['order']
                     reply+=f"\nThe order is {order['state']} with {order['completed_pieces']} completed pieces."
+            task['report']=track_report(task,task['report'],previous_report,context['current_sequence']+1)
             save_task(c,task)
             turn_id=uuid.uuid4().hex
             feedback_id=uuid.uuid4().hex

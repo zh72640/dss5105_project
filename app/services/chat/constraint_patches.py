@@ -81,6 +81,8 @@ def apply_interpretation(task, interpretation, sequence):
         replacement = field == 'due_date' and p.op == 'set' and any(
             out['sources'].get(field, {}).get(key) for key in ('pending', 'replacement'))
         out['sources'][field]={'message_sequence':p.evidence.message_sequence,'quote':p.evidence.quote,'operation':p.op}
+        if interpretation.accept_alternative:
+            out['sources'][field]['alternative_id'] = interpretation.accept_alternative.alternative_id
         if replacement:
             out['sources'][field]['replacement'] = True
         out['changes'].append({'field':field,'before':old,'after':val,'sequence':sequence,'op':p.op})

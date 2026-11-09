@@ -551,3 +551,22 @@ test('undated recommendation cards disclose missing dates without deadline claim
   assert.match(content,/deadline compliance cannot be assessed/);
   assert.doesNotMatch(content,/Exceeds the registered due date|Meets the registered due date|DUE_DATE_UNCONFIRMED/);
 });
+
+
+test('pending alternatives stay visible and numbered during selection clarification',async()=>{
+  const option=id=>({alternative_id:id,required_changes:{preferred_workshop:null},
+    plan:{allocation:[{workshop_id:'W6',pieces:2000}],estimated_delivery_date:'2026-04-23',
+          estimated_cost:2400,expected_defect_rate:.05}});
+  const view=snapshot('alternatives');
+  view.task={state:'BLOCKED',report:{ready_for_planning:false,
+    blocking_issues:[{question:'There are multiple alternatives. Specify the option number to use.'}],
+    pending_alternatives:[option('alt-one'),option('alt-two')]}};
+  const ui=controller(async url=>response(url.includes('/messages')?{items:[]}:view));
+  await ui.load('alternatives');
+  const flatten=node=>[node.textContent,...node.children.map(flatten)].join(' ');
+  const content=flatten(ui.button('chat-validation'));
+  assert.match(content,/Option 1: Remove the required sole workshop/);
+  assert.match(content,/Option 2: Remove the required sole workshop/);
+  assert.match(content,/Accept a specific option to generate a fresh recommendation/);
+  assert.doesNotMatch(content,/alt-one|alt-two/);
+});

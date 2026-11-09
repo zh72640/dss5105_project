@@ -121,14 +121,17 @@ def latest_model_stage(connection, request_id):
     return json.loads(row["detail_json"]).get("stage") if row else None
 
 
-def latest_extraction(connection, request_id):
+def latest_extraction(connection, request_id, event_type='allocation_extraction'):
+    """Recover the latest attempt for one interpretation stage of this request."""
     row = connection.execute("""SELECT event_id,detail_json FROM chat_agent_events
-        WHERE request_id=? AND event_type='allocation_extraction'
-        ORDER BY event_id DESC LIMIT 1""", (request_id,)).fetchone()
+        WHERE request_id=? AND event_type=?
+        ORDER BY event_id DESC LIMIT 1""", (request_id, event_type)).fetchone()
     if row is None:
         return None
     result = json.loads(row['detail_json'])
+    validation = ('extraction_validation_failed' if event_type == 'allocation_extraction'
+                  else 'followup_validation_failed')
     result['validation_recorded'] = connection.execute("""SELECT 1 FROM chat_agent_events
-        WHERE request_id=? AND event_type='extraction_validation_failed' AND event_id>?
-        LIMIT 1""", (request_id, row['event_id'])).fetchone() is not None
+        WHERE request_id=? AND event_type=? AND event_id>?
+        LIMIT 1""", (request_id, validation, row['event_id'])).fetchone() is not None
     return result

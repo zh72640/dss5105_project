@@ -7,9 +7,9 @@ This package is the source of runtime LLM instructions. Offline conversation rep
 | ID | Kind | Purpose |
 | --- | --- | --- |
 | `conversation.intent`, `conversation.interpret`, `conversation.reply` | fragment / prompt | Chat v2 turn interpretation and grounded replies. |
-| `agent.intent`, `allocation.extract`, `agent.reply` | prompt | Main Graph routing, allocation preparation, and Tool-loop instructions. |
+| `agent.intent`, `agent.followup`, `allocation.extract`, `agent.reply` | prompt | Main Graph routing, contextual follow-up interpretation, allocation intake, and Tool-loop instructions. |
 
-The conversation definitions use `chat_v2`. Active versions are selected in `catalog/manifest.yaml`: routing uses `agent.intent` v3, allocation extraction uses v7, and allocation explanation uses v5. Prior versions remain available for inspection and pinned requests.
+The conversation definitions use `chat_v2`. Active versions are selected in `catalog/manifest.yaml`: routing uses `agent.intent` v5, contextual follow-ups use `agent.followup` v1, allocation extraction uses v9, and allocation explanation uses v5. Prior versions remain available for inspection and pinned requests.
 
 ## Directory ownership
 

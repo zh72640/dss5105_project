@@ -8,6 +8,7 @@ from langgraph.graph.message import add_messages
 from langgraph.runtime import Runtime
 
 from app.agent.allocation_graph import build_graph as build_allocation_graph
+from app.agent.followup import resolve as resolve_followup
 from app.agent.explanation import explain
 from app.agent.response import assemble
 from app.agent.dynamic import AgentContext, final_text, record_model_response, record_model_start
@@ -16,6 +17,8 @@ from app.llm.json_output import json_text
 from app.agent.executor import run as run_executor
 from app.prompts import get_registry
 from app.services.chat import service as chat
+from app.services.chat.context import build_context
+from app.db.database import Database
 from app.services.intake.evidence import date_mentions
 from app.schemas.agent import ExplanationResult
 
@@ -25,7 +28,7 @@ MAIN_WORKFLOWS = frozenset({'main_v1', CURRENT_WORKFLOW})
 
 INTENT_SCHEMA = {
     "type": "object", "properties": {
-        "task_type": {"type": "string", "enum": ["allocation", "compat"]}
+        "task_type": {"type": "string", "enum": ["allocation", "followup", "compat"]}
     }, "required": ["task_type"], "additionalProperties": False,
 }
 
@@ -43,6 +46,9 @@ class MainState(TypedDict, total=False):
     source_node: str | None
     explanation: ExplanationResult | None
     response: dict | None
+    followup_interpretation: dict | None
+    followup_sequence: int | None
+    followup_route: str
 
 
 def _answers_pending_due_date(message, session):
@@ -58,10 +64,15 @@ def identify(state: MainState, runtime: Runtime[AgentContext]):
     session = chat.inspect(context.session_id, owner=context.owner, db_path=context.db_path)
     if _answers_pending_due_date(context.user_message, session):
         return {"route": "allocation", "workflow_version": state.get("workflow_version", CURRENT_WORKFLOW)}
+    with Database(context.db_path) as db:
+        conversation = build_context(db.connection, session)
     bundle = get_registry().render("agent.intent",
         variables={"task": {"task_id": session["task"]["task_id"],
                             "state": session["task"]["state"],
-                            "pending_issues": session["task"]["issues"]},
+                            "pending_issues": conversation['pending_questions'],
+                            "history": conversation['history'][-12:],
+                            "pending_alternatives": conversation['pending_alternatives'],
+                            "order_id": session['task']['draft'].get('order_id')},
                    "output_schema": INTENT_SCHEMA},
         user_message=context.user_message)
     spec = context.registry.resolve("llm", context.model_key)
@@ -82,7 +93,7 @@ def identify(state: MainState, runtime: Runtime[AgentContext]):
     try:
         parsed = json.loads(json_text(text_content(check_response(raw)))) if spec.output_method == "prompt" else check_structured(result)[0]
         route = parsed.get("task_type")
-        if route not in ("allocation", "compat"):
+        if route not in ("allocation", "followup", "compat"):
             raise ValueError("INVALID_TASK_ROUTE")
     except (ValueError, KeyError, TypeError, AttributeError):
         return {"route": "failed", "workflow_version": state.get('workflow_version', CURRENT_WORKFLOW),
@@ -96,8 +107,11 @@ def identify(state: MainState, runtime: Runtime[AgentContext]):
 
 def allocation(state: MainState, runtime: Runtime[AgentContext]):
     subgraph = build_allocation_graph()
-    output = subgraph.invoke({"messages": state.get("messages", [])},
-                             context=runtime.context)
+    inputs = {"messages": state.get("messages", [])}
+    if state.get('followup_interpretation'):
+        inputs.update(interpretation=state['followup_interpretation'],
+                      sequence=state['followup_sequence'])
+    output = subgraph.invoke(inputs, context=runtime.context)
     result = output["task_result"]
     return {"task_result": result, "source_node": "allocation",
             "tool_results": output.get("tool_results", []),
@@ -160,6 +174,7 @@ def _build_graph(checkpointer, *, legacy):
     graph = StateGraph(MainState, context_schema=AgentContext)
     graph.add_node("identify", identify)
     graph.add_node("allocation", allocation)
+    graph.add_node("followup", resolve_followup)
     graph.add_node("compat", compatibility)
     graph.add_node("finish", finish)
     if legacy:
@@ -169,7 +184,9 @@ def _build_graph(checkpointer, *, legacy):
         graph.add_node("response", assemble)
     graph.add_edge(START, "identify")
     graph.add_conditional_edges("identify", lambda state: state["route"],
-                                {"allocation": "allocation", "compat": "compat", "failed": "finish"})
+                                {"allocation": "allocation", "followup": "followup", "compat": "compat", "failed": "finish"})
+    graph.add_conditional_edges("followup", lambda state: state['followup_route'],
+                                {"allocation": "allocation", "compat": "compat", "finish": "finish"})
     if legacy:
         graph.add_edge("allocation", "respond")
         graph.add_edge("respond", "finish")

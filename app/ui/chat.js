@@ -186,7 +186,8 @@
     const required=C.text('div');required.append(C.text('dt','Required sole workshop'),C.text('dd',report.effective_constraints?.preferred_workshop||'None'));dl.append(required);
     if(report.resolved_differences?.length)target.append(C.registeredDifferences(report.resolved_differences));
     (report.blocking_issues||[]).forEach(p=>target.append(C.text('p',p.question,'chat-notice')));
-    if(report.alternatives?.length)target.append(C.alternatives(report.alternatives));
+    const alternatives=report.alternatives?.length?report.alternatives:report.pending_alternatives;
+    if(alternatives?.length)target.append(C.alternatives(alternatives));
     else if(report.alternatives_status==='no_known_feasible_alternative')target.append(C.text('p','No known feasible alternative preserves capability, status and your exclusions.','chat-notice'));
   }
   async function load(sid,followLatest=false,reply=null){

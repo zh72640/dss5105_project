@@ -112,6 +112,10 @@ flowchart TD
     R --> EX[explanation：解释保存结果或返回阻塞原因]
     EX --> A[response：确定性组装响应]
     A --> F[finish]
+    I -->|followup| FU[followup: contextual LLM interpretation]
+    FU -->|accept or revise| P
+    FU -->|explain or query| C
+    FU -->|clarify without task mutation| F
     I -->|compat| C[兼容任务 Executor]
     C --> F
     I -->|识别失败| F
@@ -120,9 +124,9 @@ flowchart TD
 
 `compat` 当前承接订单查询、工坊查询、已有推荐问答和受控生产操作等通用任务，复用动态 Executor；这些任务尚未分别拆成独立业务子图。
 
-The active `agent.intent` v3 routes named-workshop/specific-order feasibility
+The active `agent.intent` v5 routes named-workshop/specific-order feasibility
 questions, such as "QuickStitch for the scarves on ORD-103?", through Allocation
-preparation. Extraction v7 retains the order, stated product, and candidate workshop
+preparation. Extraction v9 retains the order, stated product, and candidate workshop
 as the evaluated sole workshop. The Service then returns actual eligibility or a
 saved preview; it does not ask for confirmation merely to check feasibility.
 General status/capacity lookups and explicit hypotheticals about recommendations
@@ -150,7 +154,7 @@ in force for both dated and undated previews.
 
 最新修复区分缺少订单号与真正的歧义：补充订单号后清除对应缺失提示，其他未解决约束继续保留；已验证的单个排除工坊统一保存为列表。
 
-The active extraction prompt is `allocation.extract` v7. A request such as
+The active extraction prompt is `allocation.extract` v9. A request such as
 "OldMill is free right now — give them ORD-008" means a recommendation preview
 with `order_id=ORD-008` and a hard `preferred_workshop` constraint. The user's
 availability claim does not override registered status or queues. Extraction
@@ -159,6 +163,54 @@ unsupported-constraint list accepts only `unsupported_constraint` and
 `soft_workshop_preference`; arbitrary model prose cannot become a business issue
 code. Legacy direct-assignment refusals can be cleared by a new, fully evidenced
 order/workshop request while real unsupported constraints remain in force.
+
+### Accepting conditional alternatives
+
+The Main Graph's `agent.intent` v5 selects `followup` for contextual replies.
+`app/agent/followup.py` uses `agent.followup` v1 to interpret bounded history,
+current questions and authoritative saved offers. The LLM distinguishes acceptance,
+explanation, questions, negation and revisions by meaning. For example, "sure, use
+your suggested workshop" follows `identify → followup → allocation`; it is not
+matched against a phrase whitelist. Explanations enter the compatibility executor;
+unresolved references ask a dialogue question without persisting a business blocker.
+The Main Graph and Allocation subgraph pass the validated interpretation and sequence
+forward, avoiding a second extraction that could lose the resolved reference.
+
+`app/agent/intake.py` provides the shared model invocation, current-message evidence
+validation, two-attempt repair and persisted attempt recovery. Follow-up attempts use
+separate `followup_interpretation` / `followup_validation_failed` audit events and
+record model usage under the `followup` stage. A retry reuses the saved model output.
+Existing `main_v1` / `main_v2` node names remain available for checkpoint recovery;
+new-turn initialization clears resolved follow-up state. No Tool or Skill is added.
+
+Every offer has an ID bound to the task/order and requirements. The LLM resolves
+option numbers, ordinals and workshop references to that saved ID. A unique offer
+may omit its ID; multiple offers without one require selection. The Service does
+not parse acceptance sentences or ordinals in LLM mode. It validates the entire
+current-message quote, the current owned task, ID freshness, mode restrictions and
+whitelisted `required_changes`. It preserves exclusions and other requirements,
+recomputes against fresh business facts and saves a normal preview. Acceptance
+never commits production or reuses the historical plan. Explicit card confirmation
+and its identity, version and freshness checks remain required.
+
+Pending offers survive dialogue-only turns. Existing sessions can recover matching
+offers from bounded preparation audit snapshots. To resolve legacy reference errors,
+the LLM can name pending question IDs in `resolved_reference_issue_ids`; the Service
+allows only current `AMBIGUOUS_MESSAGE` issues with field `message`. It never resolves
+business-field or unsupported-constraint issues through this channel. This replaces
+hardcoded matching of old error prose. Resolved IDs remain in acceptance provenance.
+
+A consumed offer normally stays consumed. A narrow legacy recovery covers an old
+acceptance that never reached successful preparation because a dialogue error
+remained, followed by restoration of its original requirements. Recovery requires
+matching task/requirements and an audited prior offer, exposes the required dialogue
+question IDs, and needs a new acceptance resolving those references. An acceptance
+that reached ready-for-planning, a closed task, or changed requirements cannot use
+this recovery. Existing JSON report/audit storage is reused; no migration is needed.
+
+Offline mode retains a deliberately limited deterministic grammar, including option
+numbers. It does not participate in LLM follow-up routing. Split-only alternatives
+remain restricted to Offline mode.
 
 ### 4.3 受控推荐执行
 

@@ -50,15 +50,15 @@
   function alternatives(options){
     const node=text('section');node.append(text('h3','Options requiring your authorization'));
     const labels={preferred_workshop:()=> 'Remove the required sole workshop',deadline_required:()=> 'Allow late delivery',num_workshop_allowed:value=>`Allow up to ${value} workshops`,objective:()=> 'Use earliest completion'};
-    options.forEach(option=>{
+    options.forEach((option,index)=>{
       const plan=option.plan,item=text('section');
-      item.append(text('strong',Object.entries(option.required_changes).map(([field,value])=>labels[field]?.(value)||field).join('; ')));
+      item.append(text('strong',`Option ${index+1}: `+Object.entries(option.required_changes).map(([field,value])=>labels[field]?.(value)||field).join('; ')));
       item.append(text('p',plan.allocation.map(p=>`${p.workshop_id}: ${p.pieces} pieces`).join(' + ')));
       item.append(text('p',`Estimated completion ${plan.estimated_delivery_date} · Cost ${plan.estimated_cost} · Weighted defect rate ${(100*plan.expected_defect_rate).toFixed(2)}%`));
       if(option.supported_mode==='offline')item.append(text('p','Split planning is currently supported in Offline mode only.'));
       node.append(item);
     });
-    node.append(text('p','Your requirements have not changed. Send the changes you authorize, then review and confirm a new recommendation.','chat-notice'));
+    node.append(text('p','Your requirements have not changed. Accept a specific option to generate a fresh recommendation, then review and confirm it.','chat-notice'));
     return node;
   }
   function registeredDifferences(differences){

@@ -3,8 +3,9 @@ active:
   conversation.intent: chat_v2
   conversation.interpret: chat_v2
   conversation.reply: chat_v2
-  agent.intent: v3
-  allocation.extract: v7
+  agent.intent: v5
+  agent.followup: v1
+  allocation.extract: v9
   agent.reply: v1
   allocation.execute: v1
   agent.response: v1
