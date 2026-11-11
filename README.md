@@ -1,5 +1,7 @@
 # SweaterCo Dispatch Desk — MVP v0.6
 
+**2026-11-11 manual orders:** **Orders → Add order** checks entered details before any order write. Missing orders require creation confirmation; mismatches require field verification and an explicit approve/keep decision with a reason. **Registration history** records checks, proposals, decisions and outcomes. Schema v10 adds durable registration audit tables. See the [registration guide and verification](docs/order_registration.md).
+
 **2026-10-31 fixes:** Incremental constraints, grounded date/name normalization, visible registered-order differences, shorter checked explanations with fallback, persistent message feedback, and current evaluation/CI. See [changes and verification](docs/REMEDIATION_RESULTS_2026-10-31.md) and [safe demo reset](docs/DEMO_RESET.md).
 
 **2026-10-27 allocation explanations:** The `weighted_hybrid` objective integrates zhen's normalized 80% lateness / 20% defect-exposure policy for single-workshop plans. LLM replies now present the plan, method, saved comparison evidence and human review step using the supplied explanation templates. DeepSeek reads `DEEPSEEK_API_KEY` at startup. See [integration and validation notes](docs/STRATEGY_EXPLANATION_INTEGRATION.md).
@@ -67,6 +69,8 @@ Regular users and administrators share the current business workspace. Future ad
 
 ## Using the desk
 
+Use **Orders → Add order** for manual entry, then **Check order**. Matching entries do not create duplicates. To correct an existing unstarted order, verify each changed field, retype its ID and give a reason; **Keep registered values** records a rejection. Creation and corrections remain separate from allocation in Chat. Both regular users and administrators can register orders and view registration history.
+
 Open the conversation assistant at `/chat` (Desk “New request” redirects there). Resolve clarifications, review the recommendation card, then confirm explicitly. Production supports partial/full completion, reversal, lapse, and reassignment from the desk. LLM turns enter `app/agent/runtime.py` → main graph / allocation subgraph / Tool loop in `app/agent/dynamic.py`. Business services live in `app/services/` and FastAPI routes in `app/api/`. After signing in, open the [API documentation](http://127.0.0.1:8000/docs) in the same browser.
 
 ## Prompt and reply organization
@@ -120,6 +124,6 @@ Historical Safari checks covered the homepage, large text, request creation, cla
 
 ## Current boundaries
 
-The server defaults to the latest queue snapshot date in the selected database. Bundled setup suggests `2026-04-01`; personal imports allow another date. Legacy dispatch/session CLIs still require an explicit matching `--as-of` for personal data. Daily approval statistics use the actual UTC date. Application v0.6 uses DB v9, Chat v2 and Session/Parser/Prompt v1, and Pipeline v0.2. The server binds to `127.0.0.1` and runs as one process at low concurrency. Accounts have `user` and `admin` roles and share one business workspace without tenant isolation; chat v2 sessions are owner-scoped.
+The server defaults to the latest queue snapshot date in the selected database. Bundled setup suggests `2026-04-01`; personal imports allow another date. Legacy dispatch/session CLIs still require an explicit matching `--as-of` for personal data. Daily approval statistics use the actual UTC date. Application v0.6 uses DB v10, Chat v2 and Session/Parser/Prompt v1, and Pipeline v0.2. The server binds to `127.0.0.1` and runs as one process at low concurrency. Accounts have `user` and `admin` roles and share one business workspace without tenant isolation; chat v2 sessions are owner-scoped.
 
 Startup configuration is parsed by `app/config/model_settings.py`. Select Offline explicitly with `--backend offline`; an unconfigured LLM request does not silently become an offline request. Configured provider aliases can be selected per session, and existing sessions retain their mode/model. Legacy `--backend deepseek` prefers a configured DeepSeek alias, while `--backend llm` prefers Gemini unless an explicit default overrides it. No real model calls were made for this scope review; the 2026-10-02 Gemini evaluation's HTTP 429 result remains historical. Global model throttling/backoff, workshop capacity editing, automatic expiry, and independent dataset evaluation remain future work.

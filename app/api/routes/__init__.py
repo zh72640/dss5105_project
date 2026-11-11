@@ -4,8 +4,8 @@ Modules: system (health/ai/models), auth, orders/events, desk, chat (Chat v2).
 Legacy ``/api/sessions``, ``/api/requests``, and ``/api/jobs`` were retired.
 """
 from fastapi import APIRouter
-from . import auth, orders, desk, system, chat
+from . import auth, orders, desk, system, chat, order_intake
 
 router = APIRouter(prefix="/api")
-for module in (system, auth, orders, desk, chat):
+for module in (system, auth, orders, desk, chat, order_intake):
     router.include_router(module.router)

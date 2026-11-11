@@ -1,0 +1,12 @@
+.intake-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;border:0;padding:0;margin:0}
+#intake-decision-fields{border:0;padding:0;margin:18px 0}
+#intake-decision-fields>label,#intake-verification>label{margin:16px 0}
+#intake-verify-fields{display:grid;gap:10px;margin:12px 0}
+#intake-review>.button-row{margin-top:18px}
+#intake-comparison td,#intake-history-items td{overflow-wrap:anywhere;white-space:normal}
+#intake-history-items details{padding:16px 0;border-top:1px solid var(--line)}
+#intake-history-items summary{cursor:pointer;font-weight:600;overflow-wrap:anywhere}
+#intake-history-items .table-wrap{margin:12px 0}
+#intake-history-items pre{white-space:pre-wrap;overflow-wrap:anywhere;font-size:.8rem}
+#intake-feedback{overflow-wrap:anywhere}
+@media(max-width:650px){.intake-grid{grid-template-columns:minmax(0,1fr)}#order-intake-dialog,#intake-history-dialog{padding:18px}}

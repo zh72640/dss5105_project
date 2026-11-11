@@ -44,6 +44,8 @@ def create_app(settings: Settings | None = None, *, model_settings=None, model_f
         ("/design-system.css", "design-system.css", "text/css"),
         ("/design-system.js", "design-system.js", "text/javascript"),
         ("/desk-views.js", "desk-views.js", "text/javascript"),
+        ("/order-intake.js", "order-intake.js", "text/javascript"),
+        ("/order-intake.css", "order-intake.css", "text/css"),
         ("/operations.js", "operations.js", "text/javascript"),
         ("/operations.css", "operations.css", "text/css"),
         ("/chat", "chat.html", "text/html"), ("/chat.css", "chat.css", "text/css"),

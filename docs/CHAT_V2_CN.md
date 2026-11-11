@@ -1,6 +1,6 @@
 # Chat v2 user and developer guide
 
-The standalone chat is at `/chat` and shares recommendation confirmation with the workbench. It uses FastAPI, LangGraph, SQLite, the configured model registry, and the existing deterministic allocation planner. The current database schema is version 9; upgrades preserve earlier orders, accounts, sessions, and assignments.
+The standalone chat is at `/chat` and shares recommendation confirmation with the workbench. It uses FastAPI, LangGraph, SQLite, the configured model registry, and the existing deterministic allocation planner. The current database schema is version 10; upgrades preserve earlier orders, accounts, sessions, and assignments.
 
 ## Start and select a mode
 

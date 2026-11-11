@@ -1,13 +1,14 @@
 # Database mapping, transactions, and state semantics
 
-The current SQLite schema is version 9. Migrations `001_initial.sql` through `009_agent_runtime.sql` are applied in order and recorded in `schema_migrations`. Migration 008 adds owner-scoped chat sessions, tasks, turns, messages, and recommendations. Migration 009 adds Agent runs, tool calls, and execution events. LangGraph `SqliteSaver` creates separate checkpoint tables in the same database for execution position; checkpoints are not authoritative business records. The original external “Data Schema2” DDL is not in this repository, so compatibility with that unspecified schema has not been asserted.
+The current SQLite schema is version 10. Migrations `001_initial.sql` through `010_order_intake.sql` are applied in order and recorded in `schema_migrations`. Migration 008 adds owner-scoped chat sessions, tasks, turns, messages, and recommendations. Migration 009 adds Agent runs, tool calls, and execution events. Migration 010 adds manual registration reviews and decisions. LangGraph `SqliteSaver` creates separate checkpoint tables in the same database for execution position; checkpoints are not authoritative business records. The original external “Data Schema2” DDL is not in this repository, so compatibility with that unspecified schema has not been asserted.
 
 ## Tables and authority
 
 | Table | Purpose |
 | --- | --- |
 | `schema_migrations` | Applied migration versions; unknown future versions stop startup. |
-| `orders` | Imported order master data plus source status, business state, version, and completed quantity. |
+| `order_intake_reviews`, `order_intake_decisions` | Submitted/proposed/registered facts, comparisons, explicit create/update/reject decisions, verification, actor, reason, snapshots and replay results. |
+| `orders` | Imported or manually confirmed order master data plus source status, business state, version, and completed quantity. |
 | `workshops` | Capacity, pickup lead, defect rate, cost, eligibility categories, status, and batch limit. |
 | `workshop_queue` | One row per workshop with current queue, baseline queue, and queue business date. |
 | `working_order` | Active order/workshop pieces, completed pieces, capacity at assignment, and unconsumed queue reservation. |

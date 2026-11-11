@@ -439,7 +439,7 @@ HTTP `/api/events` 和 Agent 的 `record_production_event` 复用同一服务。
 | `desk_users`、`login_sessions` | 账号、角色、密码 hash、登录 token hash 与有效期 |
 | LangGraph checkpoint 表 | Main Graph / Executor 的消息、节点位置、Skill 快照与工作状态 |
 
-`Database` 使用迁移版本 1–9，写事务由 `BEGIN IMMEDIATE` 保护。只有新数据库初始化时导入种子数据，已有数据库不会重复导入订单。计划使用业务日期，审计使用实际 UTC 时间。
+`Database` 使用迁移版本 1–10，写事务由 `BEGIN IMMEDIATE` 保护。只有新数据库初始化时导入种子数据，已有数据库不会重复导入订单。计划使用业务日期，审计使用实际 UTC 时间。
 
 ### 8.2 不同层的状态
 
@@ -608,3 +608,15 @@ only upon new optional authorization; any additional saved issue prevents that
 recovery. Historical audit events and business records remain unchanged. Tests use
 scripted models and temporary SQLite fixtures, including successful preview,
 missing information, unsupported hard constraints, replay, and saved-task recovery.
+
+
+### Manual order registration
+
+Orders now includes Add order and Registration history. `/api/order-intake/*` calls
+`app/services/order_intake.py` and `app/db/order_intake_repository.py` directly.
+Checks save comparisons without changing orders. Explicit decisions recheck owner,
+version, facts and lifecycle restrictions in one transaction; approved corrections
+require secondary field verification and increment the order version. Both approval
+and rejection preserve submitted values, before/after facts and reasons. Migration
+010 adds `order_intake_reviews` and `order_intake_decisions`; Chat allocation guards
+continue to reject outdated facts. See [manual registration](order_registration.md).
