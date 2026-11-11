@@ -610,6 +610,18 @@ scripted models and temporary SQLite fixtures, including successful preview,
 missing information, unsupported hard constraints, replay, and saved-task recovery.
 
 
+### Conversational order registration
+
+Requests also routes `order_registration` through a dedicated Main Graph node.
+The model extracts evidence-backed partial fields; the chat registration service
+persists and validates a separate task in `chat_order_registration`. It reuses
+the manual service for comparisons and decisions. `chat_registration_steps`
+preserves prepared results across interrupted graph finalization. Explicit
+`order_decision` turns bind the saved review and order version to the current
+owner and session version; order changes, decisions and chat messages commit
+together. No allocation Tool or calculation is duplicated. See
+[the file-level plan and workflow](chat_order_registration.md).
+
 ### Manual order registration
 
 Orders now includes Add order and Registration history. `/api/order-intake/*` calls

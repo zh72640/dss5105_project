@@ -14,6 +14,8 @@ def snapshot(connection, session_id, owner):
         task[field] = json.loads(task.pop(field + '_json'))
     session['task'] = task
     session['recommendation'] = latest_recommendation(connection, session_id)
+    from app.db.chat_registration_repository import get as registration
+    session['order_registration'] = registration(connection, session_id)
     return session
 
 

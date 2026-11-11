@@ -317,7 +317,7 @@ class ChatBehavior(unittest.TestCase):
     def test_v7_upgrade_and_failed_migration_preserve_business_records(self):
         for fail in (False,True):
             path=str(Path(self.temp.name)/f'v7-{fail}.sqlite3')
-            with patch.object(Database,'_upgrade_chat'), patch.object(Database,'_upgrade_agent'), patch.object(Database,'_upgrade_order_intake'):
+            with patch.object(Database,'_upgrade_chat'), patch.object(Database,'_upgrade_agent'), patch.object(Database,'_upgrade_order_intake'), patch.object(Database,'_upgrade_chat_registration'):
                 with Database(path) as db:
                     self.assertEqual(db.connection.execute('SELECT MAX(version) FROM schema_migrations').fetchone()[0],7)
                     before=[tuple(r) for r in db.connection.execute('SELECT * FROM orders')]

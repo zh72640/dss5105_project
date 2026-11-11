@@ -131,6 +131,7 @@
       if(message.role==='user'){
         title=meta.intent==='confirm_allocation'?'Confirmation requested':meta.intent==='reject_recommendation'?'Rejection requested':meta.intent==='cancel_task'?'Closure requested':submitted?'Message sent':'Request submitted';submitted=true;
       }else if(meta.committed){title='Allocation committed';committed=true;}
+      else if(meta.intent==='order_registration')title=({CREATED:'Order registered',UPDATED:'Order details updated',REJECTED:'Order changes declined'}[meta.order_decision_outcome]||(meta.order_decision_outcome?'Order decision recorded':{REVIEW:'Order details checked',COLLECTING:'Order details requested',COMPLETED:'Existing order matched',CANCELLED:'Order registration cancelled'}[meta.registration_status]));
       else if(meta.intent==='reject_recommendation')title='Recommendation rejected';
       else if(meta.intent==='cancel_task'){title='Request closed';cancelled=true;}
       else if(meta.recommendation_id&&!plans.has(meta.recommendation_id)){title='Recommendation prepared';plans.add(meta.recommendation_id);}

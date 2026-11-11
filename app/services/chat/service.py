@@ -91,6 +91,8 @@ def inspect(sid, *, owner, db_path):
     with Database(db_path) as db:
         session=require_session(db.connection,sid,owner)
         refresh_validity(db.connection,session)
+        from app.services.chat.order_registration import active
+        session["active_task"] = "order_registration" if active(session.get("order_registration")) else "allocation"
         return session
 
 
@@ -186,9 +188,21 @@ def already_confirmed(c, sid, rid, owner):
     return None
 
 
-def turn(sid, *, owner, request_id, expected_version, db_path, action='message', message='', recommendation_id=None, registry=None):
+def turn(sid, *, owner, request_id, expected_version, db_path, action='message', message='', recommendation_id=None, registry=None, order_decision=None):
     with Database(db_path) as check_db:
         selected = require_session(check_db.connection, sid, owner)
+        from app.services.chat import order_registration
+        if action == 'order_decision':
+            if order_decision is None or message or recommendation_id:
+                raise ChatError('INVALID_FIELDS', 'Supply only the saved order decision.', 400)
+            return order_registration.turn(sid, owner=owner, request_id=request_id,
+                expected_version=expected_version, db_path=db_path, decision=order_decision)
+        if order_decision is not None:
+            raise ChatError('INVALID_FIELDS', 'Order decisions require an explicit order_decision action.', 400)
+        if selected['mode'] == 'offline' and action == 'message' and (
+                order_registration.active(selected.get('order_registration')) or order_registration.starts_registration(message)):
+            return order_registration.turn(sid, owner=owner, request_id=request_id,
+                expected_version=expected_version, db_path=db_path, message=message)
         if selected['mode'] == 'llm':
             if action == 'message':
                 from app.services.chat.agent_turns import turn as agent_turn
@@ -261,6 +275,8 @@ def turn(sid, *, owner, request_id, expected_version, db_path, action='message',
             if current['version']!=expected_version or current['status']!='OPEN':
                 raise ChatError('SESSION_VERSION_CONFLICT','The session changed. Read its latest state.')
             session=current
+            if action == 'archive':
+                order_registration.archive_in_transaction(c, session, owner=owner, request_id=request_id)
             task=deepcopy(session['task'])
             previous_report=deepcopy(task['report'])
             previous_report['pending_alternatives']=pending_options(c,task)

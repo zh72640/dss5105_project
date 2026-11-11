@@ -48,7 +48,7 @@ class AccountRoleTests(unittest.TestCase):
     def old_database(self, version, username="student"):
         upgrades = {2: "_upgrade_lifecycle", 3: "_upgrade_sessions", 4: "_upgrade_desk",
                     5: "_upgrade_jobs", 6: "_upgrade_job_recovery", 7: "_upgrade_account_roles", 8: "_upgrade_chat",
-                    9: "_upgrade_agent", 10: "_upgrade_order_intake"}
+                    9: "_upgrade_agent", 10: "_upgrade_order_intake", 11: "_upgrade_chat_registration"}
         with ExitStack() as patches:
             for target, method in upgrades.items():
                 if target > version:

@@ -23,8 +23,9 @@ function controller(fetch,options={}){
     location,history:{replaceState(_state,_title,url){location.href=String(url);}},URL,
     crypto:{randomUUID:()=> sequence++?'client-key-'+sequence:'fixed-client-key'},console,fetch});
   vm.runInContext(fs.readFileSync(path.join(__dirname,'../app/ui/chat-common.js'),'utf8'),context);
+  vm.runInContext(fs.readFileSync(path.join(__dirname,'../app/ui/chat-registration.js'),'utf8'),context);
   let source=fs.readFileSync(path.join(__dirname,'../app/ui/chat.js'),'utf8');
-  source=source.replace('boot().catch(e=>status(e.message));',`globalThis.controller={boot,load,confirm,deliver,send,newSession,endRequest,controls,synchronize,button:id=>$(id),storage,location,
+  source=source.replace('boot().catch(e=>status(e.message));',`globalThis.controller={boot,load,confirm,decideRegistration,deliver,send,newSession,endRequest,controls,synchronize,button:id=>$(id),storage,location,
     restorePending:p=>{saveOperation(scope,activeId,p);},
     state:()=>({session,pending:pending(),busy:busy(),operations:scope?.operations,activeId,typing:!!replyAnimation}),
     setSession:s=>{user={username:'alice'};if(!scope)scope={key:key(),operations:{...(savedState(key()).operations||{})}};session=s;activeId=s?.session_id||null;}};`);
@@ -615,4 +616,25 @@ test('structured candidates persist as tables and selection sends a message rath
   assert.equal(stale.disabled,true);
   await stale.listeners.click();
   assert.equal(posts.length,1);
+});
+
+test('registration decisions keep review and session versions across uncertain retries',async()=>{
+  const calls=[];let fail=true;
+  const registered={...snapshot('s'),order_registration:{status:'REVIEW',review_id:'r1',draft:{order_id:'ORD-901'},issues:[],review:{review_id:'r1',order_id:'ORD-901',match:'missing',expected_version:null,differences:[]}}};
+  const api=controller(async(url,options)=>{
+    if(options?.method==='POST'){calls.push(JSON.parse(options.body));if(fail){fail=false;throw Error('response lost');}return response({session_id:'s',assistant_message:{content:'Decision saved'}});}
+    return response(url.includes('/messages')?{items:[],next_cursor:null}:url==='/api/chat/sessions?after=0&limit=100'?{items:[],next_cursor:null}:registered);
+  });api.setSession(registered);
+  const decision={review_id:'r1',action:'create',expected_version:null,reason:'Verified'};
+  await api.decideRegistration(registered.order_registration.review,decision);
+  assert.equal(api.state().pending.body.action,'order_decision');
+  await api.deliver();assert.equal(calls.length,2);assert.deepEqual(calls[0],calls[1]);
+  assert.equal(calls[0].expected_version,1);assert.equal(calls[0].order_decision.expected_version,null);
+});
+
+test('a registration card from another request cannot submit to the selected session',async()=>{
+  let count=0;const api=controller(async()=>{count++;return response({});});
+  api.setSession({...snapshot('new'),order_registration:{status:'REVIEW',review_id:'new-review'}});
+  await api.decideRegistration({review_id:'old-review'},{review_id:'old-review',action:'create',expected_version:null,reason:'Verified'});
+  assert.equal(count,0);assert.match(api.button('chat-status').textContent,/no longer current/);
 });

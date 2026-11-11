@@ -60,3 +60,12 @@ test('decision timeline does not present retained recommendation IDs as new plan
   assert.equal(events.at(-1).title,'Request archived');
   assert.ok(!events.some(e=>/committed|confirmed/.test(e.title)));
 });
+
+test('registration timeline distinguishes reviews and saved decisions from allocation',()=>{
+  const events=chat.decisionEvents({task:{state:'DRAFT'}},[
+    {role:'assistant',metadata:{intent:'order_registration',registration_status:'REVIEW',recommendation_id:'old-plan'}},
+    {role:'assistant',metadata:{intent:'order_registration',registration_status:'COMPLETED',order_decision_outcome:'CREATED'}},
+    {role:'assistant',metadata:{intent:'order_registration',registration_status:'CANCELLED',order_decision_outcome:'REJECTED'}},
+  ]);
+  assert.deepEqual(events.map(e=>e.title),['Request created','Order details checked','Order registered','Order changes declined']);
+});

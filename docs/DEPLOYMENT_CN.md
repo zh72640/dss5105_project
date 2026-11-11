@@ -1,6 +1,6 @@
 # Deployment, upgrade, and recovery
 
-This guide keeps its historical filename for existing links. The current local MVP uses FastAPI, Uvicorn, LangGraph, and SQLite schema version 10. It is intended for a single local server process bound to `127.0.0.1`; public hosting, tenant isolation, and HTTPS termination are outside this setup.
+This guide keeps its historical filename for existing links. The current local MVP uses FastAPI, Uvicorn, LangGraph, and SQLite schema version 11. It is intended for a single local server process bound to `127.0.0.1`; public hosting, tenant isolation, and HTTPS termination are outside this setup.
 
 ## First run
 
@@ -54,7 +54,7 @@ with closing(sqlite3.connect(f"file:{source_path.as_posix()}?mode=ro", uri=True)
 print(backup_path)
 ```
 
-Backups include business data, account password hashes, login token hashes, Agent run traces, and LangGraph checkpoints. Store them privately and do not commit them to Git. After a code update and dependency sync, starting the application applies missing migrations transactionally. Unknown future schema versions are refused. Schema version 10 adds manual order review and decision audit tables; it does not replace the established production tables.
+Backups include business data, account password hashes, login token hashes, Agent run traces, and LangGraph checkpoints. Store them privately and do not commit them to Git. After a code update and dependency sync, starting the application applies missing migrations transactionally. Unknown future schema versions are refused. Schema version 11 adds manual order review and decision audit tables; it does not replace the established production tables.
 
 ## Restore and restart behavior
 

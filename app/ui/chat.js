@@ -56,7 +56,7 @@
   function clearConversation(){
     stopTyping(false);transcript=[];
     session=null;loading=false;epoch++;$('chat-input').value='';$('chat-messages').replaceChildren();$('chat-pending').replaceChildren();$('chat-announcement').textContent='';
-    $('chat-validation').hidden=true;$('chat-plan').replaceChildren();$('chat-plan').hidden=true;
+    $('chat-validation').hidden=true;$('chat-registration').replaceChildren();$('chat-registration').hidden=true;$('chat-plan').replaceChildren();$('chat-plan').hidden=true;
     $('review-placeholder').hidden=false;$('chat-decision-timeline').replaceChildren(C.text('li','Start a request to begin the record.'));$('chat-empty').hidden=false;$('chat-title').textContent='New request';$('chat-subtitle').textContent='Enter your request to begin.';status('');
   }
   function status(value){$('chat-status').textContent=value||'';}
@@ -146,7 +146,8 @@
   }
   function controls(){
     const operation=pending(),working=busy(),blocked=working||!!operation||starting||loading;
-    $('chat-review-actions').hidden=!session||session.status==='ARCHIVED'||session.task?.state==='CONFIRMED';$('chat-reject-plan').disabled=blocked||!C.canConfirm(session?.recommendation);$('chat-not-allocated').disabled=blocked||!session;
+    const registrationActive=['COLLECTING','REVIEW'].includes(session?.order_registration?.status);
+    $('chat-review-actions').hidden=registrationActive||!session||session.status==='ARCHIVED'||session.task?.state==='CONFIRMED';$('chat-reject-plan').disabled=blocked||!C.canConfirm(session?.recommendation);$('chat-not-allocated').disabled=blocked||!session;
     $('chat-send').disabled=blocked||session?.status==='ARCHIVED';
     $('chat-new').disabled=starting||(!session&&working&&activeId?.startsWith('create:'));
     $('chat-input').disabled=blocked||session?.status==='ARCHIVED';
@@ -154,6 +155,7 @@
     $('chat-retry').hidden=!operation||working;$('chat-retry').disabled=working||operation?.run?.retryable===false;
     $('chat-end-request').hidden=!endTarget();$('chat-end-request').disabled=working;$('chat-working').hidden=!working;
     document.querySelectorAll('.chat-recommendation button').forEach(n=>n.disabled=blocked||!C.canConfirm(session?.recommendation));
+    document.querySelectorAll('#chat-registration fieldset').forEach(n=>n.disabled=blocked||session?.status!=='OPEN'||session?.order_registration?.status!=='REVIEW'||!!session?.order_registration?.issues?.length);
     renderPending();
   }
   async function allPages(url){let out=[],cursor=0;do{const data=await C.request(`${url}${url.includes('?')?'&':'?'}after=${cursor}&limit=100`);out.push(...data.items);cursor=data.next_cursor;}while(cursor!=null);return out;}
@@ -182,7 +184,7 @@
     const target=$('chat-decision-timeline');target.replaceChildren();
     const add=(title,when)=>{const row=C.text('li',title);if(when)row.append(C.text('small',new Date(when).toLocaleString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})));target.append(row);};
     C.decisionEvents(session,messages).forEach(event=>add(event.title,event.when));
-    $('review-placeholder').hidden=!!Object.keys(session.task.report||{}).length||!!session.recommendation;
+    $('review-placeholder').hidden=!!Object.keys(session.task.report||{}).length||!!session.recommendation||!!session.order_registration;
   }
   function renderReport(){
     const target=$('chat-validation'),report=session.task.report;target.replaceChildren();target.hidden=!Object.keys(report).length;
@@ -210,7 +212,10 @@
       $('chat-subtitle').textContent=`Business date ${session.business_date} · ${stateNames[session.task.state]} · ${session.mode==='offline'?'Offline rules demo':session.model_key}`;
       renderMessages(messages,reply);
       if(outgoing.get(runningKey(ownerScope,sid))?.received)outgoing.delete(runningKey(ownerScope,sid));
-      renderReport();$('chat-plan').replaceChildren();$('chat-plan').hidden=!session.recommendation;
+      const registration=$('chat-registration');registration.replaceChildren();registration.hidden=!session.order_registration;
+      if(session.order_registration)registration.append(ChatRegistration.card(session.order_registration,decideRegistration));
+      renderReport();if(['COLLECTING','REVIEW'].includes(session.order_registration?.status))$('chat-validation').hidden=true;
+      $('chat-plan').replaceChildren();$('chat-plan').hidden=!session.recommendation;
       if(session.recommendation)$('chat-plan').append(C.card(session.recommendation,confirm));renderTimeline(messages);$('chat-business-date').textContent=typeof DispatchUI!=='undefined'?DispatchUI.date(session.business_date):session.business_date;
       persist();sessionURL(sid);controls();status(pending()?pendingNotice():'');if(followLatest||nearBottom||oldId!==sid)scroll.scrollTop=scroll.scrollHeight;return true;
     }catch(error){if(token===epoch&&scope===ownerScope)throw error;return false;}
@@ -299,6 +304,11 @@
     if(selectedIndex<0){status('This option is no longer current. Ask for other options again.');return;}
     const part=option.plan.allocation[0];
     await send('message',`Use option ${selectedIndex+1} (${part.workshop_name||part.workshop_id}, ${part.workshop_id}), including its listed requirement changes.`);
+  }
+  async function decideRegistration(review,decision){
+    if(busy()||pending()||starting||loading)return;
+    if(session?.status!=='OPEN'||session?.order_registration?.review_id!==review.review_id){status('This order review is no longer current. Refresh the request.');return;}
+    saveOperation(scope,activeId,{url:`/api/chat/sessions/${session.session_id}/turns`,body:{request_id:crypto.randomUUID(),expected_version:session.version,action:'order_decision',order_decision:decision}});await deliver();
   }
   async function confirm(rec){
     if(busy()||pending()||starting||loading||rec.session_id!==session?.session_id)return;

@@ -77,7 +77,7 @@ class WorkshopFeasibilityQuestions(unittest.TestCase):
         self.assertEqual(trace['tool_calls'],[])
         calls=[e['detail'] for e in trace['events'] if e['event_type']=='model_call']
         self.assertEqual([c['stage'] for c in calls],['intent','extract'])
-        self.assertEqual(calls[0]['prompt']['version'],'v6')
+        self.assertEqual(calls[0]['prompt']['version'],'v7')
         self.assertEqual(calls[1]['prompt']['version'],'v12')
         self.assertFalse(result['committed'])
         with Database(self.path) as db:

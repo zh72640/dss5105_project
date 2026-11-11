@@ -83,14 +83,14 @@ def record_turn_start(connection, *, turn_id, session_id, request_id, fingerprin
 
 def record_message_pair(connection, *, session_id, turn_id, sequence, user_message,
                         assistant_message, feedback_id, recommendation_id,
-                        workflow="dynamic_agent_v1", alternatives=None):
+                        workflow="dynamic_agent_v1", alternatives=None, metadata=None):
     import uuid
     now = utc_now()
     for offset, role, content, mid in ((1, "user", user_message, uuid.uuid4().hex),
                                        (2, "assistant", assistant_message, feedback_id)):
         connection.execute("INSERT INTO chat_messages VALUES (?,?,?,?,?,?,?,?)",
             (mid, session_id, turn_id, sequence + offset, role, content,
-             json.dumps({"workflow": workflow, "recommendation_id": recommendation_id,
+             json.dumps({"workflow": workflow, "recommendation_id": recommendation_id, **(metadata or {}),
                          **({"alternatives": alternatives} if role == "assistant" and alternatives else {})}), now))
     connection.execute("UPDATE chat_sessions SET version=version+1,updated_at=? WHERE session_id=?",
                        (now, session_id))

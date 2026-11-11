@@ -3,6 +3,7 @@ from typing import Any, Literal
 from pydantic import Field, model_validator
 from app.schemas.api import Input, Output, Identifier, Version, Objective
 from app.schemas.allocation import AllocationRecommendationResult
+from app.schemas.order_registration import RegistrationDecision
 
 Intent = Literal['new_request', 'allocate_request', 'answer_clarification', 'modify_constraints',
     'request_alternatives', 'select_workshop',
@@ -21,14 +22,19 @@ class ChatCreateInput(Input):
 class ChatTurnInput(Input):
     request_id: Identifier
     expected_version: Version
-    action: Literal['message', 'new_request', 'confirm', 'archive'] = 'message'
+    action: Literal['message', 'new_request', 'confirm', 'archive', 'order_decision'] = 'message'
     message: str = Field(default='', max_length=10000)
     recommendation_id: Identifier | None = None
+    order_decision: RegistrationDecision | None = None
 
     @model_validator(mode='after')
     def confirmation_target(self):
         if self.action=='confirm' and not self.recommendation_id:
             raise ValueError('confirmation requires recommendation_id')
+        if (self.action == 'order_decision') != (self.order_decision is not None):
+            raise ValueError('order_decision action requires its decision payload exclusively')
+        if self.action == 'order_decision' and (self.message or self.recommendation_id):
+            raise ValueError('Send revisions separately before deciding on an order')
         return self
 
 

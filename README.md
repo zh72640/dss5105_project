@@ -1,6 +1,6 @@
 # SweaterCo Dispatch Desk — MVP v0.6
 
-**2026-11-11 manual orders:** **Orders → Add order** checks entered details before any order write. Missing orders require creation confirmation; mismatches require field verification and an explicit approve/keep decision with a reason. **Registration history** records checks, proposals, decisions and outcomes. Schema v10 adds durable registration audit tables. See the [registration guide and verification](docs/order_registration.md).
+**2026-11-11 order entry:** **Requests** accepts an order in one sentence and asks for missing details across messages. The saved review card requires explicit creation confirmation or verified correction; approvals and rejections share **Orders → Registration history** with the manual **Add order** form. Schema v11 preserves conversational drafts and retry results. See [conversational registration](docs/chat_order_registration.md) and the [manual registration guide](docs/order_registration.md).
 
 **2026-10-31 fixes:** Incremental constraints, grounded date/name normalization, visible registered-order differences, shorter checked explanations with fallback, persistent message feedback, and current evaluation/CI. See [changes and verification](docs/REMEDIATION_RESULTS_2026-10-31.md) and [safe demo reset](docs/DEMO_RESET.md).
 
@@ -70,6 +70,8 @@ Regular users and administrators share the current business workspace. Future ad
 ## Using the desk
 
 Use **Orders → Add order** for manual entry, then **Check order**. Matching entries do not create duplicates. To correct an existing unstarted order, verify each changed field, retype its ID and give a reason; **Keep registered values** records a rejection. Creation and corrections remain separate from allocation in Chat. Both regular users and administrators can register orders and view registration history.
+
+Alternatively, open **Requests** and send: `Add order ORD-901 for ABC: 300 knitted vests, TOPS, ordered 2026-11-11, due 2026-11-25.` Reply with any missing details, then use the review card to confirm or decline. After registration, send `Allocate ORD-901.` to request a separate allocation preview. LLM mode supports contextual phrasing; Offline mode accepts explicit field labels and complete dates.
 
 Open the conversation assistant at `/chat` (Desk “New request” redirects there). Resolve clarifications, review the recommendation card, then confirm explicitly. Production supports partial/full completion, reversal, lapse, and reassignment from the desk. LLM turns enter `app/agent/runtime.py` → main graph / allocation subgraph / Tool loop in `app/agent/dynamic.py`. Business services live in `app/services/` and FastAPI routes in `app/api/`. After signing in, open the [API documentation](http://127.0.0.1:8000/docs) in the same browser.
 

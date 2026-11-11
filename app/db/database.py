@@ -6,7 +6,7 @@ from app.db.import_data import load_seed
 from app.core import admin_account
 
 ROOT = Path(__file__).resolve().parents[2]
-DB_VERSION = 10
+DB_VERSION = 11
 
 
 def utc_now():
@@ -38,7 +38,7 @@ class Database:
                 if seed_data is not None or initial_account is not None:
                     raise ValueError("Database is already initialized; existing data was not changed.")
                 version = self.connection.execute("SELECT MAX(version) FROM schema_migrations").fetchone()[0]
-                if version not in (1, 2, 3, 4, 5, 6, 7, 8, 9, DB_VERSION):
+                if version not in (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, DB_VERSION):
                     raise sqlite3.DatabaseError("unsupported_database_version")
                 if version == 1:
                     self._upgrade_lifecycle()
@@ -58,6 +58,8 @@ class Database:
                     self._upgrade_agent()
                 if version < 10:
                     self._upgrade_order_intake()
+                if version < 11:
+                    self._upgrade_chat_registration()
                 return
             seed_data = seed_data or load_seed()
             sql = (Path(__file__).parent / "migrations/001_initial.sql").read_text()
@@ -87,11 +89,19 @@ class Database:
             self._upgrade_chat()
             self._upgrade_agent()
             self._upgrade_order_intake()
+            self._upgrade_chat_registration()
             if initial_account is not None:
                 username, encoded_password = initial_account
                 self.connection.execute(
                     "INSERT INTO desk_users (username,password_hash,created_at,role) VALUES (?,?,?,'user')",
                     (username, encoded_password, utc_now()))
+
+    def _upgrade_chat_registration(self):
+        sql = (Path(__file__).parent / 'migrations/011_chat_order_registration.sql').read_text(encoding='utf-8')
+        for statement in sql.split(';'):
+            if statement.strip():
+                self.connection.execute(statement)
+        self.connection.execute('INSERT INTO schema_migrations VALUES (?,?)', (11, utc_now()))
 
     def _upgrade_order_intake(self):
         sql = (Path(__file__).parent / 'migrations/010_order_intake.sql').read_text(encoding='utf-8')

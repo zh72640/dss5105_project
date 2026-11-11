@@ -115,6 +115,10 @@ def _turn(sid, *, owner, request_id, expected_version, db_path, message, registr
             if body is not None:
                 body = reconcile_response(body, session)
                 reply = body['explanation']
+            registration = session.get("order_registration") if state.get("source_node") == "order_registration" else None
+            if registration:
+                from app.services.chat.order_registration import reply as registration_reply
+                reply = registration_reply(registration)
             reply = _verified_reply(reply, state, task, rec)
             if body is not None:
                 body['explanation'] = reply
@@ -132,10 +136,13 @@ def _turn(sid, *, owner, request_id, expected_version, db_path, message, registr
                 input_json=encoded({"message": message}), telemetry_json=encoded(telemetry))
             agent_repository.record_message_pair(connection, session_id=sid, turn_id=turn_id,
                 sequence=sequence, user_message=message, assistant_message=reply,
-                feedback_id=feedback_id, recommendation_id=(visible_rec_id if body is not None else
+                feedback_id=feedback_id, recommendation_id=(None if registration else visible_rec_id if body is not None else
                     rec['recommendation_id'] if rec else None),
                 workflow=state.get("workflow_version", "dynamic_agent_v1"),
-                alternatives=(body or {}).get("alternatives"))
+                alternatives=(body or {}).get("alternatives"),
+                metadata={"intent": "order_registration", "registration_status": registration["status"],
+                          "order_review_id": registration["review_id"],
+                          "order_decision_outcome": ((registration.get("review") or {}).get("decision") or {}).get("outcome")} if registration else None)
             response = {**(body or {}), "session_id": sid, "session_version": expected_version + 1, "turn_id": turn_id,
                         "intent": "agent", "task_state": task["state"], "validation_report": task["report"],
                         "assistant_message": {"message_id": feedback_id, "content": reply, "role": "assistant"},
@@ -146,6 +153,8 @@ def _turn(sid, *, owner, request_id, expected_version, db_path, message, registr
                         "pending_question": (state.get("pending_question") or
                             (state.get("task_result") or {}).get("result", {}).get("question") if
                             isinstance((state.get("task_result") or {}).get("result"), dict) else None)}
+            if registration:
+                response.update(intent="order_registration", order_registration=registration, recommendation_id=None, cards=[])
             response["session"] = require_session(connection, sid, owner)
             agent_repository.finalize_turn(connection, turn_id, encoded(response), request_id)
             _event(connection, sid, request_id, "finish" if not state.get("pending_question") else "wait_user",

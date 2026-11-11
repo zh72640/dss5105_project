@@ -50,3 +50,6 @@
 
 .chat-table-scroll th,.chat-table-scroll td{overflow-wrap:normal}
 .chat-options-table{min-width:760px}.chat-options-table td:nth-child(3){white-space:nowrap}
+
+.chat-registration-card{padding:16px;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+.chat-registration-card dl{display:grid;gap:10px}.chat-registration-card dl>div{display:flex;justify-content:space-between;gap:12px}.chat-registration-card dd{margin:0;text-align:right;overflow-wrap:anywhere}.chat-registration-card fieldset{border:0;padding:0;display:grid;gap:12px;min-width:0}.chat-registration-card label{display:grid;gap:6px}.chat-registration-card .registration-difference{display:flex;align-items:flex-start;gap:8px}.registration-difference input{width:auto;flex:none}.registration-actions{display:grid;gap:8px}.chat-registration-card textarea{width:100%;min-width:0}

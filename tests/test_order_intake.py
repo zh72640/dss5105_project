@@ -266,7 +266,7 @@ class RegistrationMigrationTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             for fail in (False, True):
                 path = str(Path(directory) / f"v9-{fail}.sqlite3")
-                with patch.object(Database, "_upgrade_order_intake"):
+                with patch.object(Database, "_upgrade_order_intake"), patch.object(Database, "_upgrade_chat_registration"):
                     with Database(path) as db:
                         before = [tuple(r) for r in db.connection.execute("SELECT * FROM orders")]
                         if fail:

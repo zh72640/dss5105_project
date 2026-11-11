@@ -1,6 +1,6 @@
 # Database mapping, transactions, and state semantics
 
-The current SQLite schema is version 10. Migrations `001_initial.sql` through `010_order_intake.sql` are applied in order and recorded in `schema_migrations`. Migration 008 adds owner-scoped chat sessions, tasks, turns, messages, and recommendations. Migration 009 adds Agent runs, tool calls, and execution events. Migration 010 adds manual registration reviews and decisions. LangGraph `SqliteSaver` creates separate checkpoint tables in the same database for execution position; checkpoints are not authoritative business records. The original external “Data Schema2” DDL is not in this repository, so compatibility with that unspecified schema has not been asserted.
+The current SQLite schema is version 11. Migrations `001_initial.sql` through `011_chat_order_registration.sql` are applied in order and recorded in `schema_migrations`. Migration 008 adds owner-scoped chat sessions, tasks, turns, messages, and recommendations. Migration 009 adds Agent runs, tool calls, and execution events. Migration 010 adds manual registration reviews and decisions. Migration 011 adds conversational registration drafts and preparation replay records. LangGraph `SqliteSaver` creates separate checkpoint tables in the same database for execution position; checkpoints are not authoritative business records. The original external “Data Schema2” DDL is not in this repository, so compatibility with that unspecified schema has not been asserted.
 
 ## Tables and authority
 
@@ -19,6 +19,7 @@ The current SQLite schema is version 10. Migrations `001_initial.sql` through `0
 | `desk_users`, `login_sessions` | Salted account password hashes, roles, and hashed expiring login tokens. |
 | `jobs` | Background session revisions, idempotency fingerprint, status, attempts, lease, retry time, and result. |
 | `chat_sessions`, `chat_allocation_tasks` | Owner-scoped current chat conversation and deterministic task state/version. |
+| `chat_order_registration`, `chat_registration_steps` | Session-scoped registration drafts, current review references, clarification and durable preparation results. |
 | `chat_turns`, `chat_messages` | Durable chat turns, request fingerprint, response, and ordered messages. |
 | `chat_recommendations` | Versioned recommendation, validity status, plan and facts hashes, and actual confirmation result. |
 | `chat_agent_runs` | Agent request ID, session, fingerprint, expected version, and run status for crash recovery. |

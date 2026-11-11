@@ -11,6 +11,7 @@ from app.agent.allocation_graph import build_graph as build_allocation_graph
 from app.agent.followup import resolve as resolve_followup, alternatives as prepare_alternatives
 from app.agent.explanation import explain
 from app.agent.response import assemble
+from app.agent.order_registration import run as register_order
 from app.agent.dynamic import AgentContext, final_text, record_model_response, record_model_start
 from app.llm.errors import BackendError, check_response, check_structured, text_content, translate_error
 from app.llm.json_output import json_text
@@ -28,7 +29,7 @@ MAIN_WORKFLOWS = frozenset({'main_v1', CURRENT_WORKFLOW})
 
 INTENT_SCHEMA = {
     "type": "object", "properties": {
-        "task_type": {"type": "string", "enum": ["allocation", "followup", "compat"]}
+        "task_type": {"type": "string", "enum": ["allocation", "followup", "compat", "order_registration"]}
     }, "required": ["task_type"], "additionalProperties": False,
 }
 
@@ -63,6 +64,8 @@ def _answers_pending_due_date(message, session):
 def identify(state: MainState, runtime: Runtime[AgentContext]):
     context = runtime.context
     session = chat.inspect(context.session_id, owner=context.owner, db_path=context.db_path)
+    if session.get("active_task") == "order_registration":
+        return {"route": "order_registration", "workflow_version": state.get("workflow_version", CURRENT_WORKFLOW)}
     if _answers_pending_due_date(context.user_message, session):
         return {"route": "allocation", "workflow_version": state.get("workflow_version", CURRENT_WORKFLOW)}
     with Database(context.db_path) as db:
@@ -94,7 +97,7 @@ def identify(state: MainState, runtime: Runtime[AgentContext]):
     try:
         parsed = json.loads(json_text(text_content(check_response(raw)))) if spec.output_method == "prompt" else check_structured(result)[0]
         route = parsed.get("task_type")
-        if route not in ("allocation", "followup", "compat"):
+        if route not in ("allocation", "followup", "compat", "order_registration"):
             raise ValueError("INVALID_TASK_ROUTE")
     except (ValueError, KeyError, TypeError, AttributeError):
         return {"route": "failed", "workflow_version": state.get('workflow_version', CURRENT_WORKFLOW),
@@ -175,6 +178,8 @@ def _build_graph(checkpointer, *, legacy):
     graph = StateGraph(MainState, context_schema=AgentContext)
     graph.add_node("identify", identify)
     graph.add_node("allocation", allocation)
+    graph.add_node("order_registration", register_order)
+    graph.add_edge("order_registration", "finish")
     graph.add_node("followup", resolve_followup)
     graph.add_node("alternatives", prepare_alternatives)
     graph.add_node("compat", compatibility)
@@ -186,7 +191,7 @@ def _build_graph(checkpointer, *, legacy):
         graph.add_node("response", assemble)
     graph.add_edge(START, "identify")
     graph.add_conditional_edges("identify", lambda state: state["route"],
-                                {"allocation": "allocation", "followup": "followup", "compat": "compat", "failed": "finish"})
+                                {"allocation": "allocation", "followup": "followup", "compat": "compat", "order_registration": "order_registration", "failed": "finish"})
     graph.add_conditional_edges("followup", lambda state: state['followup_route'],
                                 {"allocation": "allocation", "alternatives": "alternatives", "compat": "compat", "finish": "finish"})
     if legacy:

@@ -20,6 +20,15 @@ def decision_by_review(connection, review_id):
     return connection.execute("SELECT * FROM order_intake_decisions WHERE review_id=?", (review_id,)).fetchone()
 
 
+def review_snapshot(connection, row):
+    review = json.loads(row['review_json'])
+    decision = decision_by_review(connection, row['review_id'])
+    if decision:
+        review['decision'] = {**json.loads(decision['response_json']),
+                              'evidence': json.loads(decision['decision_json'])}
+    return review
+
+
 def save_review(connection, review, fingerprint):
     connection.execute("""INSERT INTO order_intake_reviews
         (review_id,request_id,actor,order_id,fingerprint,review_json,created_at) VALUES (?,?,?,?,?,?,?)""",
