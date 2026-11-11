@@ -51,7 +51,7 @@ test('confirmed or superseded recommendations cannot be accepted',()=>{
   assert.equal(client.stateLabel('confirmed'),'Committed');
 });
 test('a persisted stale-plan response is delivered for UI synchronization',async()=>{
-  global.fetch=async()=>({ok:false,status:409,json:async()=>({committed:false,assistant_message:{content:'重新确认'},session_version:4})});
+  global.fetch=async()=>({ok:false,status:409,json:async()=>({committed:false,assistant_message:{content:'\u91cd\u65b0\u786e\u8ba4'},session_version:4})});
   const value=await client.request('/api/chat/sessions/s/turns',{action:'confirm'});
   assert.equal(value.committed,false);assert.equal(value.session_version,4);
 });
@@ -77,7 +77,7 @@ test('an uncertain confirmation retries the exact same persisted operation',asyn
     if(options?.method==='POST'){
       calls.push(JSON.parse(options.body));
       if(!failed){failed=true;throw Error('offline');}
-      return response({session_id:'s',assistant_message:{content:'已提交'}});
+      return response({session_id:'s',assistant_message:{content:'\u5df2\u63d0\u4ea4'}});
     }
     if(url.includes('/messages')||url.startsWith('/api/chat/sessions?'))return response({items:[],next_cursor:null});
     return response(snapshot('s'));

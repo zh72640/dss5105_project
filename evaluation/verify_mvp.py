@@ -35,7 +35,7 @@ def main():
     (out / "lifecycle_demo.json").write_text(json.dumps(lifecycle, indent=2, ensure_ascii=False) + "\n")
     comparison = compare()
     (out / "simulator_comparison.json").write_text(json.dumps(comparison, indent=2) + "\n")
-    (out / "simulator_comparison_CN.md").write_text(markdown(comparison))
+    (out / "simulator_comparison.md").write_text(markdown(comparison), encoding="utf-8")
     comparison_complete = len(comparison["runs"]) == 14 and all(r["metrics"]["batches"] == 120 for r in comparison["runs"])
     dispatch, dispatch_records = evaluate_dispatch()
     (out / "dispatch_behavior_metrics.json").write_text(json.dumps(dispatch, indent=2) + "\n")

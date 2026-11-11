@@ -253,7 +253,7 @@ def turn(sid, *, owner, request_id, expected_version, db_path, action='message',
                 telemetry={'backend':session['mode'],'error':type(error).__name__}
         initial_message=''
         if interpretation.intent=='new_request':
-            initial_message=re.sub(r'^(?:new request|新请求|新建(?:请求|会话)|另一个订单|another order)[：:，,\s]*','',message,flags=re.I).strip()
+            initial_message=re.sub(r'^(?:new request|\u65b0\u8bf7\u6c42|\u65b0\u5efa(?:\u8bf7\u6c42|\u4f1a\u8bdd)|\u53e6\u4e00\u4e2a\u8ba2\u5355|another order)[\uff1a:\uff0c,\s]*','',message,flags=re.I).strip()
             if initial_message:
                 fresh_context={'business_date':session['business_date'],'history':[],'current_sequence':1,
                     'draft':ParseResult().to_dict(),'field_sources':{},'recent_changes':[],'pending_questions':[],
@@ -358,8 +358,8 @@ def turn(sid, *, owner, request_id, expected_version, db_path, action='message',
                 reply='\n'.join(f"Workshop {w['workshop_id']} ({w['name']}): {w['status']}, capacity {w['capacity_pieces_per_day']} pieces/day, unit cost {w['cost_per_piece']}." for w in rows if not ids or w['workshop_id'] in ids) or 'Workshop not found.'
             elif intent=='explain_recommendation':
                 reply=explain(session,message)
-                if re.search(r'如果|假如|what if',message,re.I):
-                    if re.search(r'允许迟交|allow late',message,re.I):
+                if re.search(r'\u5982\u679c|\u5047\u5982|what if',message,re.I):
+                    if re.search(r'\u5141\u8bb8\u8fdf\u4ea4|allow late',message,re.I):
                         draft={**task['draft'],'deadline_required':False}
                         report,hypothesis,_,_,_=allocation.recommend(c,draft,date.fromisoformat(session['business_date']),task['issues'],task['sources'])
                         reply='Hypothetical comparison allowing lateness; current requirements and commitment are unchanged:\n'+(solution_reply(hypothesis,draft['order_id']) if report['ready_for_recommendation'] else clarification_reply(report))
@@ -406,7 +406,7 @@ def turn(sid, *, owner, request_id, expected_version, db_path, action='message',
                     reply=clarification_reply(report)
             if task['state']=='RECOMMENDED' and rec:
                 session['recommendation']=rec
-                if 'explain_recommendation' in interpretation.candidate_intents or re.search(r'为什么|为何|\bwhy\b',message,re.I):
+                if 'explain_recommendation' in interpretation.candidate_intents or re.search(r'\u4e3a\u4ec0\u4e48|\u4e3a\u4f55|\bwhy\b',message,re.I):
                     explanation=explain(session,message).split('\n',1)[-1]
                     reply+='\n'+explanation
                 if 'query_order' in interpretation.candidate_intents and trace and trace.get('order'):

@@ -16,6 +16,8 @@ import sys
 import time
 
 ROOT = Path(__file__).resolve().parents[1]
+if __package__ in (None, ''):
+    sys.path.insert(0, str(ROOT))
 STAGES = ('python', 'frontend', 'agent', 'language', 'http', 'simulator', 'browser')
 # Historical labels expect DECLINE for these two requests. Chat v2 clarifies them.
 # Keep them visible as warnings; do not change the labels or accept new mismatches.
@@ -77,13 +79,24 @@ def inspect_result(stage, output, log):
         require(details['all_observed_responses_under_3_seconds'] and not details['production_database_touched'],
                 'Offline HTTP timing or database isolation check failed.')
     elif stage == 'simulator':
+        from evaluation.compare_simulator import BASELINES, OBJECTIVES
         report = read_json(output / 'simulator/simulator_comparison.json')
-        baseline = read_json(ROOT / 'evaluation/results/scope_review_20261017/simulator-comparison.json')
+        baseline = read_json(ROOT / 'evaluation/fixtures/simulator_baseline.json')
         metrics = lambda data: {(row['seed'], row['scenario'], row['policy']): row['metrics'] for row in data['runs']}
-        require(len(report['runs']) == 14 and all(row['metrics']['batches'] == 120 for row in report['runs']),
-                'Expected 14 complete simulator configurations with 120 orders each.')
-        require(metrics(report) == metrics(baseline), 'Simulator metrics differ from the reviewed baseline.')
-        details = {'configurations': 14, 'orders_per_configuration': 120, 'baseline_metrics_match': True,
+        expected = {(5105, scenario, policy) for scenario in ('standard', 'shock')
+                    for policy in (*BASELINES, *('planner_' + objective for objective in OBJECTIVES))}
+        current, reviewed = metrics(report), metrics(baseline)
+        require(len(report['runs']) == len(expected) and set(current) == expected
+                and all(row['metrics']['batches'] == 120 for row in report['runs']),
+                'Expected every configured simulator policy/scenario with 120 orders each.')
+        require(all(current.get(key) == value for key, value in reviewed.items()),
+                'Simulator metrics differ from the reviewed baseline.')
+        unreviewed = sorted(set(current) - set(reviewed))
+        if unreviewed:
+            warnings.append(f'{len(unreviewed)} simulator configurations have no historical reviewed baseline: '
+                            + ', '.join(f'{scenario}/{policy}' for _, scenario, policy in unreviewed))
+        details = {'configurations': len(current), 'orders_per_configuration': 120, 'baseline_metrics_match': True,
+                   'reviewed_configurations': len(reviewed), 'unreviewed_configurations': len(unreviewed),
                    'scope': 'Fixed seed, development data, single-workshop adapter; no split-benefit claim.'}
     elif stage == 'browser':
         details = read_json(output / 'browser/browser.json')

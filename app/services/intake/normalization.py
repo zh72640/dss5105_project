@@ -9,8 +9,8 @@ PRODUCTS = {"crewneck sweaters?": ("Crewneck sweater", "TOPS"),
             "hoodies?": ("Hoodie", "TOPS"), "vests?": ("Vest", "TOPS"),
             "scar(?:f|ves)": ("Scarf", "ACCESSORIES"), "beanies?": ("Beanie", "ACCESSORIES")}
 NUMBERS = {"zero": 0, "one": 1, "two": 2, "three": 3, "four": 4, "five": 5,
-           "six": 6, "seven": 7, "eight": 8, "一": 1, "两": 2, "二": 2, "三": 3}
-NUMBER = r"(?:-?\d+(?:\.\d+)?|zero|one|two|three|four|five|six|seven|eight|一|两|二|三)"
+           "six": 6, "seven": 7, "eight": 8, "\u4e00": 1, "\u4e24": 2, "\u4e8c": 2, "\u4e09": 3}
+NUMBER = r"(?:-?\d+(?:\.\d+)?|zero|one|two|three|four|five|six|seven|eight|\u4e00|\u4e24|\u4e8c|\u4e09)"
 
 
 def number(value):

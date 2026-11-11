@@ -215,13 +215,13 @@ class DynamicAgentBehavior(unittest.TestCase):
 
     def test_agent_question_and_final_reply_are_english(self):
         question = ScriptedNativeModel(tool("load_skill", name="order-inquiry"),
-            tool("ask_user", question="请提供订单号。"),
+            tool("ask_user", question="\u8bf7\u63d0\u4f9b\u8ba2\u5355\u53f7\u3002"),
             tool("ask_user", question="Which order ID should I check?"))
         first = self.run_turn("Check an order for me.", question, "english-question")
         self.assertEqual(first["pending_question"], "Which order ID should I check?")
         self.assertIn("ENGLISH_REQUIRED", self.rows(
             "SELECT result_json FROM chat_agent_tool_calls WHERE request_id='english-question' AND tool_name='ask_user' ORDER BY rowid")[0][0])
-        final = ScriptedNativeModel(AIMessage(content="订单已找到。"))
+        final = ScriptedNativeModel(AIMessage(content="\u8ba2\u5355\u5df2\u627e\u5230\u3002"))
         second = self.run_turn("ORD-045", final, "english-reply", 1)
         self.assertEqual(second["assistant_message"]["content"], "Please continue in English in this session.")
 

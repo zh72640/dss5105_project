@@ -75,37 +75,37 @@ def compare(seeds=(5105,)):
 
 
 def markdown(report):
-    lines = ["# 官方模拟器对比结果", "", "固定 seed、原始 120 订单、原样官方 harness。所有指标越低越好；max share 仅衡量集中程度，不等于已实现公平性优化。", "",
-             "默认主设置 min_delay 来自现有系统；团队课程主目标分配尚待确认。以下是开发集实验，不是独立 holdout 或真实经营收益。", "",
-             "| 场景 | Seed | 策略 | 平均天数 | P90天数 | 迟交% | 缺陷% | 成本 | 最大份额% |",
+    lines = ["# Simulator comparison", "", "Fixed seeds, the original 120 orders, and the supplied simulation harness. Lower metrics are better; maximum share measures concentration, not an implemented fairness objective.", "",
+             "The primary min_delay setting follows the existing default. The course objective assignment remains to be confirmed. These are development-data observations, not holdout performance or realized business gains.", "",
+             "| Scenario | Seed | Policy | Mean days | P90 days | Late % | Defect % | Cost | Max share % |",
              "|---|---:|---|---:|---:|---:|---:|---:|---:|"]
     for run in report["runs"]:
         m = run["metrics"]
         lines.append(f"| {run['scenario']} | {run['seed']} | {run['policy']} | " + " | ".join(f"{m[k]:.2f}" for k in METRICS) + " |")
-    lines += ["", "## 基线胜出的指标", "", "每个设置对三种基线逐项比较，差异不代表统计显著性；完整逐订单结果在同目录 JSON。", ""]
+    lines += ["", "## Metrics where baselines win", "", "Each setting is compared with three baselines. Differences do not establish statistical significance. The adjacent JSON retains all order-level outcomes.", ""]
     for row in report["comparisons"]:
         if row["baseline_wins"]:
-            lines.append(f"- {row['scenario']} / seed {row['seed']} / {row['policy']}：{row['baseline']} 在 {', '.join(row['baseline_wins'])} 更低。")
-    lines += ["", "## 10 个可复核的不利案例", "", "取主设置在固定 seed 下的前 10 个不同订单损失案例，保留完整数值，不据此调整策略。这里只是算法比较，不代替最终要求的全部系统失败分析。", ""]
+            lines.append(f"- {row['scenario']} / seed {row['seed']} / {row['policy']}: {row['baseline']} is lower on {', '.join(row['baseline_wins'])}.")
+    lines += ["", "## Ten inspectable loss cases", "", "The first ten distinct losing orders for the primary setting are retained with their values; policies are not tuned from these cases. This algorithm comparison does not replace system failure analysis.", ""]
     seen = set()
     for row in report["primary_per_order_losses"]:
         if row["order_id"] in seen:
             continue
         seen.add(row["order_id"])
         ours, theirs = row["planner"], row["baseline_outcome"]
-        lines.append(f"- {row['order_id']}（{row['scenario']}，seed {row['seed']}）对比 {row['baseline']}："
-                     f"本系统 {ours['workshop']} / {ours['turnaround']:.2f} 天 / 成本 {ours['cost']:.2f}；"
-                     f"基线 {theirs['workshop']} / {theirs['turnaround']:.2f} 天 / 成本 {theirs['cost']:.2f}。"
-                     f"较差项：{', '.join(row['worse_metrics'])}。"
-                     + ("速度目标未约束总成本，因此可能选择更贵工坊。" if "cost" in row["worse_metrics"] else
-                        "应结合不同历史队列、随机返工与冲击核查；单条结果不能证明局部选择错误。"))
+        lines.append(f"- {row['order_id']} ({row['scenario']}, seed {row['seed']}) against {row['baseline']}: "
+                     f"planner {ours['workshop']} / {ours['turnaround']:.2f} days / cost {ours['cost']:.2f}; "
+                     f"baseline {theirs['workshop']} / {theirs['turnaround']:.2f} days / cost {theirs['cost']:.2f}. "
+                     f"Worse metrics: {', '.join(row['worse_metrics'])}. "
+                     + ("The speed objective does not cap cost and can select a more expensive workshop." if "cost" in row["worse_metrics"] else
+                        "Inspect preceding queues, random rework, and shocks; one outcome cannot prove the local choice was wrong."))
         if len(seen) == 10:
             break
-    lines += ["", "## 解释边界", "", "混合分数为 `0.6 × 天数 + 0.4 × 缺陷率百分数`，权重沿用现有实现，未据本次结果调参。"
-              "min_delay 是预计周转时间目标，不等于全局最少迟交。官方只接收单工坊选择；拆单收益另行测量。"
-              "冲击对象不传入 allocator，不能声称策略能预知工坊故障。官方 shock 选择会额外消耗一次随机数，"
-              "因此同 seed 的 standard/shock 返工样本也会不同；场景差值不能解释为纯停工效应。", "",
-              "系统相对简短启发式增加的能力：自然语言校验、约束执行、多轮澄清、可追溯分配、事务与生产生命周期；这些能力需由接口和可靠性测试证明，不能由模拟器分数替代。", ""]
+    lines += ["", "## Interpretation limits", "", "Hybrid uses `0.6 * days + 0.4 * defect percentage`; existing weights are not tuned on these results. "
+              "min_delay minimizes estimated turnaround, not global late-order count. The supplied simulator accepts one workshop; split benefits need separate measurement. "
+              "Allocators cannot see the shock target or predict outages. Shock selection consumes an extra random draw, "
+              "so identical seeds can produce different rework samples across scenarios; their difference is not a pure downtime effect.", "",
+              "Natural-language validation, constraint enforcement, clarification, audit, transactions, and lifecycle behavior require interface and reliability tests. Simulator scores do not establish those capabilities.", ""]
     return "\n".join(lines)
 
 
@@ -117,7 +117,7 @@ def main():
     report = compare(tuple(dict.fromkeys(args.seeds)))
     args.output_dir.mkdir(parents=True, exist_ok=True)
     (args.output_dir / "simulator_comparison.json").write_text(json.dumps(report, indent=2) + "\n")
-    (args.output_dir / "simulator_comparison_CN.md").write_text(markdown(report))
+    (args.output_dir / "simulator_comparison.md").write_text(markdown(report), encoding="utf-8")
     print(json.dumps({"runs": len(report["runs"]), "baseline_comparisons": len(report["comparisons"]),
                       "primary_loss_cases": len(report["primary_per_order_losses"]), "output_dir": str(args.output_dir)}, indent=2))
 

@@ -66,20 +66,20 @@ def literal_evidence(value, quote):
 
 def replaces_exclusions(text):
     return bool(re.search(r'\bonly\s+exclude\b|\breplace\b[^.!?;]*\bexclusions?\b|'
-                          r'\bset\s+(?:the\s+)?exclusions?\s+(?:to|=)|仅排除|替换排除', text, re.I))
+                          r'\bset\s+(?:the\s+)?exclusions?\s+(?:to|=)|\u4ec5\u6392\u9664|\u66ff\u6362\u6392\u9664', text, re.I))
 
 
 def clears_exclusions(text):
-    if re.search(r"do not (?:clear|remove|drop)|don't (?:clear|remove|drop)|不要清除", text, re.I):
+    if re.search(r"do not (?:clear|remove|drop)|don't (?:clear|remove|drop)|\u4e0d\u8981\u6e05\u9664", text, re.I):
         return False
-    return bool(re.search(r'\b(?:clear|remove|drop)\s+(?:all\s+|the\s+)?exclusions?\b|清除(?:全部)?排除', text, re.I))
+    return bool(re.search(r'\b(?:clear|remove|drop)\s+(?:all\s+|the\s+)?exclusions?\b|\u6e05\u9664(?:\u5168\u90e8)?\u6392\u9664', text, re.I))
 
 
 def pending_due_date(text):
     """An explicitly pending replacement date cannot be satisfied by old DB facts."""
-    return bool(re.search(r'(?:due date|deadline|ship date|交期|截止日期)', text, re.I) and
+    return bool(re.search(r'(?:due date|deadline|ship date|\u4ea4\u671f|\u622a\u6b62\u65e5\u671f)', text, re.I) and
                 re.search(r'will confirm|confirm[^.!?]*later|date[^.!?]*to follow|'
-                          r'unconfirmed|not (?:yet )?confirmed|to be confirmed|\b(?:TBD|TBC)\b|no (?:confirmed )?due date|待确认|稍后确认', text, re.I))
+                          r'unconfirmed|not (?:yet )?confirmed|to be confirmed|\b(?:TBD|TBC)\b|no (?:confirmed )?due date|\u5f85\u786e\u8ba4|\u7a0d\u540e\u786e\u8ba4', text, re.I))
 
 
 def requests_recommendation(text):
@@ -135,11 +135,11 @@ def exclusion_operations(text, names=None):
         prefix = text[last_end:start].lower()
         suffix = text[end:end + 45].lower()
         operation = None
-        if re.search(r"do not exclude|don't exclude|not excluding|unexclude|restore|不排除|取消排除", prefix):
+        if re.search(r"do not exclude|don't exclude|not excluding|unexclude|restore|\u4e0d\u6392\u9664|\u53d6\u6d88\u6392\u9664", prefix):
             operation = 'remove'
         elif re.search(r'\b(?:remove|drop)\s*$', prefix) and re.match(r'\s+from\s+(?:the\s+)?exclusions?', suffix):
             operation = 'remove'
-        elif re.search(r"exclude|excluding|avoid|do not use|don't use|not to|not use|away from|nothing new to|排除|不用|不要", prefix):
+        elif re.search(r"exclude|excluding|avoid|do not use|don't use|not to|not use|away from|nothing new to|\u6392\u9664|\u4e0d\u7528|\u4e0d\u8981", prefix):
             operation = 'add'
         elif re.match(r'\s+(?:must |should |is |be |remain |stay )*(?:not excluded|allowed again)', suffix):
             operation = 'remove'

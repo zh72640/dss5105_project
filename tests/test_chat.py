@@ -51,7 +51,7 @@ class ChatBehavior(unittest.TestCase):
 
     def test_missing_information_never_calls_planner(self):
         with patch('app.services.allocation.service.allocate',side_effect=AssertionError('planner must not run')):
-            first=self.turn('帮我分配，成本越低越好')
+            first=self.turn('\u5e2e\u6211\u5206\u914d\uff0c\u6210\u672c\u8d8a\u4f4e\u8d8a\u597d')
             self.assertFalse(first['validation_report']['ready_for_planning'])
         final=self.turn('ORD-045')
         self.assertEqual(final['session']['task']['draft']['objective'],'min_cost')
@@ -60,12 +60,12 @@ class ChatBehavior(unittest.TestCase):
 
     def test_compound_followup_undo_and_exclusion_removal(self):
         self.recommend()
-        self.turn('最多两个工坊，不要 W6')
-        self.turn('撤销刚才对工坊数量的修改')
+        self.turn('\u6700\u591a\u4e24\u4e2a\u5de5\u574a\uff0c\u4e0d\u8981 W6')
+        self.turn('\u64a4\u9500\u521a\u624d\u5bf9\u5de5\u574a\u6570\u91cf\u7684\u4fee\u6539')
         draft=self.inspect()['task']['draft']
         self.assertIsNone(draft['num_workshop_allowed'])
         self.assertEqual(draft['exclusion'],['W3','W6'])
-        self.turn('不排除 W3 了')
+        self.turn('\u4e0d\u6392\u9664 W3 \u4e86')
         self.assertEqual(self.inspect()['task']['draft']['exclusion'],['W6'])
 
     def test_conflicting_order_fields_collected_and_explicit_resolution(self):
@@ -73,25 +73,25 @@ class ChatBehavior(unittest.TestCase):
             result=self.turn('Allocate ORD-045 cheapest, 999 pieces, due 2027-01-01.')
         fields={p['field'] for p in result['validation_report']['blocking_issues']}
         self.assertTrue({'pieces','due_date'}.issubset(fields))
-        result=self.turn('使用登记信息')
+        result=self.turn('\u4f7f\u7528\u767b\u8bb0\u4fe1\u606f')
         self.assertEqual(result['task_state'],'RECOMMENDED')
 
     def test_budget_survives_unrelated_updates_and_blocks_confirmation(self):
         self.recommend()
         with patch('app.services.allocation.service.allocate',side_effect=AssertionError('planner must not run')):
-            self.turn('不要 W6，预算 100 元')
-            result=self.turn('改成两个工坊')
+            self.turn('\u4e0d\u8981 W6\uff0c\u9884\u7b97 100 \u5143')
+            result=self.turn('\u6539\u6210\u4e24\u4e2a\u5de5\u574a')
         self.assertTrue(result['validation_report']['blocking_issues'])
         with self.assertRaises(chat.ChatError):
             self.confirm()
-        result=self.turn('取消预算')
+        result=self.turn('\u53d6\u6d88\u9884\u7b97')
         self.assertEqual(result['task_state'],'RECOMMENDED')
 
     def test_same_turn_objective_conflict_survives_unrelated_patch(self):
         self.turn('Allocate ORD-045 cheapest and fastest.')
-        result=self.turn('改成两个工坊')
+        result=self.turn('\u6539\u6210\u4e24\u4e2a\u5de5\u574a')
         self.assertFalse(result['validation_report']['ready_for_planning'])
-        result=self.turn('最低成本')
+        result=self.turn('\u6700\u4f4e\u6210\u672c')
         self.assertEqual(result['task_state'],'RECOMMENDED')
 
     def test_unknown_preferred_and_excluded_workshops_block_planner(self):
@@ -104,20 +104,20 @@ class ChatBehavior(unittest.TestCase):
         self.recommend()
         before=self.inspect()['task']
         rec=self.inspect()['recommendation']['recommendation_id']
-        self.turn('为什么选这个工坊？')
-        self.turn('ORD-109 现在是什么状态？')
+        self.turn('\u4e3a\u4ec0\u4e48\u9009\u8fd9\u4e2a\u5de5\u574a\uff1f')
+        self.turn('ORD-109 \u73b0\u5728\u662f\u4ec0\u4e48\u72b6\u6001\uff1f')
         after=self.inspect()
         self.assertEqual(before,after['task'])
         self.assertEqual(after['recommendation']['recommendation_id'],rec)
         self.assertIn('ORD-109',chat.list_messages(self.sid,owner='alice',db_path=self.path)['items'][-1]['content'])
 
     def test_workshop_query_is_not_order_lookup(self):
-        response=self.turn('工坊 W3 的状态和产能怎么样？')
+        response=self.turn('\u5de5\u574a W3 \u7684\u72b6\u6001\u548c\u4ea7\u80fd\u600e\u4e48\u6837\uff1f')
         self.assertEqual(response['intent'],'query_workshop')
         self.assertIn('Workshop W3',response['assistant_message']['content'])
 
     def test_order_id_answer_to_query_does_not_become_allocation_request(self):
-        self.turn('订单状态怎么样？')
+        self.turn('\u8ba2\u5355\u72b6\u6001\u600e\u4e48\u6837\uff1f')
         with patch('app.services.allocation.service.allocate',side_effect=AssertionError('read-only query must not plan')):
             result=self.turn('ORD-045')
         self.assertEqual(result['intent'],'query_order')
@@ -127,7 +127,7 @@ class ChatBehavior(unittest.TestCase):
     def test_confirm_with_revision_cannot_commit(self):
         self.recommend()
         old=self.inspect()['recommendation']['recommendation_id']
-        result=self.turn('确认，不过不要 W6')
+        result=self.turn('\u786e\u8ba4\uff0c\u4e0d\u8fc7\u4e0d\u8981 W6')
         self.assertFalse(result['committed'])
         self.assertNotEqual(result['recommendation_id'],old)
         self.assertIn('W6',result['session']['task']['draft']['exclusion'])
@@ -160,7 +160,7 @@ class ChatBehavior(unittest.TestCase):
         self.assertEqual(approved['feedback_message_id'],replay['feedback_message_id'])
         self.assertEqual(self.scalar("SELECT COUNT(*) FROM chat_messages WHERE content LIKE 'Committed%'") ,1)
         self.assertEqual(self.inspect()['status'],'OPEN')
-        followup=self.turn('最终分了多少？')
+        followup=self.turn('\u6700\u7ec8\u5206\u4e86\u591a\u5c11\uff1f')
         self.assertIn('Committed result',followup['assistant_message']['content'])
         self.assertEqual(self.scalar('SELECT COUNT(*) FROM working_order'),1)
 
@@ -245,9 +245,9 @@ class ChatBehavior(unittest.TestCase):
         self.assertTrue(replay['replayed'])
         self.assertEqual(result['turn_id'],replay['turn_id'])
         with self.assertRaises(chat.ChatError):
-            self.turn('不要 W3',request_id='same',expected_version=0)
+            self.turn('\u4e0d\u8981 W3',request_id='same',expected_version=0)
         with self.assertRaises(chat.ChatError):
-            self.turn('不要 W3',expected_version=0)
+            self.turn('\u4e0d\u8981 W3',expected_version=0)
 
     def test_creation_with_first_message_replays_without_duplicates(self):
         args=dict(owner='alice',request_id='first',db_path=self.path,as_of=date(2026,4,1),message='Allocate ORD-045.',mode='offline')
@@ -265,14 +265,14 @@ class ChatBehavior(unittest.TestCase):
 
     def test_ambiguous_cancellation_does_not_execute(self):
         self.recommend()
-        result=self.turn('取消')
+        result=self.turn('\u53d6\u6d88')
         self.assertFalse(result['committed'])
         self.assertFalse(result['validation_report']['ready_for_planning'])
 
     def test_hypothetical_does_not_change_formal_constraints(self):
         self.recommend()
         before=self.inspect()['task']
-        result=self.turn('如果允许迟交会怎样？')
+        result=self.turn('\u5982\u679c\u5141\u8bb8\u8fdf\u4ea4\u4f1a\u600e\u6837\uff1f')
         self.assertIn('Hypothetical comparison',result['assistant_message']['content'])
         self.assertEqual(before,self.inspect()['task'])
 
@@ -295,15 +295,15 @@ class ChatBehavior(unittest.TestCase):
         self.assertEqual(result['session']['recommendation']['feedback_message_id'],approved['feedback_message_id'])
 
     def test_zero_pieces_and_excessive_limit_are_clarification_not_service_errors(self):
-        for message in ('分配 ORD-045，0件','Allocate ORD-045; at most nine workshops.'):
+        for message in ('\u5206\u914d ORD-045\uff0c0\u4ef6','Allocate ORD-045; at most nine workshops.'):
             with patch('app.services.allocation.service.allocate',side_effect=AssertionError('planner must not run')):
                 result=self.turn(message)
             self.assertEqual(result['http_status'],200)
             self.assertFalse(result['validation_report']['ready_for_planning'])
 
     def test_explicitly_withdrawing_soft_preference_unblocks(self):
-        self.turn('分配 ORD-045，优先 W3')
-        result=self.turn('取消工坊偏好')
+        self.turn('\u5206\u914d ORD-045\uff0c\u4f18\u5148 W3')
+        result=self.turn('\u53d6\u6d88\u5de5\u574a\u504f\u597d')
         self.assertEqual(result['task_state'],'RECOMMENDED')
 
     def test_session_pagination_returns_latest_then_older_without_duplicates(self):
@@ -337,7 +337,7 @@ class ChatBehavior(unittest.TestCase):
     def test_query_with_new_budget_is_not_misclassified_as_read_only(self):
         self.recommend()
         with patch('app.services.allocation.service.allocate',side_effect=AssertionError('planner must not run')):
-            result=self.turn('方案多少钱，预算100元')
+            result=self.turn('\u65b9\u6848\u591a\u5c11\u94b1\uff0c\u9884\u7b97100\u5143')
         self.assertEqual(result['task_state'],'BLOCKED')
         self.assertTrue(result['session']['task']['issues'])
 
@@ -371,7 +371,7 @@ class ChatBehavior(unittest.TestCase):
 
     def test_currency_cap_cannot_be_silently_dropped(self):
         with patch('app.services.allocation.service.allocate',side_effect=AssertionError('planner must not run')):
-            result=self.turn('分配 ORD-045，成本最低，但不超过100元')
+            result=self.turn('\u5206\u914d ORD-045\uff0c\u6210\u672c\u6700\u4f4e\uff0c\u4f46\u4e0d\u8d85\u8fc7100\u5143')
         self.assertEqual(result['task_state'],'BLOCKED')
 
     def test_time_window_requires_explicit_supported_constraint(self):
@@ -381,7 +381,7 @@ class ChatBehavior(unittest.TestCase):
 
     def test_compound_revision_also_answers_why(self):
         self.recommend()
-        result=self.turn('不要 W6，为什么推荐这个工坊？')
+        result=self.turn('\u4e0d\u8981 W6\uff0c\u4e3a\u4ec0\u4e48\u63a8\u8350\u8fd9\u4e2a\u5de5\u574a\uff1f')
         self.assertIn('W6',result['session']['task']['draft']['exclusion'])
         self.assertIn('Current recommendation uses',result['assistant_message']['content'])
 
@@ -411,7 +411,7 @@ class ChatAPI(unittest.TestCase):
         for version in ('0',True,-1):
             self.assertEqual(self.client.post(f'/api/chat/sessions/{sid}/turns',json={'request_id':'x','expected_version':version,'message':'hello'}).status_code,400)
         self.assertEqual(self.client.get('/api/chat/sessions?limit=1000').status_code,400)
-        self.assertEqual(self.client.post(f'/api/chat/sessions/{sid}/turns',json={'request_id':'x','expected_version':0,'action':'confirm','message':'不要 W3'}).status_code,400)
+        self.assertEqual(self.client.post(f'/api/chat/sessions/{sid}/turns',json={'request_id':'x','expected_version':0,'action':'confirm','message':'\u4e0d\u8981 W3'}).status_code,400)
 
 
 class ChatModels(unittest.TestCase):
@@ -450,7 +450,7 @@ class ChatModels(unittest.TestCase):
             validate_interpretation(forged,'allocate ORD-045',context)
         forged=TurnInterpretation(intent='modify_constraints',answered_question_ids=['unsupported_constraint'])
         with self.assertRaisesRegex(ValueError,'UNGROUNDED_WITHDRAWAL'):
-            validate_interpretation(forged,'改成两个工坊',context)
+            validate_interpretation(forged,'\u6539\u6210\u4e24\u4e2a\u5de5\u574a',context)
 
 
 if __name__=='__main__':

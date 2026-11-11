@@ -1,93 +1,89 @@
-# 项目开发约定（草稿）
+# Project development conventions
 
-本文适用于整个仓库，供 Codex 及其他开发 Agent 阅读。
+These instructions apply to the entire repository and to all development agents.
 
-- `docs/architecture.md` 是目标系统架构的设计依据。
-- 当前代码与测试用于确认已有业务行为和兼容性要求，不作为目标架构的判定标准。
-- `AGENTS.md` 提供核心开发约束；具体 Tool 和 Skill 的开发方式遵循对应规范。
-- 当现有实现与目标架构冲突时，应先识别差异并制定迁移方案，不得自行修改架构原则来适应旧代码。
+- `docs/architecture.md` is the design authority for the target architecture.
+- Current code and tests establish existing business behavior and compatibility requirements; they do not define the target architecture.
+- This file provides core constraints. Follow the separate Tool and Skill standards for their implementation.
+- When an implementation conflicts with the target architecture, identify the gap and plan its migration. Do not change architectural principles to accommodate old code.
 
-## 1. 项目定位
+## 1. Project purpose
 
-- 本项目面向快反服装制造的外协派单场景，通过自然语言交互协助工厂选择合适的外部工坊，提供可解释、可追溯的分配建议与决策记录。
-- 系统支持订单与约束提取、信息澄清、工坊资格和可行性评估、交期估算、备选方案推荐及分配确认，帮助派单员在时间压力下作出决策。
-- 派单综合考虑工坊能力、产能、队列、质量、成本与交付约束。LLM 负责请求理解、任务协调和结果解释；关键业务规则、计算与状态变更由确定性代码控制。
+SweaterCo supports subcontracting decisions in fast-response garment manufacturing. Natural-language interaction helps dispatchers select external workshops and preserves explainable recommendations and decision records.
 
-## 2. Project Structure
+The system extracts orders and constraints, asks for clarification, evaluates workshop eligibility and feasibility, estimates delivery, proposes alternatives, and obtains allocation confirmation. Decisions account for capabilities, capacity, queues, quality, cost, and delivery requirements. The LLM interprets requests, coordinates tasks, and explains results; deterministic code controls calculations, business rules, and state changes.
 
-以下是目标目录职责。现有代码尚未全部迁移到这些位置；开发新功能时遵循此分层，调整旧功能时核对调用方与兼容性，不因目录调整复制业务实现。
+## 2. Project structure
 
-| 目录 | 目标职责 |
+These are target responsibilities. New features must follow these boundaries; changes to existing code must account for callers and compatibility. Moving a file must not duplicate its business implementation.
+
+| Directory | Responsibility |
 | --- | --- |
-| `app/agent/` | LLM Agent：Main Graph、Allocation 子图、Tool Loop、Skill 加载、Checkpoint 启动与恢复。 |
-| `app/offline/` | Chat v2 Offline 解释图与确定性回复（非原生 Tool Agent）。 |
-| `app/skills/` | Markdown Skill，定义业务任务的步骤、工具使用、分支、澄清和 Fallback 方法。 |
-| `app/tools/` | 向 Agent 暴露标准化能力；验证输入、调用 Service 或 DB Repository，并封装结构化结果。 |
-| `app/services/` | 确定性业务操作、计算、评分、优化算法、业务规则和执行策略；含 `responses/` 桌面审计文案。 |
-| `app/allocator/` | 确定性分配计算：`allocate()`、资格、评分与整数拆单（无 DB/Agent 依赖）。 |
-| `app/db/` | 所有数据库访问，包括 SQL、CRUD、Repository、连接、事务及迁移。 |
-| `app/prompts/` | 独立管理 LLM Prompt 模板及加载逻辑。 |
-| `app/schemas/` | HTTP、Agent State、Tool 输入输出及业务数据契约。 |
-| `app/api/` | FastAPI 接口、HTTP 请求处理和响应。 |
-| `app/llm/` | LLM ModelRegistry、LangChain 工厂与选择契约（非 ORM）。 |
-| `app/config/` | 启动配置（数据库路径、业务日期、模型环境目录）。 |
-| `app/core/` | 应用基础设施：ASGI lifespan、本地账号与 Cookie 鉴权。 |
+| `app/agent/` | LLM Agent, Main Graph, allocation subgraph, Tool loop, Skill loading, checkpoint startup and recovery. |
+| `app/offline/` | Chat v2 Offline interpretation graph and deterministic replies, separate from the native Tool Agent. |
+| `app/skills/` | Markdown task instructions: steps, tools, branches, clarification, and fallback. |
+| `app/tools/` | Named Agent capabilities: validate inputs, call Services or Repositories, and return structured results. |
+| `app/services/` | Deterministic operations, calculations, scoring, optimization, business rules, and execution policy; `responses/` contains desk audit wording. |
+| `app/allocator/` | Independent deterministic allocation: `allocate()`, eligibility, scoring, and integer splits; no DB or Agent dependencies. |
+| `app/db/` | SQL, CRUD, Repositories, connections, transactions, and migrations. |
+| `app/prompts/` | Versioned model prompts and their loader. |
+| `app/schemas/` | HTTP, Agent State, Tool, and business data contracts. |
+| `app/api/` | FastAPI routes, HTTP request handling, and responses. |
+| `app/llm/` | ModelRegistry, LangChain model factory, selection and error contracts; not ORM models. |
+| `app/config/` | Startup settings: database path, business date, and model configuration. |
+| `app/core/` | ASGI lifespan, local accounts, and cookie authentication. |
 
-上表是后续开发与重构的目标，不表示代码已经全部迁移。现有目录位置及其与目标分层的差距见 `docs/current_architecture.md`；其他目录继续承担各自的命令、页面、数据、验证和运行文件职责。
+See `docs/current_architecture.md` for the implemented paths and remaining gaps. Other directories retain their command, UI, data, evaluation, and runtime responsibilities.
 
-## 3. 架构原则与职责边界
+## 3. Architecture and responsibility boundaries
 
-本项目采用 **Agent–Skill–Tool–Service** 分层架构。`docs/architecture.md` 是目标架构的详细设计依据；当前代码中不符合该架构的实现，不作为后续开发的设计标准。
+The project follows **Agent–Skill–Tool–Service** layering. Existing implementations that depart from `docs/architecture.md` are not precedents for new features.
 
-### 3.1 组件职责
+### Component responsibilities
 
-- **LLM Agent**：负责理解用户请求、根据 Skill 选择 Tool、分析结果、提出下一步行动及生成解释。不直接实现业务计算、SQL 或状态变更。
-- **LangGraph Runtime**：负责节点执行、路由、Agent–Tool Loop、State 管理、流程守卫、暂停与恢复。LLM 提出行动，Runtime 控制实际执行。
-- **Skill**：以 Markdown `SKILL.md` 描述任务步骤、Tool 使用、条件分支、澄清和 Fallback。Skill 是动态加载的指导资源，不是可执行 Python Workflow，不授予权限，也不能替代确定性业务规则。
-- **Tool**：向 LLM 暴露独立、具名、可调用的能力，负责参数与调用条件校验、下层能力调用及结构化结果封装。不重复实现 Service 中的计算和规则，不直接编写 SQL。
-- **Service / Policy**：执行确定性业务操作，包括资格判断、约束校验、交期估算、评分、规划和状态变更。必须独立执行业务校验，不依赖 Agent 或 Tool 已完成的检查。
-- **DB Repository**：统一负责 SQL、CRUD、连接、事务与持久化，不决定派单策略。
-- **Prompt**：独立管理模型提示模板，通过 Loader 加载；不在 Agent 主流程中硬编码大量 Prompt 或确定性业务规则。
+- **LLM Agent:** Understand requests, select Tools using Skills, analyze results, propose actions, and explain. Do not implement calculations, SQL, or state changes in the Agent.
+- **LangGraph Runtime:** Control node execution, routing, Agent–Tool loops, State, guards, suspension, and recovery. The LLM proposes; Runtime executes.
+- **Skill:** A dynamically loaded Markdown resource describing steps, Tools, branches, clarification, and fallback. It is not an executable Python workflow, does not grant permissions, and does not replace deterministic rules.
+- **Tool:** Expose an independent, named capability; validate arguments and call conditions; delegate and return structured results. Do not duplicate Service calculations or write SQL.
+- **Service / Policy:** Independently enforce eligibility, constraints, estimates, scoring, planning, and state changes. Never assume that the Agent or Tool already performed business validation.
+- **DB Repository:** Own SQL, CRUD, connections, transactions, and persistence; do not decide allocation strategy.
+- **Prompt:** Keep templates and their loading separate from orchestration. Do not embed large prompts or deterministic rules in Agent nodes.
 
-### 3.2 执行与依赖规则
+### Execution and dependencies
 
-- **Main Graph 与业务流程分离。** Main Graph 负责通用任务识别、路由及结果处理；业务专属准备步骤、规则和完成条件归业务节点或 Subgraph。
-- **Intent、Business Task 和 Skill 不强制一一对应。** 业务流程按需加载零个、一个或多个 Skill，不要求每个 Skill 都有独立 Agent 或 Subgraph。
-- **Agent Executor 应可复用。** 模型调用、Tool Binding 和 Agent–Tool Loop 使用通用机制；各业务自行定义准备流程、Skill、允许的 Tool 和 Completion Guard。
-- **Tool 必须独立组织。** Tool 定义和实现放在 `app/tools/`，通过 Registry 注册，并根据任务和权限动态暴露。不得将业务 Tool 实现集中堆积在 Agent Node 或内部 ToolSet 中。
-- **LLM 自主调用业务能力时使用 Tool。** LangGraph 的确定性节点可以直接调用 Service；Tool 可以调用 Service，或通过 DB Repository 执行简单查询。
-- **Tool 暴露与执行权限分离。** Skill 声明某个 Tool 不代表获得调用权限。Runtime 必须独立验证 Tool Call，Service / Policy 负责最终业务规则校验。
-- **LLM 不能自行宣告任务成功。** 模型停止调用 Tool 不代表任务完成；业务流程必须通过 Completion Guard 核对必要结果。
-- **统一任务结果。** 业务流程通过 `TaskResult` 向 Main Graph 返回结构化结果，不允许依据模型文本直接修改业务状态。
-- **业务数据与工作流状态分离。** SQLite 业务表是订单、队列、推荐、分配和业务任务状态的权威来源；LangGraph checkpoint 保存工作流执行上下文，不代替业务数据库。
+- Keep the Main Graph generic: task identification, routing, and results. Business preparation, rules, and completion conditions belong to business nodes or subgraphs.
+- Intent, Business Task, and Skill do not require one-to-one mappings. A task may load zero, one, or several Skills; a Skill does not require its own Agent or subgraph.
+- Reuse the model invocation, Tool binding, and Agent–Tool executor. Each business defines preparation, Skills, allowed Tools, and its Completion Guard.
+- Define Tools in `app/tools/` and register them centrally. Expose them dynamically by task and permission. Do not accumulate business Tool implementations in Agent nodes or an internal ToolSet.
+- Autonomous LLM business calls use Tools. Deterministic LangGraph nodes may call Services directly. Tools may call Services or use Repositories for simple queries.
+- Tool visibility and execution permission are separate. Skill declarations do not authorize execution; Runtime validates calls and Service / Policy enforces final rules.
+- Model silence or a success statement does not complete a task. A Completion Guard must verify the required results.
+- Return structured `TaskResult` objects to the Main Graph. Never modify business state based on model prose.
+- SQLite business tables are authoritative for orders, queues, recommendations, allocations, and tasks. Checkpoints store execution context and do not replace business records.
 
-### 3.3 业务与兼容性约束
+### Business and compatibility constraints
 
-- **推荐、确认和提交必须分离。** Chat v2 推荐仅为预览；分配提交必须通过携带推荐 ID 和当前版本信息的显式 `confirm` 操作，并重新验证身份、版本及最新业务事实。
-- **关键写操作必须受控。** 业务状态变更需要 Service / Policy 校验、数据库事务、版本检查、审计及适当的幂等保护。模型回复不能替代实际提交结果。
-- **对话以 Chat v2 为准。** 自然语言分配走 `/api/chat/*` 与 `/chat`；`offline` 与 `llm` 仍是 Chat 内不同模式，不是旧 Parser/Session 产品。Parser v1（`/api/requests`）、旧多轮 `/api/sessions` 与 `session_revise` jobs 已退役，不得再恢复为对外 API。
-- **生产状态规则必须复用。** 生产事件沿用 `app/services/lifecycle.py` 的状态、数量、版本、审计与幂等规则；Agent Tool 不得另行实现生产状态变更逻辑。本地测试可用 `dispatch.seed_allocation`（离线规则）准备已分配订单，它不是 HTTP 产品入口。
-- **Desk 引导至 Chat。** Desk「新建请求」等会话编辑入口应跳转 `/chat`；推荐确认继续走 Chat 推荐卡语义，不重建旧 `/api/sessions` 编辑器。
-- **重构优先复用既有实现。** 不在 Agent、Tool 和 Service 中复制同一业务规则，不因架构调整擅自改变算法、接口行为或数据库语义。发现现有实现与目标架构冲突时，先分析差距并制定迁移方案。
+- Keep recommendation, confirmation, and commit separate. Chat v2 recommendations are previews. Allocation requires an explicit `confirm` action with the recommendation ID and current versions, followed by identity, version, and fresh-fact checks.
+- Important writes require Service / Policy validation, transactions, version checks, audit, and appropriate idempotency. Model text cannot replace a committed result.
+- Natural-language allocation uses `/api/chat/*` and `/chat`. Offline and LLM are Chat modes. Parser v1 (`/api/requests`), legacy `/api/sessions`, and `session_revise` jobs are retired; do not restore them as public APIs.
+- Reuse `app/services/production/lifecycle.py` for production state, quantity, version, audit, and idempotency rules. Agent Tools must not implement separate production transitions. Tests may use `dispatch.seed_allocation`; it is an offline preparation helper, not an HTTP product entry point.
+- Desk New request and conversation-editing entry points route to `/chat`. Keep recommendation-card confirmation semantics; do not rebuild the retired session editor.
+- Reuse existing implementations when refactoring. Do not duplicate rules across layers or change algorithms, API behavior, or database semantics merely to reorganize files. Identify architectural gaps and plan migration first.
 
-## 4. Tool & Skill Development
+## 4. Tool and Skill development
 
-- 新增或修改 Tool 时，遵循 `docs/tool_development.md`。
-- 新增或修改 Markdown Skill 时，遵循 `docs/skill_development.md`。
-- Tool 仅暴露能力，不复制 Service 的业务计算和确定性规则。
-- Skill 仅定义任务执行指引，不替代 LangGraph 流程守卫或 Service / Policy。
-- 修改 Tool 或 Skill 时，应同步验证相关 Schema、Registry、调用权限及业务测试。
+Follow `docs/tool_development.md` for Tools and `docs/skill_development.md` for Markdown Skills. Tools expose capabilities without duplicating deterministic Service logic. Skills provide execution guidance without replacing Runtime guards or Service / Policy. Validate related schemas, registration, permissions, and business tests whenever Tools or Skills change.
 
-## 5. 数据、安全与运行环境
+## 5. Data, security, and runtime
 
-- 不提交 `.env`、API 密钥、个人 CSV、运行中的 SQLite 数据库、备份或登录凭据。`.env.example` 只放字段说明和空值；配置在启动时读取，运行中的模型调用使用该配置快照。
-- 测试、演示和评估优先使用临时或独立数据库，绝不把默认 `runtime/dispatch.sqlite3` 当成可清空的测试库。修改真实数据库或运行迁移前先确认目标路径和备份状态。
-- 保留 Chat 会话的 owner 检查、HTTP 鉴权、管理员角色边界、版本冲突与请求 ID 重放规则。账号共享当前业务工作区；不要假设已经实现多租户隔离。
-- 默认服务器只监听本机 `127.0.0.1`。外部模型调用是可选的在线验证，需明确区分于 mock 或离线测试。
+- Never commit `.env`, API keys, personal CSV files, live SQLite databases, backups, or credentials. `.env.example` contains explanations and empty values only. Read configuration at startup and use that snapshot for model calls.
+- Use temporary or isolated databases for tests, demos, and evaluations. Never treat `runtime/dispatch.sqlite3` as disposable. Verify the target path and backup status before changing real data or applying migrations.
+- Preserve session ownership, HTTP authentication, administrator boundaries, version conflicts, and request-ID replay rules. Accounts share one business workspace; do not assume tenant isolation.
+- Bind to `127.0.0.1` by default. Real model calls are optional online validation and must be distinguished from mocked or offline checks.
 
-## 6. 开发与验证
+## 6. Development and verification
 
-从仓库根目录运行命令。常用入口：
+Run commands from the repository root:
 
 ```bash
 uv sync --locked
@@ -95,21 +91,21 @@ uv run --locked python -m app.cli.setup
 uv run --locked python -m app.server --backend offline
 ```
 
-根据改动范围先运行相关测试，再考虑完整回归：
+Start with tests relevant to the change, then run broader regression when justified:
 
 ```bash
 uv run --no-sync python -X utf8 -m unittest tests.test_dynamic_agent -q
-uv run --no-sync python -X utf8 -m unittest discover -s tests -p "test_*.py" -q
-node tests/test_chat_ui.cjs
-node tests/test_ui_state.cjs
+uv run --no-sync python -X utf8 -m unittest discover -s tests -p 'test_*.py' -q
+node --test tests/test_*.cjs
+python3 evaluation/check_repository.py
 ```
 
-只修改文档时检查文件路径、链接、命令及描述是否与当前实现一致。修改 Agent、Tool、事务或状态机时，至少覆盖成功、拒绝/冲突、重试/重放和旧数据恢复中与变更相关的路径。`evaluation/verify_*.py` 中部分脚本会写入 `evaluation/results/`；运行前确认是否需要更新报告，不要把历史结果当作本次测试结果。
+For documentation changes, check paths, links, commands, and descriptions against the implementation. Agent, Tool, transaction, or state-machine changes must cover relevant success, rejection/conflict, retry/replay, and old-data recovery paths. Evaluation scripts may write to ignored output directories; historical results are not evidence of the current run.
 
-对涉及多个模块的架构调整，必须先阅读相关 Architecture 和开发规范，分析现有实现与目标架构的差距，制定文件级迁移计划，再分阶段实施和验证。优先复用既有代码，不进行无关重构。
+Before a multi-module architectural change, read the relevant architecture and development standards, identify gaps, prepare a file-level migration plan, and implement and verify in stages. Reuse existing code and avoid unrelated refactoring.
 
-**Language Convention**：整个系统面向英文用户。所有用户可见内容，包括 UI 文案、Agent 回复、澄清问题、错误提示及推荐解释，必须使用英文。代码标识符、注释、Docstring、Prompt、Skill 和开发文档原则上也使用英文；不得新增中文硬编码文案。`AGENTS.md` 和现有中文架构文档可保留中文，无须为此翻译。
+**Language:** All repository documentation, UI text, Agent replies, clarification questions, errors, explanations, identifiers, comments, docstrings, prompts, and Skills use English. Preserve non-English input compatibility with Unicode-escaped literals where needed; do not add non-English prose or generated reports to Git. Keep generated evaluation output and local notes out of the repository.
 
-## 7. 交付说明
+## 7. Delivery
 
-完成变更时说明：改了哪些文件、行为为何变化、运行了哪些验证、哪些验证因环境或外部模型不可用而未运行。涉及模型或模拟器的结论要写明使用真实服务、mock、离线规则还是固定种子数据。若发现已有未提交修改与任务冲突，先定位冲突范围，避免覆盖其他人的工作。
+Explain which files changed, why behavior changed, what was verified, and which checks were unavailable because of the environment or external services. State whether model/simulator evidence used real services, mocks, offline rules, or fixed-seed data. Locate conflicts with pre-existing uncommitted work before editing and preserve other contributors' changes.

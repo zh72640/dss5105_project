@@ -14,6 +14,40 @@ from evaluation.run_test_workflow import execute_stage, inspect_result, main
 
 
 class TestWorkflow(unittest.TestCase):
+    def simulator_evidence(self, output):
+        baseline = json.loads((Path(__file__).resolve().parents[1] / 'evaluation/fixtures/simulator_baseline.json').read_text())
+        rows = baseline['runs']
+        # New policy results are checked for completeness, not presented as reviewed.
+        rows += [{'seed':5105, 'scenario':scenario, 'policy':'planner_weighted_hybrid',
+                  'metrics':{'batches':120}} for scenario in ('standard','shock')]
+        folder = output / 'simulator'
+        folder.mkdir()
+        path = folder / 'simulator_comparison.json'
+        path.write_text(json.dumps({'runs':rows}))
+        return path, rows
+
+    def test_simulator_preserves_reviewed_metrics_and_discloses_new_policies(self):
+        with tempfile.TemporaryDirectory() as directory:
+            self.simulator_evidence(Path(directory))
+            details, warnings = inspect_result('simulator', Path(directory), '')
+        self.assertEqual(details['reviewed_configurations'], 14)
+        self.assertEqual(details['unreviewed_configurations'], 2)
+        self.assertIn('planner_weighted_hybrid', warnings[0])
+
+    def test_simulator_rejects_missing_duplicate_or_changed_baseline_results(self):
+        for failure in ('missing','duplicate','changed'):
+            with self.subTest(failure=failure), tempfile.TemporaryDirectory() as directory:
+                path, rows = self.simulator_evidence(Path(directory))
+                if failure == 'missing':
+                    rows.pop()
+                elif failure == 'duplicate':
+                    rows[-1] = rows[0]
+                else:
+                    rows[0]['metrics']['total_cost'] += 1
+                path.write_text(json.dumps({'runs':rows}))
+                with self.assertRaises(ValueError):
+                    inspect_result('simulator', Path(directory), '')
+
     def test_failed_process_never_becomes_a_pass(self):
         with tempfile.TemporaryDirectory() as directory:
             result = execute_stage('python', [sys.executable, '-c', 'raise SystemExit(7)'],

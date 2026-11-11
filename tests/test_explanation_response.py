@@ -234,7 +234,7 @@ class ExplanationResponseBehavior(unittest.TestCase):
         self.assertEqual(errors[-1]['code'], 'explanation_unexpected_tools')
 
     def test_unusable_explanations_remain_model_errors_and_never_become_business_failures(self):
-        for text in ('这是推荐。',):
+        for text in ('\u8fd9\u662f\u63a8\u8350\u3002',):
             with self.subTest(text=text):
                 request_id = 'unusable-' + str(len(text))
                 model = ExplanationScript(actions=[*actions()[:3], AIMessage(content=text)])

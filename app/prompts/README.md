@@ -7,9 +7,9 @@ This package is the source of runtime LLM instructions. Offline conversation rep
 | ID | Kind | Purpose |
 | --- | --- | --- |
 | `conversation.intent`, `conversation.interpret`, `conversation.reply` | fragment / prompt | Chat v2 turn interpretation and grounded replies. |
-| `agent.intent`, `agent.followup`, `allocation.extract`, `agent.reply` | prompt | Main Graph routing, contextual follow-up interpretation, allocation intake, and Tool-loop instructions. |
+| `agent.intent`, `agent.followup`, `allocation.extract`, `agent.reply`, `order_registration.extract` | prompt | Main Graph routing, contextual follow-up interpretation, allocation intake, Tool-loop instructions, and conversational order registration. |
 
-The conversation definitions use `chat_v2`. Active versions are selected in `catalog/manifest.yaml`: routing uses `agent.intent` v6, contextual follow-ups use `agent.followup` v4, allocation extraction uses v12, and allocation explanation uses v5. Prior versions remain available for inspection and pinned requests.
+The conversation definitions use `chat_v2`. Active versions are selected in `catalog/manifest.yaml`: routing uses `agent.intent` v7, contextual follow-ups use `agent.followup` v4, allocation extraction uses v12, and allocation explanation uses v5. Prior versions remain available for inspection and pinned requests.
 
 Extraction v10 states the allocation domain explicitly: outsourcing garment work to external workshops is the normal request, and a full factory is background context. Such wording does not create an unsupported routing constraint or authorize changes to capacity or queues. Actual unsupported budget, split, and quality requirements must still be reported. Its ORD-017 example is exercised through real preparation and preview services using a scripted model on a temporary database; this checks the contract and downstream behavior, not live model reliability. Previously saved blocking issues and pinned request versions are not automatically rewritten by a prompt update.
 

@@ -1,0 +1,202 @@
+{
+  "description": "Reviewed simulator regression metrics; seed 5105, bundled development data.",
+  "source_commit": "d55f906",
+  "runs": [
+    {
+      "seed": 5105,
+      "scenario": "standard",
+      "policy": "random",
+      "metrics": {
+        "batches": 120,
+        "mean_days": 21.523154699449456,
+        "p90_days": 45.61538461538461,
+        "late_percent": 34.166666666666664,
+        "defect_percent": 4.166666666666667,
+        "total_cost": 111780.0,
+        "max_share_percent": 22.620320855614974
+      }
+    },
+    {
+      "seed": 5105,
+      "scenario": "standard",
+      "policy": "greedy_biggest",
+      "metrics": {
+        "batches": 120,
+        "mean_days": 49.023713235294125,
+        "p90_days": 80.625,
+        "late_percent": 84.16666666666667,
+        "defect_percent": 4.166666666666667,
+        "total_cost": 108430.0,
+        "max_share_percent": 70.16042780748663
+      }
+    },
+    {
+      "seed": 5105,
+      "scenario": "standard",
+      "policy": "cheapest",
+      "metrics": {
+        "batches": 120,
+        "mean_days": 105.12639353400223,
+        "p90_days": 192.8695652173913,
+        "late_percent": 93.33333333333333,
+        "defect_percent": 7.5,
+        "total_cost": 85960.0,
+        "max_share_percent": 70.16042780748663
+      }
+    },
+    {
+      "seed": 5105,
+      "scenario": "standard",
+      "policy": "planner_min_delay",
+      "metrics": {
+        "batches": 120,
+        "mean_days": 8.054749296597123,
+        "p90_days": 13.69230769230769,
+        "late_percent": 1.6666666666666667,
+        "defect_percent": 5.0,
+        "total_cost": 115640.0,
+        "max_share_percent": 25.56149732620321
+      }
+    },
+    {
+      "seed": 5105,
+      "scenario": "standard",
+      "policy": "planner_min_defects",
+      "metrics": {
+        "batches": 120,
+        "mean_days": 162.51383053221286,
+        "p90_days": 282.1470588235293,
+        "late_percent": 95.0,
+        "defect_percent": 1.6666666666666667,
+        "total_cost": 129920.0,
+        "max_share_percent": 70.16042780748663
+      }
+    },
+    {
+      "seed": 5105,
+      "scenario": "standard",
+      "policy": "planner_hybrid",
+      "metrics": {
+        "batches": 120,
+        "mean_days": 8.788612914508056,
+        "p90_days": 16.23076923076923,
+        "late_percent": 2.5,
+        "defect_percent": 3.3333333333333335,
+        "total_cost": 113480.0,
+        "max_share_percent": 33.58288770053476
+      }
+    },
+    {
+      "seed": 5105,
+      "scenario": "standard",
+      "policy": "planner_min_cost",
+      "metrics": {
+        "batches": 120,
+        "mean_days": 105.12639353400223,
+        "p90_days": 192.8695652173913,
+        "late_percent": 93.33333333333333,
+        "defect_percent": 7.5,
+        "total_cost": 85960.0,
+        "max_share_percent": 70.16042780748663
+      }
+    },
+    {
+      "seed": 5105,
+      "scenario": "shock",
+      "policy": "random",
+      "metrics": {
+        "batches": 120,
+        "mean_days": 23.363680375996548,
+        "p90_days": 48.35294117647061,
+        "late_percent": 39.166666666666664,
+        "defect_percent": 4.166666666666667,
+        "total_cost": 111780.0,
+        "max_share_percent": 22.620320855614974
+      }
+    },
+    {
+      "seed": 5105,
+      "scenario": "shock",
+      "policy": "greedy_biggest",
+      "metrics": {
+        "batches": 120,
+        "mean_days": 51.03658088235294,
+        "p90_days": 81.25,
+        "late_percent": 86.66666666666667,
+        "defect_percent": 4.166666666666667,
+        "total_cost": 108430.0,
+        "max_share_percent": 70.16042780748663
+      }
+    },
+    {
+      "seed": 5105,
+      "scenario": "shock",
+      "policy": "cheapest",
+      "metrics": {
+        "batches": 120,
+        "mean_days": 103.88433667781491,
+        "p90_days": 190.0434782608695,
+        "late_percent": 91.66666666666667,
+        "defect_percent": 5.0,
+        "total_cost": 85960.0,
+        "max_share_percent": 70.16042780748663
+      }
+    },
+    {
+      "seed": 5105,
+      "scenario": "shock",
+      "policy": "planner_min_delay",
+      "metrics": {
+        "batches": 120,
+        "mean_days": 8.383526710572745,
+        "p90_days": 15.382352941176471,
+        "late_percent": 1.6666666666666667,
+        "defect_percent": 5.0,
+        "total_cost": 115805.0,
+        "max_share_percent": 26.149732620320854
+      }
+    },
+    {
+      "seed": 5105,
+      "scenario": "shock",
+      "policy": "planner_min_defects",
+      "metrics": {
+        "batches": 120,
+        "mean_days": 165.00203081232488,
+        "p90_days": 285.11764705882337,
+        "late_percent": 95.0,
+        "defect_percent": 1.6666666666666667,
+        "total_cost": 129920.0,
+        "max_share_percent": 70.16042780748663
+      }
+    },
+    {
+      "seed": 5105,
+      "scenario": "shock",
+      "policy": "planner_hybrid",
+      "metrics": {
+        "batches": 120,
+        "mean_days": 9.298390702434821,
+        "p90_days": 18.588235294117666,
+        "late_percent": 3.3333333333333335,
+        "defect_percent": 3.3333333333333335,
+        "total_cost": 114110.0,
+        "max_share_percent": 33.2620320855615
+      }
+    },
+    {
+      "seed": 5105,
+      "scenario": "shock",
+      "policy": "planner_min_cost",
+      "metrics": {
+        "batches": 120,
+        "mean_days": 103.88433667781491,
+        "p90_days": 190.0434782608695,
+        "late_percent": 91.66666666666667,
+        "defect_percent": 5.0,
+        "total_cost": 85960.0,
+        "max_share_percent": 70.16042780748663
+      }
+    }
+  ]
+}

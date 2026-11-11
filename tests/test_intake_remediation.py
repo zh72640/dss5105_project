@@ -59,7 +59,7 @@ class IntakeRemediation(unittest.TestCase):
             self.extract(text, ('set', 'due_date', '2026-04-01', text))
         self.assertEqual(self._due('ORD-041 due today.'), '2026-04-01')
         self.assertEqual(self._due('ORD-041 back by tomorrow.'), '2026-04-02')
-        self.assertEqual(self._due('ORD-041 截止明天.'), '2026-04-02')
+        self.assertEqual(self._due('ORD-041 \u622a\u6b62\u660e\u5929.'), '2026-04-02')
 
     def test_pending_due_date_answer_is_modify_constraints(self):
         plain = {**self.context, 'pending_questions': [],
